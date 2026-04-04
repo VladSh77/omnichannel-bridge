@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_omnichannel" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.omnichannel</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Omnichannel" name="omnichannel_bridge_settings" groups="base.group_system">
+                    <block title="Meta (Facebook / Instagram)" name="omnichannel_block_meta">
+                        <setting string="Webhook verify token" help="Same value as hub.verify_token in Meta webhook subscription (GET challenge).">
+                            <field name="omnichannel_meta_verify_token" password="True"/>
+                        </setting>
+                        <setting string="Page access token (fallback)" help="Prefer Omnichannel → Integrations (Meta).">
+                            <field name="omnichannel_meta_page_access_token" password="True"/>
+                        </setting>
+                        <setting string="App secret" help="Used to validate X-Hub-Signature-256 on POST webhooks.">
+                            <field name="omnichannel_meta_app_secret" password="True"/>
+                        </setting>
+                    </block>
+                    <block title="Bot schedule" name="omnichannel_block_schedule">
+                        <setting help="Use company timezone (on the main company contact).">
+                            <field name="omnichannel_bot_reply_mode"/>
+                        </setting>
+                        <setting string="Manager hours start">
+                            <field name="omnichannel_manager_hour_start"/>
+                        </setting>
+                        <setting string="Manager hours end">
+                            <field name="omnichannel_manager_hour_end"/>
+                        </setting>
+                    </block>
+                    <block title="CRM" name="omnichannel_block_crm">
+                        <setting help="Creates a CRM lead when a brand-new messenger identity appears.">
+                            <field name="omnichannel_new_contact_as_lead"/>
+                        </setting>
+                    </block>
+                    <block title="Telegram" name="omnichannel_block_telegram">
+                        <setting string="Bot token (fallback)" help="Prefer Omnichannel → Integrations per company.">
+                            <field name="omnichannel_telegram_bot_token" password="True"/>
+                        </setting>
+                        <setting string="Webhook secret" help="Must match Telegram secret_token when registering the webhook.">
+                            <field name="omnichannel_telegram_webhook_secret" password="True"/>
+                        </setting>
+                    </block>
+                    <block title="LLM (факти з Odoo, без вигадок)" name="omnichannel_block_llm">
+                        <setting string="Увімкнути автовідповіді" help="Рекомендовано: Ollama (локально, відкриті ваги). OpenAI — опційно, пропрієтарний хмарний API.">
+                            <field name="omnichannel_llm_enabled"/>
+                        </setting>
+                        <setting string="Бекенд">
+                            <field name="omnichannel_llm_backend"/>
+                        </setting>
+                        <setting string="Суворе підґрунтя" help="Модель отримує лише FACTS_FROM_DATABASE з Python/Odoo; інструкція забороняє вигадувати ціни та місця.">
+                            <field name="omnichannel_llm_strict_grounding"/>
+                        </setting>
+                        <setting string="Контекст: останні повідомлення треду" help="Марковано як не фінансова правда; для зв’язності діалогу.">
+                            <field name="omnichannel_llm_include_transcript"/>
+                        </setting>
+                        <setting string="Скільки останніх повідомлень">
+                            <field name="omnichannel_llm_transcript_messages"/>
+                        </setting>
+                        <setting string="Ollama URL">
+                            <field name="omnichannel_ollama_base_url"/>
+                        </setting>
+                        <setting string="Ollama model">
+                            <field name="omnichannel_ollama_model"/>
+                        </setting>
+                        <setting string="OpenAI API key" help="Лише якщо бекенд = OpenAI.">
+                            <field name="omnichannel_openai_api_key" password="True"/>
+                        </setting>
+                        <setting string="OpenAI model">
+                            <field name="omnichannel_openai_model"/>
+                        </setting>
+                        <setting string="Legacy OpenAI toggle" help="Якщо увімкнено без llm_enabled — LLM вважається увімкненим (зворотна сумісність).">
+                            <field name="omnichannel_openai_enabled"/>
+                        </setting>
+                        <setting string="Базовий системний промпт">
+                            <field name="omnichannel_openai_system_prompt" placeholder="Тон, емпатія, сценарій продажу — без вигаданих цифр (їх дає блок фактів)."/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

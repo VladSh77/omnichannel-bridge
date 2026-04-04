@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_omnichannel" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.omnichannel</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Omnichannel" name="omnichannel_page" groups="sales_team.group_sale_salesman">
+                    <group string="Звертання для бота">
+                        <field name="omni_addressing_style"/>
+                        <field name="omni_addressing_vocative" placeholder="Наприклад: Ольго"/>
+                    </group>
+                    <group string="Пам’ять з діалогів">
+                        <field name="omni_chat_memory" colspan="2" nolabel="1"/>
+                    </group>
+                    <field name="omni_identity_ids" nolabel="1">
+                        <list editable="bottom">
+                            <field name="provider"/>
+                            <field name="external_id"/>
+                            <field name="display_name"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

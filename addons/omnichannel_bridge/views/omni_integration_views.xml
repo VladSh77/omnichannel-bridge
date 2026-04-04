@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_integration_tree" model="ir.ui.view">
+        <field name="name">omni.integration.tree</field>
+        <field name="model">omni.integration</field>
+        <field name="arch" type="xml">
+            <list string="Omnichannel integrations" editable="bottom">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="provider"/>
+                <field name="active"/>
+                <field name="api_token" password="True"/>
+                <field name="webhook_secret" password="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_omni_integration_form" model="ir.ui.view">
+        <field name="name">omni.integration.form</field>
+        <field name="model">omni.integration</field>
+        <field name="arch" type="xml">
+            <form string="Omnichannel integration">
+                <sheet>
+                    <group>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                        <field name="provider"/>
+                        <field name="active"/>
+                    </group>
+                    <group string="Credentials">
+                        <field name="api_token" password="True" placeholder="Telegram bot token / Meta Page access token"/>
+                        <field name="webhook_secret" password="True" placeholder="Telegram optional / Meta App Secret (signature)"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_integration" model="ir.actions.act_window">
+        <field name="name">Omnichannel integrations</field>
+        <field name="res_model">omni.integration</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_omni_root"
+        name="Omnichannel"
+        parent="sale.menu_sale_config"
+        sequence="45"
+    />
+    <menuitem
+        id="menu_omni_integration"
+        name="Integrations"
+        parent="menu_omni_root"
+        action="action_omni_integration"
+        sequence="10"
+    />
+</odoo>
