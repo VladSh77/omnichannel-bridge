@@ -1,8 +1,14 @@
-# Fajna — омніканальні продажі в Odoo
+# 🤖 Omnichannel Bridge for Odoo 17
 
-**Домен:** путівки в **дитячі табори** (преміум-сегмент) — якість спілкування критична; детальні вимоги, мови (UA/PL), RODO/діти, місця/резерв, купон **−5% на табір** і гібрид «бот ↔ один менеджер» — у **[чеклісті ТЗ](docs/TZ_CHECKLIST.md)** (розділ «Домен бізнесу» та пов’язані пункти).
+![Odoo Version](https://img.shields.io/badge/Odoo-17.0%20Community-purple)
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![LLM](https://img.shields.io/badge/LLM-Ollama%20%2F%20qwen2.5-red)
+![License](https://img.shields.io/badge/License-LGPL--3.0-green.svg)
+![Status](https://img.shields.io/badge/Status-Active%20Development-orange)
 
-Єдиний робочий простір для менеджерів: діалоги з **Instagram, Facebook Messenger, Telegram** (та інших каналів за доробкою) агрегуються в **Odoo Discuss**, клієнти прив’язуються до **res.partner**, бот відповідає **лише на основі фактів, які Python збирає з Odoo** (каталог, ціни, квоти місць, оплати, поля картки, звернення на ім’я), плюс **локальний LLM (Ollama)** з відкритими вагами — без обов’язкових платних API та без купівлі модулів на маркетплейсі. Паралельно з існуючим **SendPulse** це може бути **окреме нове підключення** (не обов’язкова міграція).
+**Developed by [Fayna Digital](https://fayna.agency) — Author: Volodymyr Shevchenko**
+
+Єдиний робочий простір для менеджерів: діалоги з **Instagram, Facebook Messenger, Telegram** (та інших каналів за доробкою) агрегуються в **Odoo Discuss**, клієнти прив’язуються до **res.partner**, бот відповідає **лише на основі фактів, які Python збирає з Odoo** (каталог, ціни, квоти місць, оплати, поля картки, звернення на ім’я), плюс **локальний LLM (Ollama)** з відкритими вагами — без обов’язкових платних API та без купівлі модулів на маркетплейсі.
 
 ## Навіщо це (проблема SendPulse + Odoo)
 
