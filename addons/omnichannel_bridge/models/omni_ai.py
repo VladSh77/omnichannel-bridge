@@ -109,6 +109,7 @@ class OmniAi(models.AbstractModel):
 
         reply = self._llm_complete(backend, ICP, system, text)
         if not reply:
+            self._omni_send_fallback(channel, partner, ICP)
             return
         channel.sudo().message_post(
             body=reply,
@@ -117,6 +118,33 @@ class OmniAi(models.AbstractModel):
             author_id=self.env.ref('base.partner_root').id,
         )
         self._omni_route_manager_mention_if_needed(channel, text, reply)
+
+    def _omni_send_fallback(self, channel, partner, icp):
+        """LLM недоступний — надсилаємо шаблонне повідомлення і сповіщаємо менеджера."""
+        msg = (icp.get_param('omnichannel_bridge.fallback_message') or '').strip()
+        if not msg:
+            # Динамічний fallback: якщо зараз неробочий час — з часом відповіді
+            if self._omni_manager_hours_active_now():
+                msg = 'Дякуємо за звернення! Менеджер зараз зайнятий і відповість найближчим часом.'
+            else:
+                start = (icp.get_param('omnichannel_bridge.manager_hour_start') or '09:00').strip()
+                msg = (
+                    'Дякуємо за звернення! '
+                    'Наш менеджер відповість вранці о %(start)s. '
+                    'Якщо питання термінове — залиште номер телефону і ми зателефонуємо.'
+                ) % {'start': start}
+        channel.sudo().message_post(
+            body=msg,
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+            author_id=self.env.ref('base.partner_root').id,
+        )
+        # Сповіщаємо менеджера
+        self.env['omni.notify'].sudo().notify_escalation(
+            channel=channel,
+            partner=partner,
+            reason='⚙️ LLM недоступний — надіслано fallback повідомлення клієнту',
+        )
 
     def _llm_complete(self, backend, icp, system_prompt, user_text):
         if backend == 'openai':

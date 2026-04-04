@@ -108,6 +108,7 @@ class OmniBridge(models.AbstractModel):
         )
         if is_new:
             self.env['omni.notify'].sudo().notify_new_thread(channel, partner, provider)
+            self._omni_maybe_create_crm_lead(partner, provider)
         channel.sudo().message_post(
             body=text,
             message_type='comment',
@@ -127,6 +128,28 @@ class OmniBridge(models.AbstractModel):
             text=text,
             provider=provider,
         )
+
+    def _omni_maybe_create_crm_lead(self, partner, provider):
+        """Новий клієнт → CRM нагода (якщо увімкнено в налаштуваннях)."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        if str(ICP.get_param('omnichannel_bridge.new_contact_as_lead', 'False')).lower() not in (
+            '1', 'true', 'yes',
+        ):
+            return
+        if 'crm.lead' not in self.env:
+            return
+        try:
+            provider_label = dict(
+                self.env['omni.integration']._selection_providers()
+            ).get(provider, provider)
+            self.env['crm.lead'].sudo().create({
+                'name': '[%s] %s' % (provider_label, partner.display_name or 'New contact'),
+                'partner_id': partner.id,
+                'description': 'Новий контакт через %s. Призначте менеджера.' % provider_label,
+                'tag_ids': [],
+            })
+        except Exception:
+            _logger.exception('Failed to create CRM lead for new omnichannel contact')
 
     def _omni_process_meta(self, payload, headers):
         raw_body = payload if isinstance(payload, (bytes, bytearray)) else json.dumps(payload).encode('utf-8')
@@ -198,6 +221,11 @@ class OmniBridge(models.AbstractModel):
             return {'ok': True, 'skipped': True}
         from_user = message.get('from') or {}
         chat = message.get('chat') or {}
+
+        # --- Kill switch / bot commands (від адміна) ---
+        if text.startswith('/') and self._omni_is_admin_telegram_user(from_user):
+            return self._omni_handle_bot_command(text, from_user, chat)
+
         external_user_id = str(from_user.get('id') or chat.get('id') or '')
         thread_id = str(chat.get('id') or external_user_id)
         display_name = ' '.join(
@@ -217,6 +245,61 @@ class OmniBridge(models.AbstractModel):
             metadata_obj={'telegram': from_user, 'chat': chat},
         )
         return {'ok': True}
+
+    def _omni_is_admin_telegram_user(self, from_user):
+        """Перевіряємо чи команда від адміна (за internal_tg_chat_id або окремим admin_tg_id)."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        admin_ids_raw = ICP.get_param('omnichannel_bridge.admin_tg_user_ids', '')
+        if not admin_ids_raw:
+            return False
+        allowed = {s.strip() for s in admin_ids_raw.split(',') if s.strip()}
+        return str(from_user.get('id', '')) in allowed
+
+    def _omni_handle_bot_command(self, text, from_user, chat):
+        """Telegram-команди для управління ботом без деплою."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        cmd = text.split()[0].lower().split('@')[0]  # /stop_bot@MyBot → /stop_bot
+        chat_id = str(chat.get('id', ''))
+
+        if cmd == '/stop_bot':
+            ICP.set_param('omnichannel_bridge.llm_enabled', 'False')
+            ICP.set_param('omnichannel_bridge.bot_reply_mode', 'never')
+            self._omni_telegram_send_message(chat_id, '🔴 Бот ВИМКНЕНО. Всі відповіді — вручну.')
+            _logger.warning('Bot stopped via Telegram command by user %s', from_user.get('id'))
+
+        elif cmd == '/start_bot':
+            ICP.set_param('omnichannel_bridge.llm_enabled', 'True')
+            ICP.set_param('omnichannel_bridge.bot_reply_mode', 'outside_manager_hours')
+            self._omni_telegram_send_message(chat_id, '🟢 Бот УВІМКНЕНО. Режим: поза робочими годинами.')
+            _logger.info('Bot started via Telegram command by user %s', from_user.get('id'))
+
+        elif cmd == '/restart_bot':
+            # Скидаємо будь-який stuck стан: включаємо LLM і режим auto
+            ICP.set_param('omnichannel_bridge.llm_enabled', 'True')
+            ICP.set_param('omnichannel_bridge.bot_reply_mode', 'outside_manager_hours')
+            self._omni_telegram_send_message(
+                chat_id,
+                '🔄 Бот ПЕРЕЗАПУЩЕНО. LLM: qwen2.5:7b. Режим: поза робочими годинами.',
+            )
+            _logger.info('Bot restarted via Telegram command by user %s', from_user.get('id'))
+
+        elif cmd == '/bot_status':
+            enabled = ICP.get_param('omnichannel_bridge.llm_enabled', 'False')
+            mode = ICP.get_param('omnichannel_bridge.bot_reply_mode', 'outside_manager_hours')
+            model = ICP.get_param('omnichannel_bridge.ollama_model', 'qwen2.5:7b')
+            status = '🟢' if enabled in ('True', '1', 'true') else '🔴'
+            self._omni_telegram_send_message(
+                chat_id,
+                '%s Статус бота\nLLM: %s\nРежим: %s\nМодель: %s' % (status, enabled, mode, model),
+            )
+
+        else:
+            self._omni_telegram_send_message(
+                chat_id,
+                'Команди: /stop_bot | /start_bot | /restart_bot | /bot_status',
+            )
+
+        return {'ok': True, 'command': cmd}
 
     def _omni_process_viber_stub(self, payload, headers):
         _logger.info('Viber webhook stub (implement Viber parser).')

@@ -63,13 +63,17 @@ class ResConfigSettings(models.TransientModel):
     )
     omnichannel_ollama_base_url = fields.Char(
         string='Ollama base URL',
-        default='http://127.0.0.1:11434',
+        default='http://77.42.20.195:11434',
         config_parameter='omnichannel_bridge.ollama_base_url',
     )
     omnichannel_ollama_model = fields.Char(
         string='Ollama model name',
-        default='llama3.2',
+        default='qwen2.5:7b',
         config_parameter='omnichannel_bridge.ollama_model',
+    )
+    omnichannel_fallback_message = fields.Text(
+        string='Fallback message when LLM is unavailable',
+        config_parameter='omnichannel_bridge.fallback_message',
     )
     omnichannel_llm_strict_grounding = fields.Boolean(
         string='Strict grounding (only FACTS_FROM_DATABASE)',
@@ -100,6 +104,12 @@ class ResConfigSettings(models.TransientModel):
     )
     omnichannel_openai_system_prompt = fields.Text(
         config_parameter='omnichannel_bridge.openai_system_prompt',
+    )
+
+    # --- Bot kill switch via Telegram ---
+    omnichannel_admin_tg_user_ids = fields.Char(
+        string='Admin Telegram user IDs (comma-separated, for /stop_bot /start_bot)',
+        config_parameter='omnichannel_bridge.admin_tg_user_ids',
     )
 
     # --- Internal Telegram notifications ---

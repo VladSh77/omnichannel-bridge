@@ -209,6 +209,34 @@ class OmniKnowledge(models.AbstractModel):
         return '\n'.join(lines)
 
     @api.model
+    def omni_partner_orders_block(self, partner):
+        """Замовлення клієнта: назва табору, extras, статус, сума."""
+        if not partner:
+            return ''
+        p = partner.commercial_partner_id
+        Order = self.env['sale.order'].sudo()
+        orders = Order.search(
+            [('partner_id', 'child_of', p.id)],
+            order='date_order desc',
+            limit=5,
+        )
+        if not orders:
+            return _('CLIENT_ORDERS: немає замовлень у системі.')
+        lines = ['CLIENT_ORDERS:']
+        for order in orders:
+            status = dict(order._fields['state'].selection).get(order.state, order.state)
+            lines.append('  Замовлення %s | %s | %s %s' % (
+                order.name,
+                status,
+                order.amount_total,
+                order.currency_id.name or '',
+            ))
+            for line in order.order_line:
+                product_name = line.product_id.display_name or line.name
+                lines.append('    - %s × %s' % (line.product_uom_qty, product_name))
+        return '\n'.join(lines)
+
+    @api.model
     def omni_strict_grounding_bundle(self, channel, partner):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
         parts = [
@@ -218,6 +246,8 @@ class OmniKnowledge(models.AbstractModel):
             self.omni_greeting_instruction_block(partner),
             '---',
             self.omni_partner_payment_summary(partner),
+            '---',
+            self.omni_partner_orders_block(partner),
             '---',
             self.omni_catalog_context_for_llm(partner),
         ]
