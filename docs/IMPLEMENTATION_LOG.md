@@ -421,3 +421,25 @@
 
 - Intended for fast production diagnostics of field mapping without code changes.
 - No server-side actions performed.
+
+## 2026-04-07 — Access Incident (SSH Password/Key Mismatch)
+
+### Incident Summary
+
+- Access to AI host was intermittently lost during security hardening.
+- Root cause: password auth toggled while active agent keypair did not match key labeled on server (`MacBook fayna`), causing lockout for this environment.
+- Temporary password-based recovery attempts used multiple credentials; some were stale/invalid.
+
+### Recovery Actions
+
+- Restored agent key access by adding current environment pubkey:
+  - `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBYnE7AQXBiSfiga35soQKAxm4LeFpkHzhhXrNDynAZm agent-current`
+- Verified non-interactive key login (`BatchMode=yes`) succeeded.
+- Kept security intent: target state remains key-based access with controlled key inventory.
+
+### Process Correction
+
+- Enforced order for future access changes:
+  1) validate key login end-to-end,
+  2) only then disable password auth,
+  3) re-test from active automation environment before session close.
