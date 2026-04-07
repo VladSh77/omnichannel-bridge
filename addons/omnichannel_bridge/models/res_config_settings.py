@@ -52,6 +52,11 @@ class ResConfigSettings(models.TransientModel):
         string='Enable LLM autoreplies',
         config_parameter='omnichannel_bridge.llm_enabled',
     )
+    omnichannel_site_livechat_enabled = fields.Boolean(
+        string='Enable AI on website live chat',
+        config_parameter='omnichannel_bridge.site_livechat_enabled',
+        default=True,
+    )
     omnichannel_llm_backend = fields.Selection(
         selection=[
             ('ollama', 'Ollama (local, open weights)'),

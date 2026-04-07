@@ -118,3 +118,40 @@
 
 - Supports manager takeover without editing global settings.
 - No server-side actions performed.
+
+## 2026-04-07 — Website Live Chat AI Bridge
+
+### Scope
+
+- Added dedicated setting to enable/disable AI for Odoo website live chat.
+- Connected website live chat inbound customer messages to the same AI queue pipeline.
+- Reused sales triggers and memory learning for site chat provider context.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+
+### Notes
+
+- Live chat bridge runs only for non-messenger channels and only when setting is enabled.
+- Provider used for this path: `site_livechat`.
+- No server-side actions performed.
+
+## 2026-04-07 — TZ Checklist Reconciliation
+
+### Scope
+
+- Reviewed `docs/TZ_CHECKLIST.md` against actual repository implementation state.
+- Updated statuses for delivered foundation items and marked partials where rollout rules are still pending.
+
+### Status Changes Applied
+
+- Marked as done: idempotency, async queue timeout mitigation, kill switch, fallback.
+- Marked as partial: website live chat bridge, manager pause semantics, bot/human logging, knowledge base, runbook.
+- Preserved pending status for unresolved business/domain items (coupons, event seat sync, legal full-pack grounding, SLA 3-min timer logic).
+
+### Notes
+
+- No server-side actions performed.

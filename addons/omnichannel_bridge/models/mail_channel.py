@@ -46,6 +46,19 @@ class MailChannel(models.Model):
         self.ensure_one()
         return self.omni_provider, self.omni_external_thread_id
 
+    def _omni_is_website_livechat_channel(self):
+        self.ensure_one()
+        if self.omni_provider == 'site_livechat':
+            return True
+        if 'livechat_channel_id' in self._fields and self.livechat_channel_id:
+            return True
+        return self.channel_type == 'livechat'
+
+    def _omni_is_internal_author(self, partner):
+        if not partner:
+            return False
+        return bool(partner.user_ids.filtered(lambda u: u.has_group('base.group_user')))
+
     @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
         existing = self.sudo().search([
@@ -85,8 +98,49 @@ class MailChannel(models.Model):
                 channel.sudo().write({'omni_last_bot_reply_at': fields.Datetime.now()})
             elif channel.omni_customer_partner_id and message.author_id != channel.omni_customer_partner_id:
                 channel.sudo().write({'omni_last_human_reply_at': fields.Datetime.now()})
+            channel._omni_handle_website_livechat_inbound(message)
             channel._omni_route_operator_reply_to_messenger(message)
         return message
+
+    def _omni_handle_website_livechat_inbound(self, message):
+        self.ensure_one()
+        if self.omni_provider:
+            # Messenger channels are handled by webhook ingest flow.
+            return
+        if not self._omni_is_website_livechat_channel():
+            return
+        icp = self.env['ir.config_parameter'].sudo()
+        if str(icp.get_param('omnichannel_bridge.site_livechat_enabled', 'True')).lower() not in (
+            '1', 'true', 'yes',
+        ):
+            return
+        body = (message.body or '').strip()
+        if not body:
+            return
+        if message.subtype_id and getattr(message.subtype_id, 'internal', False):
+            return
+        author = message.author_id
+        odoobot = self.env.ref('base.partner_root')
+        if not author or author == odoobot:
+            return
+        if self._omni_is_internal_author(author):
+            self.sudo().write({'omni_last_human_reply_at': fields.Datetime.now()})
+            return
+        # Website visitor message -> same AI queue and sales/memory pipeline.
+        self.sudo().write({'omni_customer_partner_id': author.id})
+        self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
+            channel=self,
+            partner=author,
+            text=body,
+            provider='site_livechat',
+        )
+        self.env['omni.memory'].sudo().omni_apply_inbound_learning(author, body)
+        self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
+            channel=self,
+            partner=author,
+            text=body,
+            provider='site_livechat',
+        )
 
     def _omni_route_operator_reply_to_messenger(self, message):
         self.ensure_one()

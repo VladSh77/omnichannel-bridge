@@ -46,6 +46,9 @@
                         <setting string="Увімкнути автовідповіді" help="Рекомендовано: Ollama (локально, відкриті ваги). OpenAI — опційно, пропрієтарний хмарний API.">
                             <field name="omnichannel_llm_enabled"/>
                         </setting>
+                        <setting string="AI у чаті сайту (Odoo Live Chat)" help="Якщо вимкнено, бот не відповідає у live chat на сайті, навіть коли LLM загалом увімкнений.">
+                            <field name="omnichannel_site_livechat_enabled"/>
+                        </setting>
                         <setting string="Бекенд">
                             <field name="omnichannel_llm_backend"/>
                         </setting>
