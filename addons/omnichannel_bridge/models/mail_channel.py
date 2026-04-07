@@ -128,6 +128,7 @@ class MailChannel(models.Model):
 
     def _omni_handle_website_livechat_inbound(self, message):
         self.ensure_one()
+        sudo_channel = self.sudo()
         if self.omni_provider:
             # Messenger channels are handled by webhook ingest flow.
             return
@@ -151,7 +152,7 @@ class MailChannel(models.Model):
             return
         if message.subtype_id and getattr(message.subtype_id, 'internal', False):
             return
-        author = message.author_id or self.omni_customer_partner_id
+        author = message.author_id or sudo_channel.omni_customer_partner_id
         odoobot = self.env.ref('base.partner_root')
         if author == odoobot:
             return
@@ -194,7 +195,7 @@ class MailChannel(models.Model):
                 'omni_bot_pause_reason': False,
             })
         # Website visitor message -> same AI queue and sales/memory pipeline.
-        self.sudo().write({'omni_customer_partner_id': author.id})
+        sudo_channel.write({'omni_customer_partner_id': author.id})
         self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
             channel=self,
             partner=author,
@@ -227,10 +228,12 @@ class MailChannel(models.Model):
 
     def _omni_route_operator_reply_to_messenger(self, message):
         self.ensure_one()
+        sudo_channel = self.sudo()
         if not self.omni_provider or not self.omni_external_thread_id:
             return
         author = message.author_id
-        if not author or author == self.omni_customer_partner_id:
+        customer = sudo_channel.omni_customer_partner_id
+        if not author or author == customer:
             return
         if message.subtype_id and getattr(message.subtype_id, 'internal', False):
             return
@@ -241,7 +244,7 @@ class MailChannel(models.Model):
             self.env['omni.bridge'].sudo().omni_send_outbound(
                 self.omni_provider,
                 self.omni_external_thread_id,
-                self.omni_customer_partner_id,
+                customer,
                 body,
             )
         except Exception:

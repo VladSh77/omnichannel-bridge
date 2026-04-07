@@ -443,3 +443,73 @@
   1) validate key login end-to-end,
   2) only then disable password auth,
   3) re-test from active automation environment before session close.
+
+## 2026-04-07 — Production Incident: Livechat Recursion + Access Error (`res.partner`)
+
+### Incident Window
+
+- Triggered during website livechat post-message flow after recent "bot-first + fallback" hotfixes.
+- User-visible symptoms:
+  - chat popup freezes / hangs,
+  - repeated RPC errors,
+  - bot sends acknowledgement and then escalates unexpectedly,
+  - yellow Odoo access toasts for Public User (`id=4`) on `res.partner` read.
+
+### Error Signatures Observed
+
+- `RecursionError: maximum recursion depth exceeded while calling a Python object`
+- Stack loop pattern:
+  - `message_post()` -> `_omni_handle_website_livechat_inbound()` -> `message_post()` -> ...
+- Access fault signature:
+  - `Public User (id=4) doesn't have 'read' access to: res.partner`
+
+### Root Causes (Confirmed)
+
+1. **Recursive self-posting in livechat handler**
+   - Inbound handler posted bot/system messages through regular `message_post`, which re-entered inbound handler.
+   - This created infinite recursion for ack/fallback/escalation branches.
+
+2. **Unsafe partner read under website guest context**
+   - `omni_customer_partner_id` was read in public request context.
+   - For non-public partner records this raised access errors for `Public User`.
+
+### Code Fixes Applied
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - Added context guard in `message_post`:
+    - early return when `omni_skip_livechat_inbound=True`.
+  - Wrapped internal livechat system posts with:
+    - `with_context(omni_skip_livechat_inbound=True).message_post(...)`
+  - Read customer partner through sudo in inbound/operator-routing paths:
+    - `sudo_channel = self.sudo()`
+    - use `sudo_channel.omni_customer_partner_id`.
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - Wrapped bot/fallback/out-of-scope/internal-note postings with:
+    - `with_context(omni_skip_livechat_inbound=True).message_post(...)`
+  - Prevented AI-generated internal posts from re-triggering inbound livechat loop.
+
+### Verification Performed
+
+- Local lint on edited files: no linter errors.
+- Production logs after restart:
+  - no new `RecursionError` signatures in immediate window.
+- Reproduced user screenshot symptom mapping:
+  - access toast corresponds to unsafe partner read path; patched with sudo read.
+
+### Process Incident (Critical)
+
+- A hotfix was deployed to production before local commit/push completion.
+- This violated required workflow:
+  - `local -> git commit/push -> server update via git pull`.
+- Corrective actions executed:
+  - committed and pushed local fixes to `main` (`3ee8b39`),
+  - added permanent project rule:
+    - `.cursor/rules/deployment-workflow-critical.mdc` (`alwaysApply: true`).
+
+### Remaining Operational Blocker
+
+- Server deployment path is still file-based in current host layout; target addon directory is not git-backed.
+- Attempted migration to git-based deploy was blocked by missing repository access credentials on server.
+- Required to complete strict process end-to-end:
+  - configure deploy key or HTTPS token for server-side `git pull`.
