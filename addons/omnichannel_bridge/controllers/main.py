@@ -19,6 +19,26 @@ class OmnichannelWebhookController(http.Controller):
         if request.httprequest.method == 'GET':
             return self._omni_webhook_get(provider)
         payload = request.httprequest.get_data() or b'{}'
+        max_bytes_raw = (
+            request.env['ir.config_parameter']
+            .sudo()
+            .get_param('omnichannel_bridge.webhook_max_body_bytes', '1048576')
+        )
+        try:
+            max_bytes = max(4096, int(max_bytes_raw))
+        except (TypeError, ValueError):
+            max_bytes = 1048576
+        if len(payload) > max_bytes:
+            _logger.warning(
+                'Omnichannel webhook body too large: provider=%s size=%s max=%s',
+                provider,
+                len(payload),
+                max_bytes,
+            )
+            return request.make_json_response(
+                {'ok': False, 'error': 'payload_too_large'},
+                status=413,
+            )
         headers = {k: v for k, v in request.httprequest.headers.items()}
         try:
             result = request.env['omni.bridge'].sudo().omni_process_webhook(

@@ -31,6 +31,21 @@
                         <setting string="Manager hours end">
                             <field name="omnichannel_manager_hour_end"/>
                         </setting>
+                        <setting string="Bot after quiet (during manager hours)" help="Waits SLA seconds before running the AI job so the manager can answer first (Meta/Telegram only).">
+                            <field name="omnichannel_bot_inside_hours_if_manager_quiet"/>
+                        </setting>
+                        <setting string="Night window (optional)" help="If enabled, bot may always reply in this local window (company timezone).">
+                            <field name="omnichannel_night_bot_enabled"/>
+                        </setting>
+                        <setting string="Night start" invisible="not omnichannel_night_bot_enabled">
+                            <field name="omnichannel_night_bot_start"/>
+                        </setting>
+                        <setting string="Night end" invisible="not omnichannel_night_bot_enabled">
+                            <field name="omnichannel_night_bot_end"/>
+                        </setting>
+                        <setting string="Max webhook body (bytes)" help="Reject oversized webhook POST payloads.">
+                            <field name="omnichannel_webhook_max_body_bytes"/>
+                        </setting>
                     </block>
                     <block title="CRM" name="omnichannel_block_crm">
                         <setting help="Creates a CRM lead when a brand-new messenger identity appears.">

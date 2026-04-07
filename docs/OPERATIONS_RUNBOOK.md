@@ -22,6 +22,13 @@
 4. Validate fallback reply behavior.
 5. Verify no bot/human double-reply happened in active threads.
 
+## Bot schedule and webhooks (settings)
+
+- `omnichannel_bridge.bot_inside_hours_if_manager_quiet`: during manager hours, AI jobs for Meta/Telegram wait `sla_no_human_seconds` before running (manager-first).
+- `omnichannel_bridge.night_bot_enabled` + `night_bot_start` / `night_bot_end`: optional local window where bot may always reply (company timezone).
+- `omnichannel_bridge.webhook_max_body_bytes`: reject oversized POST to `/omni/webhook/*` (default 1 MiB).
+- Outbound Meta/Telegram: transient HTTP failures retry with exponential backoff in code.
+
 ## Known High-Risk Areas
 
 - Duplicate webhook delivery without idempotency guard.

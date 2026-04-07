@@ -526,3 +526,24 @@
   - widened short-message bypass to 35 characters,
   - added onboarding hint tokens (UA/PL/EN) for docs/browsing-style openers,
   - added price/language stems (`цін`, `cena`, `price`, Polish camp terms) to catch common variants like «ціни» without substring `ціна`.
+
+## 2026-04-07 — TZ §6.1 schedule, §14.1 Meta retries, §14.5 webhook size
+
+### Scope
+
+- Align bot schedule with TZ: optional night window; during manager working hours queue AI job after SLA so the manager can answer first (Meta/Telegram only).
+- Harden outbound: retry Graph/Telegram POST on transient errors with exponential backoff.
+- Reject oversized webhook bodies with HTTP 413.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`: `omni_bot_may_reply_now(channel)`, `omni_autoreply_delay_seconds_for_inbound`, `night_bot_*`, shared time-span helpers.
+- `addons/omnichannel_bridge/models/omni_bridge.py`: enqueue delay; `_omni_http_post_with_retries` for Meta and Telegram send.
+- `addons/omnichannel_bridge/controllers/main.py`: `webhook_max_body_bytes` guard.
+- `addons/omnichannel_bridge/models/res_config_settings.py` + `views/res_config_settings_views.xml`: new settings fields.
+- `docs/TZ_CHECKLIST.md`, `docs/OPERATIONS_RUNBOOK.md`.
+
+### Notes
+
+- Website live chat remains immediate (unchanged).
+- No server actions performed.

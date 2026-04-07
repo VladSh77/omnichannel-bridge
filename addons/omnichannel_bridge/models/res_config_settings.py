@@ -48,6 +48,35 @@ class ResConfigSettings(models.TransientModel):
         default='18:00',
         config_parameter='omnichannel_bridge.manager_hour_end',
     )
+    omnichannel_bot_inside_hours_if_manager_quiet = fields.Boolean(
+        string='During manager hours: bot after quiet period (SLA)',
+        default=True,
+        config_parameter='omnichannel_bridge.bot_inside_hours_if_manager_quiet',
+        help='If enabled, Meta/Telegram AI jobs wait SLA seconds during manager hours so the manager can reply first; '
+        'then the bot may reply if still no human message. Website live chat is unchanged (immediate).',
+    )
+    omnichannel_night_bot_enabled = fields.Boolean(
+        string='Night / early window: bot always allowed',
+        default=False,
+        config_parameter='omnichannel_bridge.night_bot_enabled',
+        help='Optional extra local-time window (e.g. 22:00–07:00) where bot may reply even if it overlaps manager hours.',
+    )
+    omnichannel_night_bot_start = fields.Char(
+        string='Night window start (HH:MM)',
+        default='22:00',
+        config_parameter='omnichannel_bridge.night_bot_start',
+    )
+    omnichannel_night_bot_end = fields.Char(
+        string='Night window end (HH:MM)',
+        default='07:00',
+        config_parameter='omnichannel_bridge.night_bot_end',
+    )
+    omnichannel_webhook_max_body_bytes = fields.Integer(
+        string='Webhook max body size (bytes)',
+        default=1048576,
+        config_parameter='omnichannel_bridge.webhook_max_body_bytes',
+        help='Reject larger POST bodies on /omni/webhook/* with 413 (TZ §14.5).',
+    )
     omnichannel_sla_no_human_seconds = fields.Integer(
         string='SLA wait before bot reply (seconds)',
         default=180,

@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import logging
+import time
 
 import requests
 from psycopg2 import IntegrityError
@@ -158,11 +159,13 @@ class OmniBridge(models.AbstractModel):
             provider=provider,
         )
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(partner, text)
+        delay = self.env['omni.ai'].sudo().omni_autoreply_delay_seconds_for_inbound()
         self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
             channel=channel,
             partner=partner,
             text=text,
             provider=provider,
+            delay_seconds=delay,
         )
 
     def _omni_maybe_create_crm_lead(self, partner, provider):
@@ -391,17 +394,55 @@ class OmniBridge(models.AbstractModel):
                 external_thread_id,
             )
 
+    def _omni_http_post_with_retries(self, url, *, json=None, params=None, max_attempts=4, timeout=30):
+        """Graph / Telegram: retry transient failures (TZ §14.1)."""
+        delay = 1.0
+        last_resp = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                resp = requests.post(url, json=json, params=params, timeout=timeout)
+            except requests.RequestException as exc:
+                last_resp = None
+                _logger.warning(
+                    'HTTP POST attempt %s/%s failed: %s %s',
+                    attempt,
+                    max_attempts,
+                    url[:80],
+                    exc,
+                )
+                if attempt >= max_attempts:
+                    raise
+                time.sleep(delay)
+                delay = min(delay * 2, 16.0)
+                continue
+            last_resp = resp
+            if resp.status_code in (429, 500, 502, 503, 504) and attempt < max_attempts:
+                _logger.warning(
+                    'HTTP POST %s status=%s, retrying in %.1fs',
+                    url[:80],
+                    resp.status_code,
+                    delay,
+                )
+                time.sleep(delay)
+                delay = min(delay * 2, 16.0)
+                continue
+            return resp
+        return last_resp
+
     def _omni_telegram_send_message(self, chat_id, text):
         token = self._omni_telegram_token()
         if not token:
             _logger.warning('Telegram bot token is not configured.')
             return
         url = 'https://api.telegram.org/bot%s/sendMessage' % token
-        resp = requests.post(
-            url,
-            json={'chat_id': chat_id, 'text': text},
-            timeout=30,
-        )
+        try:
+            resp = self._omni_http_post_with_retries(
+                url,
+                json={'chat_id': chat_id, 'text': text},
+            )
+        except requests.RequestException:
+            _logger.exception('Telegram sendMessage failed after retries')
+            return
         if not resp.ok:
             _logger.error('Telegram sendMessage failed: %s %s', resp.status_code, resp.text)
 
@@ -411,15 +452,18 @@ class OmniBridge(models.AbstractModel):
             _logger.warning('Meta page access token is not configured.')
             return
         url = 'https://graph.facebook.com/%s/me/messages' % META_GRAPH_VERSION
-        resp = requests.post(
-            url,
-            params={'access_token': token},
-            json={
-                'recipient': {'id': psid},
-                'messaging_type': 'RESPONSE',
-                'message': {'text': text[:2000]},
-            },
-            timeout=30,
-        )
+        try:
+            resp = self._omni_http_post_with_retries(
+                url,
+                params={'access_token': token},
+                json={
+                    'recipient': {'id': psid},
+                    'messaging_type': 'RESPONSE',
+                    'message': {'text': text[:2000]},
+                },
+            )
+        except requests.RequestException:
+            _logger.exception('Meta send message failed after retries')
+            return
         if not resp.ok:
             _logger.error('Meta send message failed: %s %s', resp.status_code, resp.text)

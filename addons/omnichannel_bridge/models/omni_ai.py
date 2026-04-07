@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-from datetime import datetime, time as time_cls
+from datetime import datetime, timedelta, time as time_cls
 
 import pytz
 import requests
 
 from odoo import api, models
+from odoo.fields import Datetime
 
 _logger = logging.getLogger(__name__)
 
@@ -49,38 +50,109 @@ class OmniAi(models.AbstractModel):
         )
 
     @api.model
-    def omni_bot_may_reply_now(self):
+    def _omni_parse_hm(self, s, default_h=9, default_m=0):
+        parts = (s or '').replace('.', ':').split(':')
+        h = int(parts[0]) if parts and str(parts[0]).isdigit() else default_h
+        m = int(parts[1]) if len(parts) > 1 and str(parts[1]).isdigit() else default_m
+        return time_cls(h % 24, min(m, 59))
+
+    @api.model
+    def _omni_company_local_time_now(self):
+        tzname = self.env.company.partner_id.tz or 'UTC'
+        try:
+            tz = pytz.timezone(tzname)
+        except Exception:
+            tz = pytz.UTC
+        return datetime.now(tz).time()
+
+    @api.model
+    def _omni_time_in_span(self, now_t, start_t, end_t):
+        if start_t <= end_t:
+            return start_t <= now_t <= end_t
+        return now_t >= start_t or now_t <= end_t
+
+    @api.model
+    def _omni_night_bot_window_active_now(self, icp=None):
+        """TZ §6.1: optional local window (e.g. deep night) where bot may always reply."""
+        icp = icp or self.env['ir.config_parameter'].sudo()
+        if str(icp.get_param('omnichannel_bridge.night_bot_enabled', 'False')).lower() not in (
+            '1',
+            'true',
+            'yes',
+        ):
+            return False
+        start_s = (icp.get_param('omnichannel_bridge.night_bot_start') or '22:00').strip()
+        end_s = (icp.get_param('omnichannel_bridge.night_bot_end') or '07:00').strip()
+        now_t = self._omni_company_local_time_now()
+        start_t = self._omni_parse_hm(start_s, 22, 0)
+        end_t = self._omni_parse_hm(end_s, 7, 0)
+        return self._omni_time_in_span(now_t, start_t, end_t)
+
+    @api.model
+    def omni_bot_may_reply_now(self, channel=None):
         ICP = self.env['ir.config_parameter'].sudo()
         mode = (ICP.get_param('omnichannel_bridge.bot_reply_mode') or 'always').strip()
         if mode == 'never':
             return False
-        if mode == 'outside_manager_hours':
-            return not self._omni_manager_hours_active_now()
-        return True
+        if mode == 'always':
+            return True
+        if mode != 'outside_manager_hours':
+            return True
+        if self._omni_night_bot_window_active_now(ICP):
+            return True
+        if not self._omni_manager_hours_active_now():
+            return True
+        quiet = str(ICP.get_param('omnichannel_bridge.bot_inside_hours_if_manager_quiet', 'True')).lower() in (
+            '1',
+            'true',
+            'yes',
+        )
+        if not quiet or not channel:
+            return False
+        try:
+            sla = int(ICP.get_param('omnichannel_bridge.sla_no_human_seconds', '180'))
+        except ValueError:
+            sla = 180
+        sla = max(30, sla)
+        last_h = channel.omni_last_human_reply_at
+        if not last_h:
+            return True
+        return (Datetime.now() - last_h) >= timedelta(seconds=sla)
 
     @api.model
     def _omni_manager_hours_active_now(self):
         ICP = self.env['ir.config_parameter'].sudo()
         start_s = (ICP.get_param('omnichannel_bridge.manager_hour_start') or '09:00').strip()
         end_s = (ICP.get_param('omnichannel_bridge.manager_hour_end') or '18:00').strip()
-        tzname = self.env.company.partner_id.tz or 'UTC'
+        now_t = self._omni_company_local_time_now()
+        start = self._omni_parse_hm(start_s, 9, 0)
+        end = self._omni_parse_hm(end_s, 18, 0)
+        return self._omni_time_in_span(now_t, start, end)
+
+    @api.model
+    def omni_autoreply_delay_seconds_for_inbound(self):
+        """Delay before running queued AI job: TZ §6.1 SLA during manager hours."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        mode = (ICP.get_param('omnichannel_bridge.bot_reply_mode') or 'always').strip()
+        if mode in ('never', 'always'):
+            return 0
+        if mode != 'outside_manager_hours':
+            return 0
+        if self._omni_night_bot_window_active_now(ICP):
+            return 0
+        if not self._omni_manager_hours_active_now():
+            return 0
+        quiet = str(ICP.get_param('omnichannel_bridge.bot_inside_hours_if_manager_quiet', 'True')).lower() in (
+            '1',
+            'true',
+            'yes',
+        )
+        if not quiet:
+            return 0
         try:
-            tz = pytz.timezone(tzname)
-        except Exception:
-            tz = pytz.UTC
-        now_t = datetime.now(tz).time()
-
-        def _parse_hm(s):
-            parts = s.replace('.', ':').split(':')
-            h = int(parts[0]) if parts and parts[0].isdigit() else 9
-            m = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
-            return time_cls(h % 24, min(m, 59))
-
-        start = _parse_hm(start_s)
-        end = _parse_hm(end_s)
-        if start <= end:
-            return start <= now_t <= end
-        return now_t >= start or now_t <= end
+            return max(0, int(ICP.get_param('omnichannel_bridge.sla_no_human_seconds', '180')))
+        except ValueError:
+            return 180
 
     @api.model
     def omni_maybe_autoreply(self, channel, partner, text, provider):
@@ -99,7 +171,7 @@ class OmniAi(models.AbstractModel):
             )
             return
         # Website live chat is bot-first: reply immediately regardless of manager-hours mode.
-        if provider != 'site_livechat' and not self.omni_bot_may_reply_now():
+        if provider != 'site_livechat' and not self.omni_bot_may_reply_now(channel=channel):
             return
         backend = (ICP.get_param('omnichannel_bridge.llm_backend') or 'ollama').strip()
         if backend == 'openai':
