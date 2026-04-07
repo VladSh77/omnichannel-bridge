@@ -62,14 +62,17 @@ class OmniNotify(models.AbstractModel):
         if not self._flag_enabled('omnichannel_bridge.internal_notify_escalate'):
             return
         name = partner.display_name or _('Unknown')
+        packet = self._handoff_packet(partner)
         text = (
             '🔺 *Ескалація* — потрібен менеджер\n'
             '👤 %(name)s\n'
             '💬 %(reason)s\n'
+            '🧾 %(packet)s\n'
             '🔗 %(url)s'
         ) % {
             'name': self._escape(name),
             'reason': self._escape(reason or _('клієнт запитав менеджера')),
+            'packet': self._escape(packet),
             'url': self._channel_url(channel),
         }
         self._send(text, parse_mode='Markdown')
@@ -158,3 +161,23 @@ class OmniNotify(models.AbstractModel):
     def _escape(text):
         """Мінімальне екранування для Markdown v1."""
         return str(text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
+
+    @api.model
+    def _handoff_packet(self, partner):
+        if not partner:
+            return 'age:—; period:—; city:—; budget:—; stage:handoff'
+        age = partner.omni_child_age or '—'
+        period = partner.omni_preferred_period or '—'
+        city = partner.omni_departure_city or '—'
+        budget = (
+            '%s %s' % (partner.omni_budget_amount, partner.omni_budget_currency or '')
+            if partner.omni_budget_amount else '—'
+        )
+        stage = partner.omni_sales_stage or 'handoff'
+        return 'age:%s; period:%s; city:%s; budget:%s; stage:%s' % (
+            age,
+            period,
+            city,
+            budget.strip(),
+            stage,
+        )

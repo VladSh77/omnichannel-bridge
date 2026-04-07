@@ -46,6 +46,21 @@ class ResPartner(models.Model):
         string='Пам’ять діалогу (факти з чату)',
         help='Доповнюється правилами з повідомлень клієнта; перевіряйте перед використанням.',
     )
+    omni_child_age = fields.Integer(string='Вік дитини (років)')
+    omni_preferred_period = fields.Char(string='Бажаний період/зміна')
+    omni_departure_city = fields.Char(string='Місто виїзду')
+    omni_budget_amount = fields.Float(string='Орієнтовний бюджет')
+    omni_budget_currency = fields.Char(string='Валюта бюджету')
+    omni_sales_stage = fields.Selection(
+        selection=[
+            ('new', 'Новий запит'),
+            ('qualifying', 'Кваліфікація'),
+            ('proposal', 'Підібрано варіанти'),
+            ('handoff', 'Передано менеджеру'),
+        ],
+        string='Етап продажу (чат)',
+        default='new',
+    )
 
     def _omni_find_by_phone(self, phone):
         needle = _normalize_phone(phone)

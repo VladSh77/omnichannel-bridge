@@ -11,6 +11,14 @@ class OmniKnowledge(models.AbstractModel):
     _description = 'Catalog + payment facts for LLM context'
 
     @api.model
+    def _omni_compact_mode(self):
+        val = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.llm_compact_mode',
+            'True',
+        )
+        return str(val).lower() in ('1', 'true', 'yes')
+
+    @api.model
     def omni_partner_payment_summary(self, partner):
         if not partner:
             return _('No partner linked yet.')
@@ -52,6 +60,8 @@ class OmniKnowledge(models.AbstractModel):
     @api.model
     def omni_catalog_context_for_llm(self, partner, limit=40):
         """Published/sale_ok products with list price, optional places, terms."""
+        if self._omni_compact_mode():
+            limit = min(limit, 12)
         Product = self.env['product.template'].sudo()
         domain = [('sale_ok', '=', True)]
         if 'is_published' in Product._fields:
@@ -99,12 +109,73 @@ class OmniKnowledge(models.AbstractModel):
             if places is not None:
                 line += ' | places/qty: %s' % places
             if terms:
-                line += ' | terms: %s' % terms[:500]
+                term_len = 160 if self._omni_compact_mode() else 500
+                line += ' | terms: %s' % terms[:term_len]
             chunks.append(line)
         if not chunks:
             return _('No catalog lines available (check sale_ok / website publish).')
         header = _('Use only this catalog data for offers; do not invent prices or seats.')
         return header + '\n' + '\n'.join(chunks)
+
+    @api.model
+    def omni_recommended_catalog_context(self, partner, limit=2):
+        """
+        Build a short, profile-aware recommendation block for sales replies.
+        Scoring is heuristic: period keyword match + budget fit + available places.
+        """
+        Product = self.env['product.template'].sudo()
+        domain = [('sale_ok', '=', True)]
+        if 'is_published' in Product._fields:
+            domain.append(('is_published', '=', True))
+        products = Product.search(domain, limit=60)
+        if not products:
+            return 'RECOMMENDED_CAMPS: no recommendations available.'
+
+        period = ((partner.omni_preferred_period or '').strip().lower() if partner else '')
+        budget = float(partner.omni_budget_amount or 0.0) if partner else 0.0
+
+        if partner:
+            pricelist = partner.property_product_pricelist
+        else:
+            pricelist = self.env.company.property_product_pricelist_id
+
+        ranked = []
+        for tmpl in products:
+            variant = tmpl.product_variant_id
+            price = tmpl.list_price
+            if pricelist and variant:
+                try:
+                    price = pricelist._get_product_price(variant, 1.0, uom=variant.uom_id)
+                except TypeError:
+                    price = pricelist._get_product_price(variant, 1.0, partner=partner or False)
+            terms = (tmpl.omni_chat_terms or tmpl.description_sale or '').lower()
+            score = 0
+            if period and (period in (tmpl.name or '').lower() or period in terms):
+                score += 3
+            if budget > 0 and float(price or 0.0) <= budget:
+                score += 2
+            places = tmpl.omni_places_remaining if tmpl.omni_places_remaining is not False else None
+            if places is not None:
+                if places > 0:
+                    score += 2
+                else:
+                    score -= 3
+            ranked.append((score, tmpl, price, places))
+
+        ranked.sort(key=lambda x: x[0], reverse=True)
+        top = ranked[:max(1, min(limit, 3))]
+        currency = self.env.company.currency_id
+        lines = ['RECOMMENDED_CAMPS:']
+        for score, tmpl, price, places in top:
+            line = '- %s | price: %s %s' % (tmpl.name, price, (tmpl.currency_id or currency).name or '')
+            if places is not None:
+                line += ' | places: %s' % places
+            if tmpl.omni_chat_terms:
+                line += ' | terms: %s' % (tmpl.omni_chat_terms[:200].replace('\n', ' '))
+            line += ' | score: %s' % score
+            lines.append(line)
+        lines.append('Policy: offer at most 1-2 options first, ask one clarifying question if needed.')
+        return '\n'.join(lines)
 
     @api.model
     def omni_partner_core_facts(self, partner):
@@ -180,6 +251,8 @@ class OmniKnowledge(models.AbstractModel):
             lim = int(ICP.get_param('omnichannel_bridge.llm_transcript_messages', '8'))
         except ValueError:
             lim = limit
+        if self._omni_compact_mode():
+            lim = min(lim, 4)
         Message = self.env['mail.message'].sudo()
         msgs = Message.search(
             [
@@ -208,7 +281,8 @@ class OmniKnowledge(models.AbstractModel):
                 role = 'bot'
             else:
                 role = 'staff'
-            lines.append('%s: %s' % (role, body[:500]))
+            msg_len = 220 if self._omni_compact_mode() else 500
+            lines.append('%s: %s' % (role, body[:msg_len]))
         return '\n'.join(lines)
 
     @api.model
@@ -271,6 +345,8 @@ class OmniKnowledge(models.AbstractModel):
         Return top-matching interview FAQ snippets by simple keyword overlap.
         Keeps prompt compact while still grounding interview-style answers.
         """
+        if self._omni_compact_mode():
+            max_items = min(max_items, 1)
         sections = self._omni_interview_faq_sections()
         if not sections:
             return ''
@@ -297,7 +373,8 @@ class OmniKnowledge(models.AbstractModel):
         ]
         for _, q, a in top:
             lines.append('- Q: %s' % q)
-            lines.append('  A: %s' % a[:900].replace('\n', ' ').strip())
+            ans_len = 260 if self._omni_compact_mode() else 900
+            lines.append('  A: %s' % a[:ans_len].replace('\n', ' ').strip())
         lines.append(
             '- Policy: for prices/dates/availability always prioritize live ORM facts from catalog/orders/events.'
         )
@@ -322,6 +399,8 @@ class OmniKnowledge(models.AbstractModel):
             '---',
             self.omni_partner_core_facts(partner),
             '---',
+            self.omni_sales_discovery_block(partner),
+            '---',
             self.omni_greeting_instruction_block(partner),
             '---',
             self.omni_partner_payment_summary(partner),
@@ -329,6 +408,8 @@ class OmniKnowledge(models.AbstractModel):
             self.omni_partner_orders_block(partner),
             '---',
             self.omni_catalog_context_for_llm(partner),
+            '---',
+            self.omni_recommended_catalog_context(partner, limit=2),
         ]
         if partner and partner.omni_chat_memory:
             parts.append('---\nCLIENT_MEMORY_LINES:\n%s' % partner.omni_chat_memory.strip())
@@ -339,3 +420,57 @@ class OmniKnowledge(models.AbstractModel):
         if faq_context:
             parts.append('---\n%s' % faq_context)
         return '\n'.join(parts)
+
+    @api.model
+    def omni_sales_discovery_block(self, partner):
+        """
+        Sales flow helper for LLM:
+        - keep dialog consultative
+        - ask only missing qualification points
+        - avoid repeating already known data from memory/CRM.
+        """
+        memory = (partner.omni_chat_memory or '').lower() if partner else ''
+        has_age = bool(partner and partner.omni_child_age) or 'age:' in memory
+        has_period = bool(partner and partner.omni_preferred_period) or 'period:' in memory
+        has_budget = bool(partner and partner.omni_budget_amount) or 'budget:' in memory
+        has_city = bool(partner and partner.omni_departure_city) or 'city:' in memory
+        has_phone = bool(partner and (partner.phone or partner.mobile))
+        has_email = bool(partner and partner.email)
+
+        missing = []
+        if not has_age:
+            missing.append('вік дитини')
+        if not has_period:
+            missing.append('бажана зміна/дати')
+        if not has_city:
+            missing.append('місто виїзду/логістика')
+        if not has_budget:
+            missing.append('орієнтовний бюджет')
+        if not has_phone and not has_email:
+            missing.append('контакт для бронювання')
+
+        profile_line = (
+            'PROFILE_HINTS: age=%s; period=%s; city=%s; budget=%s %s; stage=%s'
+            % (
+                partner.omni_child_age if partner else '',
+                (partner.omni_preferred_period or '') if partner else '',
+                (partner.omni_departure_city or '') if partner else '',
+                (partner.omni_budget_amount or '') if partner else '',
+                (partner.omni_budget_currency or '') if partner else '',
+                (partner.omni_sales_stage or '') if partner else '',
+            )
+        )
+
+        return (
+            'SALES_DISCOVERY_POLICY:\n'
+            '- Працюй як консультант з продажу таборів: коротко, по суті, з емпатією.\n'
+            '- Після першої відповіді веди кваліфікацію: вік, зміна, логістика, бюджет, контакт.\n'
+            '- Став не більше 1-2 уточнень за повідомлення.\n'
+            '- Не повторюй питання, якщо факт вже відомий з CRM або CLIENT_MEMORY_LINES.\n'
+            '- %s.\n'
+            '- Missing now: %s.\n'
+            '- Коли даних достатньо: запропонуй 1-2 релевантні табори з ORM фактами і мʼякий наступний крок (бронь/менеджер).'
+        ) % (
+            profile_line,
+            ', '.join(missing) if missing else 'дані для підбору вже зібрані',
+        )

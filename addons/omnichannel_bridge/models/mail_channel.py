@@ -160,6 +160,7 @@ class MailChannel(models.Model):
                 'omni_bot_paused': True,
                 'omni_bot_pause_reason': 'client_requested_human',
             })
+            author.sudo().write({'omni_sales_stage': 'handoff'})
             self.message_post(
                 body=_('Передаю діалог менеджеру. Будь ласка, зачекайте трохи.'),
                 message_type='comment',

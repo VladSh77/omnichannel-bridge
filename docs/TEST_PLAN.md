@@ -36,6 +36,9 @@
 - Reply generated only when AI is enabled.
 - Reply mode behavior (`always`, `outside_manager_hours`, `never`).
 - Fallback reply when backend unavailable.
+- RU/BE inbound message path: normal camp answer in Ukrainian (without policy explanation).
+- PL inbound message path: normal camp answer in Polish.
+- Out-of-scope inbound message path: send camp-scope notice + manager escalation.
 
 ### C. Fact Grounding
 
@@ -44,12 +47,18 @@
 - No fabricated legal terms in response.
 - Bot stays within camp domain; off-topic asks are escalated to manager.
 - RU input gets UA/PL response policy reminder (no RU replies).
+- Sales discovery flow asks missing qualifiers only: age, period, logistics, budget, contact.
+- Anti-repeat check: bot does not ask again for clues already present in CRM/chat memory.
+- When qualifiers are sufficient, bot proposes 1-2 recommended camps from catalog context (not a long list).
+- Compact mode check: transcript and FAQ snippets are shortened (token-saving mode).
+- Auto-next-question: if reply has no question mark and qualifiers are missing, bot appends exactly one next-step qualifier question.
 
 ### D. Human Handoff
 
 - Manager-request trigger path.
 - Bot pause on manager join in website livechat.
 - Manual pause/resume actions on channel.
+- Escalation notification includes compact handoff packet (age/period/city/budget/stage).
 
 ### E. Regression and Stability
 

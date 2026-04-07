@@ -54,6 +54,7 @@ class OmniMemory(models.AbstractModel):
                 changed.append('звертання: %s' % voc)
         if changed:
             self._omni_append_chat_memory(partner, '; '.join(changed))
+        self._omni_capture_sales_clues(partner, text)
 
     @api.model
     def _omni_normalize_vocative(self, phrase):
@@ -87,3 +88,51 @@ class OmniMemory(models.AbstractModel):
             return ''
         first = display_name.strip().split()[0].lower()
         return _UA_VOCATIVE_MAP.get(first, '')
+
+    @api.model
+    def _omni_capture_sales_clues(self, partner, text):
+        txt = (text or '').strip()
+        if not txt:
+            return
+        updates = {}
+        clues = []
+        age_m = re.search(r'(\d{1,2})\s*(?:рок[аів]?|р\.|lat|lata)', txt, re.IGNORECASE)
+        if age_m:
+            age = int(age_m.group(1))
+            clues.append('age:%s' % age)
+            if 5 <= age <= 18:
+                updates['omni_child_age'] = age
+        budget_m = re.search(
+            r'(\d{3,6})\s*(грн|uah|zl|pln|zł|€|eur)',
+            txt,
+            re.IGNORECASE,
+        )
+        if budget_m:
+            amount = float(budget_m.group(1))
+            curr = budget_m.group(2).lower()
+            clues.append('budget:%s%s' % (budget_m.group(1), curr))
+            updates['omni_budget_amount'] = amount
+            updates['omni_budget_currency'] = curr
+        period_m = re.search(
+            r'(черв(?:ень|ня)|лип(?:ень|ня)|серп(?:ень|ня)|wrzesie[nń]|lipiec|sierpie[nń]|july|august)',
+            txt,
+            re.IGNORECASE,
+        )
+        if period_m:
+            period = period_m.group(1).lower()
+            clues.append('period:%s' % period)
+            updates['omni_preferred_period'] = period
+        city_m = re.search(
+            r'(?:з|из|from)\s+([A-Za-zА-Яа-яІіЇїЄєҐґŁłŚśŻżŹźĆćŃńÓóĘęĄą\-]{3,30})',
+            txt,
+            re.IGNORECASE,
+        )
+        if city_m:
+            city = city_m.group(1)
+            clues.append('city:%s' % city)
+            updates['omni_departure_city'] = city
+        if updates:
+            updates['omni_sales_stage'] = 'qualifying'
+            partner.sudo().write(updates)
+        if clues:
+            self._omni_append_chat_memory(partner, '; '.join(clues))

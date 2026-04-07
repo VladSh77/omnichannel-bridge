@@ -14,6 +14,14 @@
                     <group string="Пам’ять з діалогів">
                         <field name="omni_chat_memory" colspan="2" nolabel="1"/>
                     </group>
+                    <group string="Профіль підбору табору">
+                        <field name="omni_child_age"/>
+                        <field name="omni_preferred_period"/>
+                        <field name="omni_departure_city"/>
+                        <field name="omni_budget_amount"/>
+                        <field name="omni_budget_currency"/>
+                        <field name="omni_sales_stage"/>
+                    </group>
                     <field name="omni_identity_ids" nolabel="1">
                         <tree editable="bottom">
                             <field name="provider"/>

@@ -236,3 +236,150 @@
 
 - Keeps rollout aligned with current business priority: website chat first, then Meta/Telegram.
 - No server-side actions performed.
+
+## 2026-04-07 — Runtime Scope/Language Guards for Camp Chat
+
+### Scope
+
+- Added runtime guard for RU inbound messages (policy reply in UA/PL + escalation).
+- Added runtime guard for out-of-scope requests (camp-only notice + escalation).
+- Kept strict grounding and livechat-first behavior unchanged.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- This is an execution-time safety layer on top of prompt policy.
+- No server-side actions performed.
+
+## 2026-04-07 — Sales Discovery Flow v1 (Camp Qualification)
+
+### Scope
+
+- Added extraction of sales clues from inbound messages (age, budget, period, city) into chat memory.
+- Added `SALES_DISCOVERY_POLICY` block into grounding bundle to enforce consultative flow.
+- Added anti-repeat behavior by deriving missing qualifiers from CRM + memory.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_memory.py`
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- This is a lightweight rule-based qualification layer before full FSM implementation.
+- No server-side actions performed.
+
+## 2026-04-07 — Structured Camp Profile on Partner
+
+### Scope
+
+- Added structured qualification fields on `res.partner` (age, period, city, budget, sales stage).
+- Synced regex-based inbound clue extraction into those fields.
+- Exposed structured profile on partner Omnichannel tab for manager control.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/res_partner.py`
+- `addons/omnichannel_bridge/models/omni_memory.py`
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/views/res_partner_views.xml`
+
+### Notes
+
+- LLM now reads both free-text memory and structured profile hints.
+- No server-side actions performed.
+
+## 2026-04-07 — Auto Sales Stage Transitions
+
+### Scope
+
+- Added automatic stage transitions to `proposal` when minimum qualification is present (age + period).
+- Added automatic transition to `handoff` on out-of-scope, fallback path, and explicit manager requests.
+- Synced livechat human-request branch to set partner stage `handoff`.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+
+### Notes
+
+- Keeps manager visibility aligned with real dialog state in chat.
+- No server-side actions performed.
+
+## 2026-04-07 — Profile-Based Camp Recommendations v1
+
+### Scope
+
+- Added a recommendation block with top 1-2 camps based on period, budget, and places.
+- Injected recommendation context into strict grounding bundle for practical sales replies.
+- Added test expectation for short recommendation output (1-2 options).
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- Scoring is heuristic and intentionally lightweight for fast rollout.
+- No server-side actions performed.
+
+## 2026-04-07 — Token-Saving Compact Context Mode
+
+### Scope
+
+- Added compact-mode switch via config parameter `omnichannel_bridge.llm_compact_mode` (default enabled).
+- Reduced context size in compact mode: catalog lines, transcript depth/length, FAQ count/length.
+- Kept strict grounding structure unchanged while lowering token footprint.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- Optimized for free/low-token usage without changing sales logic.
+- No server-side actions performed.
+
+## 2026-04-07 — Manager Handoff Packet
+
+### Scope
+
+- Added compact handoff packet to escalation notifications.
+- Packet includes key sales qualifiers: age, period, city, budget, stage.
+- Keeps manager takeover fast without opening full CRM card first.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- Notification format remains concise for mobile Telegram reading.
+- No server-side actions performed.
+
+## 2026-04-07 — Auto Next Question for Faster Qualification
+
+### Scope
+
+- Added post-processing of LLM replies to append one missing qualifier question.
+- Works only when model reply has no question and partner profile is incomplete.
+- Language-aware question templates (UA/PL) based on inbound message language.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- Keeps dialog moving toward booking readiness with minimal token cost.
+- No server-side actions performed.

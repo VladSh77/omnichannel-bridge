@@ -87,6 +87,17 @@ class OmniAi(models.AbstractModel):
         ICP = self.env['ir.config_parameter'].sudo()
         if not self._omni_llm_enabled():
             return
+        normalized = (text or '').strip()
+        if not self._omni_is_camp_scope_message(normalized):
+            self._omni_send_out_of_scope_reply(channel)
+            if partner:
+                partner.sudo().write({'omni_sales_stage': 'handoff'})
+            self.env['omni.notify'].sudo().notify_escalation(
+                channel=channel,
+                partner=partner,
+                reason='🎯 Запит поза темою таборів — передано менеджеру',
+            )
+            return
         # Website live chat is bot-first: reply immediately regardless of manager-hours mode.
         if provider != 'site_livechat' and not self.omni_bot_may_reply_now():
             return
@@ -119,6 +130,7 @@ class OmniAi(models.AbstractModel):
         if strict:
             system_parts.append(_STRICT_POLICY_UK)
             system_parts.append(_CAMP_DOMAIN_POLICY_UK)
+        system_parts.append(self._omni_reply_language_instruction(normalized))
         system_parts.append(facts)
         system = '\n\n'.join(system_parts)
 
@@ -126,13 +138,15 @@ class OmniAi(models.AbstractModel):
         if not reply:
             self._omni_send_fallback(channel, partner, ICP)
             return
+        reply = self._omni_append_next_question(reply, partner, normalized)
         channel.sudo().message_post(
             body=reply,
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
             author_id=self.env.ref('base.partner_root').id,
         )
-        self._omni_route_manager_mention_if_needed(channel, text, reply)
+        self._omni_update_sales_stage_after_reply(partner)
+        self._omni_route_manager_mention_if_needed(channel, partner, text, reply)
 
     def _omni_send_fallback(self, channel, partner, icp):
         """LLM недоступний — надсилаємо шаблонне повідомлення і сповіщаємо менеджера."""
@@ -160,6 +174,104 @@ class OmniAi(models.AbstractModel):
             partner=partner,
             reason='⚙️ LLM недоступний — надіслано fallback повідомлення клієнту',
         )
+        if partner:
+            partner.sudo().write({'omni_sales_stage': 'handoff'})
+
+    def _omni_send_out_of_scope_reply(self, channel):
+        channel.sudo().message_post(
+            body=(
+                'Я допомагаю лише з питаннями щодо таборів CampScout '
+                '(програми, умови, безпека, доїзд, оплата, реєстрація). '
+                'Передаю ваш запит менеджеру.'
+            ),
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+            author_id=self.env.ref('base.partner_root').id,
+        )
+
+    def _omni_is_ru_or_be_message(self, user_text):
+        txt = (user_text or '').lower()
+        if not txt:
+            return False
+        cyrillic_only = any('а' <= ch <= 'я' or ch in 'іїєґў' for ch in txt)
+        if not cyrillic_only:
+            return False
+        hard_ru_markers = ('ы', 'э', 'ъ', 'ё')
+        hard_be_markers = ('ў',)
+        if any(ch in txt for ch in hard_ru_markers + hard_be_markers):
+            return True
+        ru_be_words = (
+            'привет',
+            'здравствуйте',
+            'здраствуйте',
+            'лагерь',
+            'смена',
+            'путевка',
+            'сколько стоит',
+            'менеджер',
+            'прывітанне',
+            'лагер',
+            'кошт',
+            'менеджар',
+        )
+        return any(w in txt for w in ru_be_words)
+
+    def _omni_reply_language_instruction(self, user_text):
+        txt = (user_text or '').lower()
+        if self._omni_is_polish_message(txt):
+            return 'LANGUAGE_RULE: Reply in Polish.'
+        if self._omni_is_ru_or_be_message(txt):
+            return 'LANGUAGE_RULE: Reply in Ukrainian.'
+        return 'LANGUAGE_RULE: Reply in the client language (Ukrainian or Polish).'
+
+    def _omni_is_polish_message(self, user_text):
+        txt = (user_text or '').lower()
+        if not txt:
+            return False
+        if any(ch in txt for ch in ('ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż')):
+            return True
+        pl_words = (
+            'dzień dobry',
+            'obóz',
+            'kolonia',
+            'turnus',
+            'cena',
+            'zapisać',
+            'rejestracja',
+            'dziecko',
+            'miejsca',
+        )
+        return any(w in txt for w in pl_words)
+
+    def _omni_is_camp_scope_message(self, user_text):
+        txt = (user_text or '').lower()
+        if not txt:
+            return True
+        # Do not overblock short neutral messages; let LLM continue dialog.
+        if len(txt) <= 20:
+            return True
+        camp_terms = (
+            'таб',
+            'camp',
+            'зміна',
+            'заїзд',
+            'програма',
+            'місц',
+            'реєстрац',
+            'брон',
+            'оплат',
+            'ціна',
+            'вартіст',
+            'дит',
+            'підліт',
+            'безпек',
+            'дорог',
+            'доїзд',
+            'трансфер',
+            'проживан',
+            'харчуван',
+        )
+        return any(k in txt for k in camp_terms)
 
     def _llm_complete(self, backend, icp, system_prompt, user_text):
         if backend == 'openai':
@@ -242,11 +354,70 @@ class OmniAi(models.AbstractModel):
             _logger.exception('Ollama request failed')
             return ''
 
-    def _omni_route_manager_mention_if_needed(self, channel, user_text, bot_reply):
+    def _omni_route_manager_mention_if_needed(self, channel, partner, user_text, bot_reply):
         lowered = (user_text or '').lower()
         if any(k in lowered for k in ('менеджер', 'manager', 'людина', 'human')):
+            if partner:
+                partner.sudo().write({'omni_sales_stage': 'handoff'})
             channel.sudo().message_post(
                 body='[auto] Client asked for a human — assign in Discuss / CRM.',
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
             )
+
+    def _omni_update_sales_stage_after_reply(self, partner):
+        if not partner:
+            return
+        partner = partner.sudo()
+        if partner.omni_sales_stage in ('handoff', 'proposal'):
+            return
+        if partner.omni_child_age and partner.omni_preferred_period:
+            partner.write({'omni_sales_stage': 'proposal'})
+        elif partner.omni_sales_stage == 'new':
+            partner.write({'omni_sales_stage': 'qualifying'})
+
+    def _omni_append_next_question(self, reply, partner, user_text):
+        base = (reply or '').strip()
+        if not base or not partner:
+            return base
+        if any(q in base for q in ('?', '？')):
+            return base
+        question = self._omni_pick_next_question(partner, user_text)
+        if not question:
+            return base
+        return '%s\n\n%s' % (base, question)
+
+    def _omni_pick_next_question(self, partner, user_text):
+        partner = partner.sudo()
+        is_pl = self._omni_is_polish_message(user_text or '')
+        if not partner.omni_child_age:
+            return (
+                'Підкажіть, будь ласка, який вік дитини?'
+                if not is_pl else
+                'Proszę podać wiek dziecka.'
+            )
+        if not partner.omni_preferred_period:
+            return (
+                'На який період або зміну розглядаєте табір?'
+                if not is_pl else
+                'Na jaki termin lub turnus rozważają Państwo obóz?'
+            )
+        if not partner.omni_departure_city:
+            return (
+                'З якого міста вам зручний виїзд?'
+                if not is_pl else
+                'Z jakiego miasta ma być wyjazd?'
+            )
+        if not partner.omni_budget_amount:
+            return (
+                'Який орієнтовний бюджет на путівку ви плануєте?'
+                if not is_pl else
+                'Jaki orientacyjny budżet planują Państwo na obóz?'
+            )
+        if not (partner.phone or partner.mobile or partner.email):
+            return (
+                'Залиште, будь ласка, контакт (телефон або email), щоб я передав підбір менеджеру.'
+                if not is_pl else
+                'Proszę zostawić kontakt (telefon lub email), a przekażę dobór menedżerowi.'
+            )
+        return ''
