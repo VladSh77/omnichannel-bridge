@@ -47,11 +47,17 @@ class OmniSalesIntel(models.AbstractModel):
         """If message references a product by name, check stock / places and return hint."""
         if not text:
             return ''
+        cleaned_text = re.sub(r'<[^>]+>', ' ', text)
+        cleaned_text = re.sub(r'&[a-zA-Z#0-9]+;', ' ', cleaned_text)
         Product = self.env['product.product'].sudo()
-        tokens = [t for t in re.split(r'\s+', text.strip()) if len(t) > 2]
-        if not tokens:
+        tokens = [t for t in re.split(r'\s+', cleaned_text.strip()) if len(t) > 2]
+        terms = tokens[:5]
+        if not terms:
             return ''
-        domain = ['|'] * (len(tokens) - 1) + [('name', 'ilike', t) for t in tokens[:5]]
+        if len(terms) == 1:
+            domain = [('name', 'ilike', terms[0])]
+        else:
+            domain = ['|'] * (len(terms) - 1) + [('name', 'ilike', t) for t in terms]
         products = Product.search(domain, limit=3)
         lines = []
         for product in products:

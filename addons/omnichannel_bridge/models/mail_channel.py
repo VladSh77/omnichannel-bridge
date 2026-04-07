@@ -138,6 +138,9 @@ class MailChannel(models.Model):
         body = (message.body or '').strip()
         if not body:
             return
+        if getattr(message, 'message_type', '') == 'notification':
+            # Ignore service/feedback notifications posted by livechat internals.
+            return
         if message.subtype_id and getattr(message.subtype_id, 'internal', False):
             return
         author = message.author_id
