@@ -156,6 +156,11 @@ class OmniAi(models.AbstractModel):
 
     @api.model
     def omni_maybe_autoreply(self, channel, partner, text, provider):
+        # Callers may pass recordsets from website/public env; re-bind so ORM reads use sudo.
+        if channel:
+            channel = channel.sudo()
+        if partner:
+            partner = partner.sudo()
         ICP = self.env['ir.config_parameter'].sudo()
         if not self._omni_llm_enabled():
             return

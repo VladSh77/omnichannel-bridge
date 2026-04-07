@@ -547,3 +547,21 @@
 
 - Website live chat remains immediate (unchanged).
 - No server actions performed.
+
+## 2026-04-07 — Livechat Public User: res.partner AccessError (full sudo re-bind)
+
+### Problem
+
+- Toast «Public User (id=4) doesn't have read access to res.partner» still appeared during website live chat (e.g. out-of-scope flow).
+- Cause: `sudo()` on `omni.ai` does not re-bind recordsets passed from `message_post` (public env). Reading `partner.user_ids`, `channel.omni_customer_partner_id`, or `partner.display_name` in helpers used the portal/public ACL.
+
+### Change
+
+- `mail_channel`: `_omni_is_internal_author` reads `user_ids` via `partner.sudo()`; livechat passes `channel`/`partner` `.sudo()` into AI, fallback, notify, sales_intel, memory.
+- `omni.ai.omni_maybe_autoreply`: normalize `channel` and `partner` with `.sudo()` at method entry.
+- `omni.knowledge`: `omni_strict_grounding_bundle` and `omni_channel_transcript_block` sudo-bind `channel` (and partner in bundle).
+- `omni.notify`: sudo-bind `channel`/`partner` in public notify APIs; `_handoff_packet` uses `partner.sudo()`.
+
+### Notes
+
+- Deploy: upgrade module `omnichannel_bridge` on Odoo after pull.

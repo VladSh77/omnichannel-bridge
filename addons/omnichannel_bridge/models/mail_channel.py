@@ -58,6 +58,8 @@ class MailChannel(models.Model):
     def _omni_is_internal_author(self, partner):
         if not partner:
             return False
+        # Live chat runs as public user; reading user_ids on res.partner needs elevated env.
+        partner = partner.sudo()
         return bool(partner.user_ids.filtered(lambda u: u.has_group('base.group_user')))
 
     def _omni_client_requests_human(self, text):
@@ -178,8 +180,8 @@ class MailChannel(models.Model):
                 author_id=odoobot.id,
             )
             self.env['omni.notify'].sudo().notify_escalation(
-                channel=self,
-                partner=author,
+                channel=self.sudo(),
+                partner=author.sudo() if author else author,
                 reason='🧑‍💼 Клієнт попросив менеджера у live chat',
             )
             return
@@ -196,13 +198,14 @@ class MailChannel(models.Model):
             })
         # Website visitor message -> same AI queue and sales/memory pipeline.
         sudo_channel.write({'omni_customer_partner_id': author.id})
+        author_adm = author.sudo() if author else author
         self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
-            channel=self,
-            partner=author,
+            channel=sudo_channel,
+            partner=author_adm,
             text=body,
             provider='site_livechat',
         )
-        self.env['omni.memory'].sudo().omni_apply_inbound_learning(author, body)
+        self.env['omni.memory'].sudo().omni_apply_inbound_learning(author_adm, body)
         # Anti-silence UX for livechat: instant acknowledge, then async AI reply.
         if not self.omni_last_bot_reply_at:
             self.with_context(omni_skip_livechat_inbound=True).message_post(
@@ -213,16 +216,16 @@ class MailChannel(models.Model):
             )
         try:
             self.env['omni.ai'].sudo().omni_maybe_autoreply(
-                channel=self,
-                partner=author,
+                channel=self.sudo(),
+                partner=author.sudo() if author else author,
                 text=body,
                 provider='site_livechat',
             )
         except Exception:
             _logger.exception('Immediate livechat AI reply failed, sending fallback')
             self.env['omni.ai'].sudo()._omni_send_fallback(
-                channel=self,
-                partner=author,
+                channel=self.sudo(),
+                partner=author.sudo() if author else author,
                 icp=self.env['ir.config_parameter'].sudo(),
             )
 

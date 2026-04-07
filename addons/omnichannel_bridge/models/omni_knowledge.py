@@ -316,6 +316,7 @@ class OmniKnowledge(models.AbstractModel):
             return ''
         if not channel:
             return ''
+        channel = channel.sudo()
         try:
             lim = int(ICP.get_param('omnichannel_bridge.llm_transcript_messages', '8'))
         except ValueError:
@@ -462,6 +463,10 @@ class OmniKnowledge(models.AbstractModel):
     @api.model
     def omni_strict_grounding_bundle(self, channel, partner, user_text=''):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
+        if channel:
+            channel = channel.sudo()
+        if partner:
+            partner = partner.sudo()
         parts = [
             '=== FACTS_FROM_DATABASE (єдине джерело правди про ціни, місця, оплати, ПІБ) ===',
             self.omni_camp_scope_block(),

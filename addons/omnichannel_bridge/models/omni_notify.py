@@ -40,9 +40,13 @@ class OmniNotify(models.AbstractModel):
         """Новий тред: перше повідомлення від клієнта."""
         if not self._flag_enabled('omnichannel_bridge.internal_notify_new'):
             return
+        if channel:
+            channel = channel.sudo()
+        if partner:
+            partner = partner.sudo()
         provider_label = self._provider_label(provider)
-        name = partner.display_name or _('Unknown')
-        phone = partner.phone or partner.mobile or '—'
+        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
+        phone = (partner.phone or partner.mobile or '—') if partner else '—'
         text = (
             '🆕 *Новий тред* — %(provider)s\n'
             '👤 %(name)s\n'
@@ -61,7 +65,11 @@ class OmniNotify(models.AbstractModel):
         """Ескалація: бот передає розмову менеджеру."""
         if not self._flag_enabled('omnichannel_bridge.internal_notify_escalate'):
             return
-        name = partner.display_name or _('Unknown')
+        if channel:
+            channel = channel.sudo()
+        if partner:
+            partner = partner.sudo()
+        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
         packet = self._handoff_packet(partner)
         text = (
             '🔺 *Ескалація* — потрібен менеджер\n'
@@ -82,7 +90,11 @@ class OmniNotify(models.AbstractModel):
         """Проблемний клієнт/тред — прапорець виставлено."""
         if not self._flag_enabled('omnichannel_bridge.internal_notify_problem'):
             return
-        name = partner.display_name or _('Unknown')
+        if channel:
+            channel = channel.sudo()
+        if partner:
+            partner = partner.sudo()
+        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
         text = (
             '⚠️ *Проблемний тред*\n'
             '👤 %(name)s\n'
@@ -166,6 +178,7 @@ class OmniNotify(models.AbstractModel):
     def _handoff_packet(self, partner):
         if not partner:
             return 'age:—; period:—; city:—; budget:—; stage:handoff'
+        partner = partner.sudo()
         age = partner.omni_child_age or '—'
         period = partner.omni_preferred_period or '—'
         city = partner.omni_departure_city or '—'
