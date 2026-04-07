@@ -126,6 +126,11 @@ class MailChannel(models.Model):
         if self._omni_is_internal_author(author):
             self.sudo().write({'omni_last_human_reply_at': fields.Datetime.now()})
             return
+        try:
+            sla_seconds = int(icp.get_param('omnichannel_bridge.sla_no_human_seconds', '180'))
+        except ValueError:
+            sla_seconds = 180
+        sla_seconds = max(30, sla_seconds)
         # Website visitor message -> same AI queue and sales/memory pipeline.
         self.sudo().write({'omni_customer_partner_id': author.id})
         self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
@@ -140,6 +145,7 @@ class MailChannel(models.Model):
             partner=author,
             text=body,
             provider='site_livechat',
+            delay_seconds=sla_seconds,
         )
 
     def _omni_route_operator_reply_to_messenger(self, message):

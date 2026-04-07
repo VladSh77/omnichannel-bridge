@@ -39,14 +39,18 @@ class OmniAiJob(models.Model):
     last_error = fields.Text()
 
     @api.model
-    def omni_enqueue_autoreply(self, channel, partner, text, provider):
+    def omni_enqueue_autoreply(self, channel, partner, text, provider, delay_seconds=0):
         if not channel or not text:
             return False
+        next_at = fields.Datetime.now()
+        if delay_seconds and delay_seconds > 0:
+            next_at = Datetime.now() + timedelta(seconds=int(delay_seconds))
         return self.sudo().create({
             'channel_id': channel.id,
             'partner_id': partner.id if partner else False,
             'provider': provider,
             'user_text': text,
+            'next_attempt_at': next_at,
         })
 
     def action_retry(self):
@@ -94,9 +98,15 @@ class OmniAiJob(models.Model):
 
         # Do not let bot race with recent human answer.
         if channel.omni_last_human_reply_at:
+            icp = self.env['ir.config_parameter'].sudo()
+            try:
+                guard_seconds = int(icp.get_param('omnichannel_bridge.sla_no_human_seconds', '180'))
+            except ValueError:
+                guard_seconds = 180
+            guard_seconds = max(30, guard_seconds)
             now = Datetime.now()
             delta = now - channel.omni_last_human_reply_at
-            if delta < timedelta(seconds=120):
+            if delta < timedelta(seconds=guard_seconds):
                 self.sudo().write({
                     'state': 'cancelled',
                     'last_error': 'recent_human_reply',

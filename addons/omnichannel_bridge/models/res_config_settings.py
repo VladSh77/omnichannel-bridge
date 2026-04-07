@@ -48,6 +48,12 @@ class ResConfigSettings(models.TransientModel):
         default='18:00',
         config_parameter='omnichannel_bridge.manager_hour_end',
     )
+    omnichannel_sla_no_human_seconds = fields.Integer(
+        string='SLA wait before bot reply (seconds)',
+        default=180,
+        config_parameter='omnichannel_bridge.sla_no_human_seconds',
+        help='If no human manager reply appears in channel within this window, bot may reply.',
+    )
     omnichannel_llm_enabled = fields.Boolean(
         string='Enable LLM autoreplies',
         config_parameter='omnichannel_bridge.llm_enabled',

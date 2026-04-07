@@ -22,6 +22,9 @@
                         <setting help="Use company timezone (on the main company contact).">
                             <field name="omnichannel_bot_reply_mode"/>
                         </setting>
+                        <setting string="SLA wait before bot reply (sec)" help="Typical value: 180 seconds. If manager replies before timeout, queued bot reply is cancelled.">
+                            <field name="omnichannel_sla_no_human_seconds"/>
+                        </setting>
                         <setting string="Manager hours start">
                             <field name="omnichannel_manager_hour_start"/>
                         </setting>

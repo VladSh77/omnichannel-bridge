@@ -155,3 +155,23 @@
 ### Notes
 
 - No server-side actions performed.
+
+## 2026-04-07 — SLA Timer Baseline (3 min)
+
+### Scope
+
+- Added configurable SLA wait window before bot reply.
+- Live chat AI jobs are queued with SLA delay.
+- AI job runner cancels bot reply if manager replied inside SLA window.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/models/omni_ai_job.py`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+
+### Notes
+
+- Default SLA is 180 seconds; enforced minimum is 30 seconds.
+- No server-side actions performed.
