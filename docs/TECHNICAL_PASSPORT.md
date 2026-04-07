@@ -54,6 +54,7 @@
 - AI is used as a response engine, not as a fact authority.
 - Sensitive child-related data must be minimized in prompt context.
 - Legal statements must be restricted to approved legal facts pack.
+- Public campaign landing [lato2026.campscout.eu](https://lato2026.campscout.eu/) may inform **tone, program names, and links** in dialog; it must **not** override ORM for prices, availability, or seat counts (see `docs/LEGAL_FACTS_PACK.md`).
 
 ## Non-Functional Requirements (Target)
 

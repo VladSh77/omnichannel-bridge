@@ -26,6 +26,13 @@ Bot responses on legal topics must be grounded in these sources only.
 - `https://campscout.eu/cookie-policy`
 - `https://campscout.eu/child-protection`
 
+## Public campaign landing (marketing baseline, not price authority)
+
+- **URL:** [CampScout 2026 — лендінг «Літо 2026»](https://lato2026.campscout.eu/)
+- **Призначення для бота:** назви програм і напрямків, загальний тон преміум-продукту, **посилання** на Telegram / WhatsApp / форму заявки, публічні формулювання про ліцензію, гарантії, методологію — як **орієнтир для діалогу** і для відправки клієнта на сторінку з деталями.
+- **Не є джерелом правди для:** конкретної **ціни в чаті**, **вільних місць**, **доступності зміни**, індивідуального розрахунку розстрочки — усе це лише з **Odoo ORM** (товари, події, реєстрації, кастомні поля) згідно з політикою strict grounding.
+- **Юридичні формулювання в чаті:** якщо питання юридичне або суперечливе — посилання на блок **Canonical Live URLs** вище, не «переписувати» договір з лендінгу з пам’яті моделі.
+
 ## Legal Response Boundaries
 
 - Bot can provide concise factual pointers.
