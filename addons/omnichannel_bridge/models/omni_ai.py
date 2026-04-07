@@ -139,7 +139,7 @@ class OmniAi(models.AbstractModel):
             self._omni_send_fallback(channel, partner, ICP)
             return
         reply = self._omni_append_next_question(reply, partner, normalized)
-        channel.sudo().message_post(
+        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
             body=reply,
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
@@ -162,7 +162,7 @@ class OmniAi(models.AbstractModel):
                     'Наш менеджер відповість вранці о %(start)s. '
                     'Якщо питання термінове — залиште номер телефону і ми зателефонуємо.'
                 ) % {'start': start}
-        channel.sudo().message_post(
+        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
             body=msg,
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
@@ -178,7 +178,7 @@ class OmniAi(models.AbstractModel):
             partner.sudo().write({'omni_sales_stage': 'handoff'})
 
     def _omni_send_out_of_scope_reply(self, channel):
-        channel.sudo().message_post(
+        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
             body=(
                 'Я допомагаю лише з питаннями щодо таборів CampScout '
                 '(програми, умови, безпека, доїзд, оплата, реєстрація). '
@@ -327,7 +327,7 @@ class OmniAi(models.AbstractModel):
             'stream': False,
         }
         try:
-            resp = requests.post(openai_url, json=payload_oa, timeout=120)
+            resp = requests.post(openai_url, json=payload_oa, timeout=(3, 8))
             if resp.ok:
                 data = resp.json()
                 return (data.get('choices') or [{}])[0].get('message', {}).get('content', '').strip()
@@ -344,7 +344,7 @@ class OmniAi(models.AbstractModel):
             'options': {'temperature': 0.15},
         }
         try:
-            resp = requests.post(native_url, json=payload_native, timeout=120)
+            resp = requests.post(native_url, json=payload_native, timeout=(3, 8))
             if not resp.ok:
                 _logger.error('Ollama error %s: %s', resp.status_code, resp.text)
                 return ''
@@ -359,7 +359,7 @@ class OmniAi(models.AbstractModel):
         if any(k in lowered for k in ('менеджер', 'manager', 'людина', 'human')):
             if partner:
                 partner.sudo().write({'omni_sales_stage': 'handoff'})
-            channel.sudo().message_post(
+            channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                 body='[auto] Client asked for a human — assign in Discuss / CRM.',
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',

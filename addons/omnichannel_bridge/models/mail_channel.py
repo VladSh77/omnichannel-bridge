@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import re
 
 from odoo import _, api, fields, models
 
@@ -113,6 +114,8 @@ class MailChannel(models.Model):
 
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)
+        if self.env.context.get('omni_skip_livechat_inbound'):
+            return message
         odoobot = self.env.ref('base.partner_root')
         for channel in self:
             if message.author_id == odoobot:
@@ -138,6 +141,11 @@ class MailChannel(models.Model):
         body = (message.body or '').strip()
         if not body:
             return
+        plain = re.sub(r'<[^>]+>', ' ', body)
+        plain = re.sub(r'\s+', ' ', plain).strip()
+        # Ignore single-symbol pings that create noise and overload LLM queue.
+        if len(re.sub(r'[\W_]+', '', plain, flags=re.UNICODE)) < 2:
+            return
         if getattr(message, 'message_type', '') == 'notification':
             # Ignore service/feedback notifications posted by livechat internals.
             return
@@ -162,7 +170,7 @@ class MailChannel(models.Model):
             })
             if author:
                 author.sudo().write({'omni_sales_stage': 'handoff'})
-            self.message_post(
+            self.with_context(omni_skip_livechat_inbound=True).message_post(
                 body=_('Передаю діалог менеджеру. Будь ласка, зачекайте трохи.'),
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
@@ -194,7 +202,14 @@ class MailChannel(models.Model):
             provider='site_livechat',
         )
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(author, body)
-        # Livechat is bot-first; reply synchronously to avoid cron delays.
+        # Anti-silence UX for livechat: instant acknowledge, then async AI reply.
+        if not self.omni_last_bot_reply_at:
+            self.with_context(omni_skip_livechat_inbound=True).message_post(
+                body=_('Дякуємо! Отримали ваше повідомлення, підбираю варіанти табору...'),
+                message_type='comment',
+                subtype_xmlid='mail.mt_comment',
+                author_id=odoobot.id,
+            )
         try:
             self.env['omni.ai'].sudo().omni_maybe_autoreply(
                 channel=self,
@@ -203,13 +218,11 @@ class MailChannel(models.Model):
                 provider='site_livechat',
             )
         except Exception:
-            _logger.exception('Immediate livechat AI reply failed, enqueue fallback job')
-            self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
+            _logger.exception('Immediate livechat AI reply failed, sending fallback')
+            self.env['omni.ai'].sudo()._omni_send_fallback(
                 channel=self,
                 partner=author,
-                text=body,
-                provider='site_livechat',
-                delay_seconds=0,
+                icp=self.env['ir.config_parameter'].sudo(),
             )
 
     def _omni_route_operator_reply_to_messenger(self, message):

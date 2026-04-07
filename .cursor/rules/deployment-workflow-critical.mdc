@@ -1,0 +1,17 @@
+---
+description: Enforce critical deployment workflow and no server hotfix bypass
+alwaysApply: true
+---
+
+# Critical Deployment Workflow (No Exceptions)
+
+- Always follow this sequence for any code change:
+  1) local edit and verify
+  2) local git commit
+  3) git push to remote
+  4) server update only via `git pull`
+
+- Never deploy via direct file copy (`scp`, `rsync`, manual edits on server) before commit/push.
+- If production is broken, still create a local commit first, push immediately, then apply `git pull` on server.
+- After every urgent fix, confirm local `git status` is clean and server commit equals remote HEAD.
+- If this workflow cannot be completed, stop and report blocker instead of bypassing the process.
