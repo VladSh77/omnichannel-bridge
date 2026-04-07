@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import os
+import re
+
 from odoo import _, api, models
 from odoo.tools import html2plaintext
 
@@ -237,7 +240,71 @@ class OmniKnowledge(models.AbstractModel):
         return '\n'.join(lines)
 
     @api.model
-    def omni_strict_grounding_bundle(self, channel, partner):
+    def _omni_interview_faq_sections(self):
+        """Load interview FAQ and split into Q/A sections."""
+        base_dir = os.path.dirname(os.path.dirname(__file__))  # addons/omnichannel_bridge
+        faq_path = os.path.join(base_dir, 'data', 'knowledge', 'interview_faq_ua.md')
+        if not os.path.exists(faq_path):
+            return []
+        try:
+            with open(faq_path, 'r', encoding='utf-8') as fp:
+                content = fp.read()
+        except Exception:
+            return []
+
+        sections = []
+        chunks = re.split(r'\n\*\*(.+?)\*\*\n', content)
+        # chunks: [prefix, q1, a1, q2, a2, ...]
+        if len(chunks) < 3:
+            return []
+        for idx in range(1, len(chunks) - 1, 2):
+            question = (chunks[idx] or '').strip()
+            answer = (chunks[idx + 1] or '').strip()
+            if not question or not answer:
+                continue
+            sections.append((question, answer))
+        return sections
+
+    @api.model
+    def omni_interview_faq_context(self, user_text, max_items=3):
+        """
+        Return top-matching interview FAQ snippets by simple keyword overlap.
+        Keeps prompt compact while still grounding interview-style answers.
+        """
+        sections = self._omni_interview_faq_sections()
+        if not sections:
+            return ''
+        query = (user_text or '').lower().strip()
+        if not query:
+            return ''
+        terms = {t for t in re.split(r'[^a-zA-Zа-яА-ЯіІїЇєЄ0-9]+', query) if len(t) >= 3}
+        if not terms:
+            return ''
+
+        scored = []
+        for q, a in sections:
+            bag = (q + ' ' + a[:600]).lower()
+            score = sum(1 for t in terms if t in bag)
+            if score > 0:
+                scored.append((score, q, a))
+        if not scored:
+            return ''
+        scored.sort(key=lambda x: x[0], reverse=True)
+        top = scored[:max(1, min(max_items, 5))]
+
+        lines = [
+            'INTERVIEW_FAQ_CONTEXT (UA, use only if relevant to client question):',
+        ]
+        for _, q, a in top:
+            lines.append('- Q: %s' % q)
+            lines.append('  A: %s' % a[:900].replace('\n', ' ').strip())
+        lines.append(
+            '- Policy: for prices/dates/availability always prioritize live ORM facts from catalog/orders/events.'
+        )
+        return '\n'.join(lines)
+
+    @api.model
+    def omni_strict_grounding_bundle(self, channel, partner, user_text=''):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
         parts = [
             '=== FACTS_FROM_DATABASE (єдине джерело правди про ціни, місця, оплати, ПІБ) ===',
@@ -256,4 +323,7 @@ class OmniKnowledge(models.AbstractModel):
         transcript = self.omni_channel_transcript_block(channel)
         if transcript:
             parts.append('---\n%s' % transcript)
+        faq_context = self.omni_interview_faq_context(user_text=user_text, max_items=3)
+        if faq_context:
+            parts.append('---\n%s' % faq_context)
         return '\n'.join(parts)

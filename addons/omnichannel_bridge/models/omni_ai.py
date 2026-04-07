@@ -95,7 +95,11 @@ class OmniAi(models.AbstractModel):
             'omnichannel_bridge.openai_system_prompt',
             'Ти допомагаєш клієнту чесно та ввічливо.',
         )
-        facts = self.env['omni.knowledge'].omni_strict_grounding_bundle(channel, partner)
+        facts = self.env['omni.knowledge'].omni_strict_grounding_bundle(
+            channel,
+            partner,
+            user_text=text or '',
+        )
         strict = str(ICP.get_param('omnichannel_bridge.llm_strict_grounding', 'True')).lower() in (
             '1',
             'true',

@@ -67,6 +67,14 @@ Fajna/
 | Документ | Призначення |
 |----------|-------------|
 | [docs/TZ_CHECKLIST.md](docs/TZ_CHECKLIST.md) | Повне ТЗ + чекліст готовності |
+| [docs/TECHNICAL_PASSPORT.md](docs/TECHNICAL_PASSPORT.md) | Технічний паспорт модуля (архітектура, інтеграції, SLA) |
+| [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | Операційні процедури (інциденти, відновлення, rollback) |
+| [docs/SECURITY_RODO.md](docs/SECURITY_RODO.md) | Правила безпеки та обробки даних (RODO/GDPR) |
+| [docs/LEGAL_FACTS_PACK.md](docs/LEGAL_FACTS_PACK.md) | Дозволені юридичні факти для бота (джерела з camp repo) |
+| [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Тест-план для локального/staging/prod контурів |
+| [docs/STAGING_BLUEPRINT.md](docs/STAGING_BLUEPRINT.md) | Blueprint staging-середовища з parity вимогами |
+| [docs/ENGINEERING_DESIGN_V1.md](docs/ENGINEERING_DESIGN_V1.md) | Технічний дизайн v1: idempotency + async queue + race guard |
+| [docs/IMPLEMENTATION_LOG.md](docs/IMPLEMENTATION_LOG.md) | Журнал реалізації (ведеться під час розробки) |
 | `addons/omnichannel_bridge/__manifest__.py` | Залежності та дані модуля |
 
 ## Ліцензія модуля

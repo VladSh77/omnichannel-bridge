@@ -5,8 +5,9 @@ import json
 import logging
 
 import requests
+from psycopg2 import IntegrityError
 
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 
 _logger = logging.getLogger(__name__)
@@ -31,6 +32,41 @@ class OmniBridge(models.AbstractModel):
             return self._omni_process_whatsapp_stub(payload, headers)
         _logger.warning('Unknown omnichannel provider: %s', provider)
         return {'ok': False, 'error': 'unknown_provider'}
+
+    def _omni_extract_external_event_id(self, provider, data):
+        if provider == 'telegram':
+            update_id = data.get('update_id')
+            return str(update_id) if update_id is not None else ''
+        if provider == 'meta':
+            for entry in data.get('entry', []):
+                for event in entry.get('messaging', []):
+                    msg = event.get('message') or {}
+                    mid = msg.get('mid')
+                    if mid:
+                        return str(mid)
+        return ''
+
+    def _omni_register_webhook_event(self, provider, data):
+        Event = self.env['omni.webhook.event'].sudo()
+        payload_hash = Event.omni_payload_hash(data)
+        external_event_id = self._omni_extract_external_event_id(provider, data)
+        vals = {
+            'provider': provider,
+            'external_event_id': external_event_id or False,
+            'payload_hash': payload_hash,
+            'state': 'received',
+        }
+        try:
+            with self.env.cr.savepoint():
+                event = Event.create(vals)
+                return event
+        except IntegrityError:
+            _logger.info(
+                'Duplicate webhook ignored provider=%s external_event_id=%s',
+                provider,
+                external_event_id or '-',
+            )
+            return False
 
     def _omni_meta_credentials(self):
         ICP = self.env['ir.config_parameter'].sudo()
@@ -122,7 +158,7 @@ class OmniBridge(models.AbstractModel):
             provider=provider,
         )
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(partner, text)
-        self.env['omni.ai'].sudo().omni_maybe_autoreply(
+        self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
             channel=channel,
             partner=partner,
             text=text,
@@ -156,7 +192,14 @@ class OmniBridge(models.AbstractModel):
         if not self._omni_verify_meta_signature(raw_body, headers):
             return {'ok': False, 'error': 'bad_signature'}
         data = json.loads(raw_body.decode('utf-8'))
+        webhook_event = self._omni_register_webhook_event('meta', data)
+        if not webhook_event:
+            return {'ok': True, 'deduplicated': True}
         if data.get('object') not in ('page', 'instagram'):
+            webhook_event.sudo().write({
+                'state': 'processed',
+                'processed_at': fields.Datetime.now(),
+            })
             return {'ok': True, 'skipped': True}
         for entry in data.get('entry', []):
             for event in entry.get('messaging', []):
@@ -181,6 +224,10 @@ class OmniBridge(models.AbstractModel):
                     email='',
                     metadata_obj=event,
                 )
+        webhook_event.sudo().write({
+            'state': 'processed',
+            'processed_at': fields.Datetime.now(),
+        })
         return {'ok': True}
 
     def _omni_verify_telegram_secret(self, headers):
@@ -213,17 +260,32 @@ class OmniBridge(models.AbstractModel):
         if not self._omni_verify_telegram_secret(headers):
             return {'ok': False, 'error': 'invalid_secret'}
         data = json.loads(payload.decode('utf-8')) if isinstance(payload, bytes) else payload
+        webhook_event = self._omni_register_webhook_event('telegram', data)
+        if not webhook_event:
+            return {'ok': True, 'deduplicated': True}
         message = data.get('message') or data.get('edited_message')
         if not message:
+            webhook_event.sudo().write({
+                'state': 'processed',
+                'processed_at': fields.Datetime.now(),
+            })
             return {'ok': True, 'skipped': True}
         text = (message.get('text') or message.get('caption') or '').strip()
         if not text:
+            webhook_event.sudo().write({
+                'state': 'processed',
+                'processed_at': fields.Datetime.now(),
+            })
             return {'ok': True, 'skipped': True}
         from_user = message.get('from') or {}
         chat = message.get('chat') or {}
 
         # --- Kill switch / bot commands (від адміна) ---
         if text.startswith('/') and self._omni_is_admin_telegram_user(from_user):
+            webhook_event.sudo().write({
+                'state': 'processed',
+                'processed_at': fields.Datetime.now(),
+            })
             return self._omni_handle_bot_command(text, from_user, chat)
 
         external_user_id = str(from_user.get('id') or chat.get('id') or '')
@@ -244,6 +306,10 @@ class OmniBridge(models.AbstractModel):
             email='',
             metadata_obj={'telegram': from_user, 'chat': chat},
         )
+        webhook_event.sudo().write({
+            'state': 'processed',
+            'processed_at': fields.Datetime.now(),
+        })
         return {'ok': True}
 
     def _omni_is_admin_telegram_user(self, from_user):

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import omni_partner_identity
+from . import omni_webhook_event
 from . import omni_integration
 from . import res_partner
 from . import mail_channel
@@ -10,5 +11,6 @@ from . import product_template
 from . import omni_knowledge
 from . import omni_memory
 from . import omni_ai
+from . import omni_ai_job
 from . import omni_notify
 from . import res_config_settings

@@ -15,6 +15,10 @@ class MailChannel(models.Model):
     )
     omni_external_thread_id = fields.Char(index=True)
     omni_customer_partner_id = fields.Many2one('res.partner', index=True, ondelete='set null')
+    omni_bot_paused = fields.Boolean(default=False, index=True)
+    omni_bot_pause_reason = fields.Char()
+    omni_last_human_reply_at = fields.Datetime()
+    omni_last_bot_reply_at = fields.Datetime()
 
     _sql_constraints = [
         (
@@ -61,7 +65,12 @@ class MailChannel(models.Model):
 
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)
+        odoobot = self.env.ref('base.partner_root')
         for channel in self:
+            if message.author_id == odoobot:
+                channel.sudo().write({'omni_last_bot_reply_at': fields.Datetime.now()})
+            elif channel.omni_customer_partner_id and message.author_id != channel.omni_customer_partner_id:
+                channel.sudo().write({'omni_last_human_reply_at': fields.Datetime.now()})
             channel._omni_route_operator_reply_to_messenger(message)
         return message
 

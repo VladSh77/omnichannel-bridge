@@ -3,3 +3,5 @@ access_omni_integration_user,omni.integration.user,model_omni_integration,base.g
 access_omni_integration_manager,omni.integration.manager,model_omni_integration,sales_team.group_sale_manager,1,1,1,1
 access_omni_partner_identity_user,omni.partner.identity.user,model_omni_partner_identity,base.group_user,1,0,0,0
 access_omni_partner_identity_manager,omni.partner.identity.manager,model_omni_partner_identity,sales_team.group_sale_manager,1,1,1,1
+access_omni_webhook_event_manager,omni.webhook.event.manager,model_omni_webhook_event,sales_team.group_sale_manager,1,1,1,1
+access_omni_ai_job_manager,omni.ai.job.manager,model_omni_ai_job,sales_team.group_sale_manager,1,1,1,1
