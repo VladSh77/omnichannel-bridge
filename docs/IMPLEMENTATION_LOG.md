@@ -513,3 +513,16 @@
 - Attempted migration to git-based deploy was blocked by missing repository access credentials on server.
 - Required to complete strict process end-to-end:
   - configure deploy key or HTTPS token for server-side `git pull`.
+
+## 2026-04-07 — Livechat Scope Guard: Fewer False Out-of-Scope Classifications
+
+### Problem
+
+- Longer website livechat starter lines (for example documentation / browsing buttons) lacked explicit camp keywords and were classified as out-of-scope, triggering escalation replies incorrectly.
+
+### Change
+
+- `addons/omnichannel_bridge/models/omni_ai.py` (`_omni_is_camp_scope_message`):
+  - widened short-message bypass to 35 characters,
+  - added onboarding hint tokens (UA/PL/EN) for docs/browsing-style openers,
+  - added price/language stems (`цін`, `cena`, `price`, Polish camp terms) to catch common variants like «ціни» without substring `ціна`.

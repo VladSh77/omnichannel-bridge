@@ -248,7 +248,23 @@ class OmniAi(models.AbstractModel):
         if not txt:
             return True
         # Do not overblock short neutral messages; let LLM continue dialog.
-        if len(txt) <= 20:
+        if len(txt) <= 35:
+            return True
+        # Website livechat starter lines: browsing / docs without explicit "camp" words yet.
+        onboarding_hints = (
+            'документац',
+            'інформац',
+            'дивлю',
+            'навколо',
+            'цікав',
+            'розповід',
+            'dokumentacj',
+            'szukam informacj',
+            'documentation',
+            'looking around',
+            'just looking',
+        )
+        if any(k in txt for k in onboarding_hints):
             return True
         camp_terms = (
             'таб',
@@ -261,6 +277,7 @@ class OmniAi(models.AbstractModel):
             'брон',
             'оплат',
             'ціна',
+            'цін',  # ціни, ціну, про ціни
             'вартіст',
             'дит',
             'підліт',
@@ -270,6 +287,11 @@ class OmniAi(models.AbstractModel):
             'трансфер',
             'проживан',
             'харчуван',
+            'cena',
+            'obóz',
+            'kolonia',
+            'turnus',
+            'price',
         )
         return any(k in txt for k in camp_terms)
 
