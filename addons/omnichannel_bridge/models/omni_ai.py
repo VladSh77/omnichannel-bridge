@@ -78,7 +78,8 @@ class OmniAi(models.AbstractModel):
         ICP = self.env['ir.config_parameter'].sudo()
         if not self._omni_llm_enabled():
             return
-        if not self.omni_bot_may_reply_now():
+        # Website live chat is bot-first: reply immediately regardless of manager-hours mode.
+        if provider != 'site_livechat' and not self.omni_bot_may_reply_now():
             return
         backend = (ICP.get_param('omnichannel_bridge.llm_backend') or 'ollama').strip()
         if backend == 'openai':

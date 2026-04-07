@@ -59,6 +59,20 @@ class MailChannel(models.Model):
             return False
         return bool(partner.user_ids.filtered(lambda u: u.has_group('base.group_user')))
 
+    def _omni_client_requests_human(self, text):
+        lowered = (text or '').lower()
+        keys = (
+            'менеджер',
+            'оператор',
+            'людина',
+            'з\'єднайте з менеджером',
+            'покличте менеджера',
+            'human',
+            'manager',
+            'operator',
+        )
+        return any(k in lowered for k in keys)
+
     @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
         existing = self.sudo().search([
@@ -131,13 +145,30 @@ class MailChannel(models.Model):
         if not author or author == odoobot:
             return
         if self._omni_is_internal_author(author):
-            self.sudo().write({'omni_last_human_reply_at': fields.Datetime.now()})
+            # Manager joined the dialog -> stop bot until explicit resume.
+            self.sudo().write({
+                'omni_last_human_reply_at': fields.Datetime.now(),
+                'omni_bot_paused': True,
+                'omni_bot_pause_reason': 'manager_joined_livechat',
+            })
             return
-        try:
-            sla_seconds = int(icp.get_param('omnichannel_bridge.sla_no_human_seconds', '180'))
-        except ValueError:
-            sla_seconds = 180
-        sla_seconds = max(30, sla_seconds)
+        if self._omni_client_requests_human(body):
+            self.sudo().write({
+                'omni_bot_paused': True,
+                'omni_bot_pause_reason': 'client_requested_human',
+            })
+            self.message_post(
+                body=_('Передаю діалог менеджеру. Будь ласка, зачекайте трохи.'),
+                message_type='comment',
+                subtype_xmlid='mail.mt_comment',
+                author_id=odoobot.id,
+            )
+            self.env['omni.notify'].sudo().notify_escalation(
+                channel=self,
+                partner=author,
+                reason='🧑‍💼 Клієнт попросив менеджера у live chat',
+            )
+            return
         # Website visitor message -> same AI queue and sales/memory pipeline.
         self.sudo().write({'omni_customer_partner_id': author.id})
         self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
@@ -152,7 +183,8 @@ class MailChannel(models.Model):
             partner=author,
             text=body,
             provider='site_livechat',
-            delay_seconds=sla_seconds,
+            # Bot-first for website chat: respond immediately.
+            delay_seconds=0,
         )
 
     def _omni_route_operator_reply_to_messenger(self, message):
