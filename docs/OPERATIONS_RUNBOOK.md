@@ -38,6 +38,14 @@
   3. Apply on server after approval.
 - Never hotfix directly on server filesystem.
 
+## Direct vs Bridge Decision Rule
+
+- Default operation mode: direct provider integration through `omnichannel_bridge`.
+- Backup mode: SendPulse bridge is allowed only as temporary continuity path.
+- Switch to backup mode only after explicit approval and failed direct-wave exit criteria.
+- While backup mode is active, keep data mapping compatibility for partner identity fields and channel metadata.
+- Return to direct mode immediately after fix + smoke validation.
+
 ## Operational Readiness Targets
 
 - Staging smoke test required before production rollout.

@@ -4,13 +4,13 @@
         <field name="name">omni.integration.tree</field>
         <field name="model">omni.integration</field>
         <field name="arch" type="xml">
-            <list string="Omnichannel integrations" editable="bottom">
+            <tree string="Omnichannel integrations" editable="bottom">
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="provider"/>
                 <field name="active"/>
                 <field name="api_token" password="True"/>
                 <field name="webhook_secret" password="True"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -42,8 +42,8 @@
 
     <menuitem
         id="menu_omni_root"
-        name="Omnichannel"
-        parent="sale.menu_sale_config"
+        name="Чати CampScout"
+        parent="base.menu_custom"
         sequence="45"
     />
     <menuitem

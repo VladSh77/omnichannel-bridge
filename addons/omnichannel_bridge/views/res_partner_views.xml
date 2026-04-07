@@ -15,11 +15,11 @@
                         <field name="omni_chat_memory" colspan="2" nolabel="1"/>
                     </group>
                     <field name="omni_identity_ids" nolabel="1">
-                        <list editable="bottom">
+                        <tree editable="bottom">
                             <field name="provider"/>
                             <field name="external_id"/>
                             <field name="display_name"/>
-                        </list>
+                        </tree>
                     </field>
                 </page>
             </xpath>

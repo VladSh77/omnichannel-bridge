@@ -183,7 +183,7 @@ class OmniKnowledge(models.AbstractModel):
         Message = self.env['mail.message'].sudo()
         msgs = Message.search(
             [
-                ('model', '=', 'mail.channel'),
+                ('model', '=', 'discuss.channel'),
                 ('res_id', '=', channel.id),
                 ('message_type', '=', 'comment'),
             ],

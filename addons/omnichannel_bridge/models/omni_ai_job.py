@@ -13,7 +13,7 @@ class OmniAiJob(models.Model):
     _description = 'Asynchronous AI reply job'
     _order = 'id desc'
 
-    channel_id = fields.Many2one('mail.channel', required=True, ondelete='cascade', index=True)
+    channel_id = fields.Many2one('discuss.channel', required=True, ondelete='cascade', index=True)
     partner_id = fields.Many2one('res.partner', ondelete='set null', index=True)
     provider = fields.Selection(
         selection=lambda self: self.env['omni.integration']._selection_providers(),

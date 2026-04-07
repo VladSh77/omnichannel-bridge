@@ -48,3 +48,9 @@
 - All A/B/C tests green.
 - No P1/P2 issues open.
 - Staging smoke validated and documented.
+
+## Fallback Validation (SendPulse Bridge)
+
+- Keep a documented field map for SendPulse compatibility: contact id, phone, email, avatar URL, language, profile URL.
+- Run a periodic bridge-readiness smoke test in staging (no production traffic switch).
+- If direct path fails wave exit criteria, execute approved fallback checklist and validate end-to-end message flow before reopening traffic.

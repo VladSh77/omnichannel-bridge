@@ -4,7 +4,7 @@
         <field name="name">omni.ai.job.tree</field>
         <field name="model">omni.ai.job</field>
         <field name="arch" type="xml">
-            <list string="AI Jobs" create="false">
+            <tree string="AI Jobs" create="false">
                 <field name="create_date"/>
                 <field name="state"/>
                 <field name="provider"/>
@@ -13,7 +13,7 @@
                 <field name="attempt_count"/>
                 <field name="max_attempts"/>
                 <field name="next_attempt_at"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -64,14 +64,14 @@
         <field name="name">omni.webhook.event.tree</field>
         <field name="model">omni.webhook.event</field>
         <field name="arch" type="xml">
-            <list string="Webhook Events" create="false">
+            <tree string="Webhook Events" create="false">
                 <field name="received_at"/>
                 <field name="processed_at"/>
                 <field name="state"/>
                 <field name="provider"/>
                 <field name="external_event_id"/>
                 <field name="payload_hash"/>
-            </list>
+            </tree>
         </field>
     </record>
 

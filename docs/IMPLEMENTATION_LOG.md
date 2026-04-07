@@ -175,3 +175,45 @@
 
 - Default SLA is 180 seconds; enforced minimum is 30 seconds.
 - No server-side actions performed.
+
+## 2026-04-07 — Production Compatibility Patch (`discuss.channel`)
+
+### Scope
+
+- Aligned channel integration to production Odoo model `discuss.channel`.
+- Removed hard dependency on `mail.channel` in AI queue/thread flow.
+- Updated Discuss form inheritance to real production view ID.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/models/omni_bridge.py`
+- `addons/omnichannel_bridge/models/omni_ai_job.py`
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `addons/omnichannel_bridge/views/mail_channel_views.xml`
+- `docs/TZ_CHECKLIST.md`
+
+### Notes
+
+- Compatibility validated against production metadata (`mail.discuss_channel_view_form`).
+- No server-side write actions performed.
+
+## 2026-04-07 — Strategy Lock: Direct-First + SendPulse Fallback
+
+### Scope
+
+- Formalized delivery strategy for channel rollout.
+- Confirmed direct integrations as default target architecture.
+- Retained SendPulse only as contingency bridge (Plan B).
+
+### Artifacts Updated
+
+- `README.md`
+- `docs/TECHNICAL_PASSPORT.md`
+- `docs/OPERATIONS_RUNBOOK.md`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- No server-side actions performed.

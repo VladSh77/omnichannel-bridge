@@ -149,7 +149,7 @@ class OmniNotify(models.AbstractModel):
         base = self.env['ir.config_parameter'].sudo().get_param(
             'web.base.url', 'https://campscout.eu'
         )
-        return '%s/web#action=mail.action_discuss&active_id=mail.channel_%s' % (
+        return '%s/web#action=mail.action_discuss&active_id=discuss.channel_%s' % (
             base.rstrip('/'),
             channel.id,
         )

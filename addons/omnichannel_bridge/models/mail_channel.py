@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 
 
 class MailChannel(models.Model):
-    _inherit = 'mail.channel'
+    _inherit = 'discuss.channel'
 
     omni_provider = fields.Selection(
         selection=lambda self: self.env['omni.integration']._selection_providers(),
@@ -79,7 +79,10 @@ class MailChannel(models.Model):
             'omni_external_thread_id': str(external_thread_id),
             'omni_customer_partner_id': partner.id,
         })
-        channel.channel_partner_ids = [(6, 0, [partner.id, odoobot.id])]
+        if hasattr(channel, 'add_members'):
+            channel.add_members(partner_ids=[partner.id, odoobot.id])
+        else:
+            channel.channel_partner_ids = [(6, 0, [partner.id, odoobot.id])]
         return channel, True
 
     def omni_thread_align_customer(self, partner):
@@ -87,8 +90,12 @@ class MailChannel(models.Model):
         if not partner:
             return
         self.sudo().write({'omni_customer_partner_id': partner.id})
-        if partner.id not in self.channel_partner_ids.ids:
-            self.channel_partner_ids = [(4, partner.id)]
+        member_partner_ids = self.channel_partner_ids.ids if 'channel_partner_ids' in self._fields else []
+        if partner.id not in member_partner_ids:
+            if hasattr(self, 'add_members'):
+                self.add_members(partner_ids=[partner.id])
+            else:
+                self.channel_partner_ids = [(4, partner.id)]
 
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)

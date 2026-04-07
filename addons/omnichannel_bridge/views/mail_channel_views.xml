@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="mail_channel_view_form_inherit_omnichannel" model="ir.ui.view">
-        <field name="name">mail.channel.form.inherit.omnichannel</field>
-        <field name="model">mail.channel</field>
-        <field name="inherit_id" ref="mail.mail_channel_view_form"/>
+        <field name="name">discuss.channel.form.inherit.omnichannel</field>
+        <field name="model">discuss.channel</field>
+        <field name="inherit_id" ref="mail.discuss_channel_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
+            <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_omni_pause_bot" type="object" string="Pause Bot"
                         class="btn-secondary" invisible="omni_bot_paused"/>
                 <button name="action_omni_resume_bot" type="object" string="Resume Bot"
                         class="btn-primary" invisible="not omni_bot_paused"/>
             </xpath>
             <xpath expr="//sheet" position="inside">
-                <group string="Omnichannel" name="omnichannel_group" groups="base.group_user">
+                <group string="Omnichannel" name="omnichannel_group">
                     <field name="omni_provider" readonly="1"/>
                     <field name="omni_external_thread_id" readonly="1"/>
                     <field name="omni_customer_partner_id" readonly="1"/>

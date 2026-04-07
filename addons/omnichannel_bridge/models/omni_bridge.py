@@ -136,7 +136,7 @@ class OmniBridge(models.AbstractModel):
             'p': dict(self.env['omni.integration']._selection_providers()).get(provider, provider),
             'name': partner.display_name,
         }
-        channel, is_new = self.env['mail.channel'].omni_get_or_create_thread(
+        channel, is_new = self.env['discuss.channel'].omni_get_or_create_thread(
             provider,
             str(thread_id),
             partner,

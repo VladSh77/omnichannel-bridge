@@ -62,6 +62,12 @@ Fajna/
 
 Деталі полів товарів (місця, умови для бота) — на формі шаблону продукту, група **Chatbot (Omnichannel)**. На картці клієнта (вкладка **Omnichannel**): **стиль звернення**, **зворот** («пані Ольго»), **пам’ять з чату** (доповнюється правилами з повідомлень). У ТЗ (§ 8.1) — **внутрішній Telegram-канал** для менеджера та керівника: потік по клієнтах + окремі сповіщення для проблемних і термінових кейсів (не плутати з клієнтським ботом у § 13).
 
+## Delivery strategy (approved)
+
+- Primary route: **direct provider integration** (Meta/Telegram/Website Live Chat -> `omnichannel_bridge`) without SendPulse in the main path.
+- Backup route: **SendPulse as bridge** only if direct delivery fails release criteria for a wave.
+- Migration rule: preserve compatibility mapping for SendPulse fields (`contact_id`, phone, email, avatar, language, profile URL) to enable fast fallback without redesign.
+
 ## Документація для команди
 
 | Документ | Призначення |

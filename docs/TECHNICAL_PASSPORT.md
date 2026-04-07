@@ -68,6 +68,13 @@
 - Staging: mandatory parity with production `addons_path` and custom modules.
 - Production: deploy only from reviewed, versioned git commits.
 
+## Integration Strategy: Direct-First with Bridge Fallback
+
+- Target architecture is direct provider connectivity to `omnichannel_bridge` (no SendPulse in primary path).
+- SendPulse is retained as contingency bridge for controlled fallback only.
+- Fallback trigger: direct channel fails agreed wave exit criteria (stability, delivery, correctness).
+- Re-entry rule: once direct path is fixed and re-validated, traffic returns to direct path and bridge mode is disabled.
+
 ## Change Control Policy
 
 - Work sequence is strict:
