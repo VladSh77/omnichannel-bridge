@@ -28,6 +28,20 @@ class MailChannel(models.Model):
         ),
     ]
 
+    def action_omni_pause_bot(self):
+        self.sudo().write({
+            'omni_bot_paused': True,
+            'omni_bot_pause_reason': 'manual_manager_takeover',
+        })
+        return True
+
+    def action_omni_resume_bot(self):
+        self.sudo().write({
+            'omni_bot_paused': False,
+            'omni_bot_pause_reason': False,
+        })
+        return True
+
     def _omni_thread_key_parts(self):
         self.ensure_one()
         return self.omni_provider, self.omni_external_thread_id

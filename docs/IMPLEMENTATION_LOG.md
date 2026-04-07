@@ -101,3 +101,20 @@
 
 - New menu: `Omnichannel -> Operations -> AI Jobs / Webhook Events`.
 - No server-side actions performed.
+
+## 2026-04-07 — Channel-Level Bot Pause Controls
+
+### Scope
+
+- Added manual pause/resume bot actions on `mail.channel` form.
+- Exposed pause state and last human/bot reply timestamps in channel UI.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/views/mail_channel_views.xml`
+
+### Notes
+
+- Supports manager takeover without editing global settings.
+- No server-side actions performed.

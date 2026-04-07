@@ -5,11 +5,21 @@
         <field name="model">mail.channel</field>
         <field name="inherit_id" ref="mail.mail_channel_view_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_omni_pause_bot" type="object" string="Pause Bot"
+                        class="btn-secondary" invisible="omni_bot_paused"/>
+                <button name="action_omni_resume_bot" type="object" string="Resume Bot"
+                        class="btn-primary" invisible="not omni_bot_paused"/>
+            </xpath>
             <xpath expr="//sheet" position="inside">
                 <group string="Omnichannel" name="omnichannel_group" groups="base.group_user">
                     <field name="omni_provider" readonly="1"/>
                     <field name="omni_external_thread_id" readonly="1"/>
                     <field name="omni_customer_partner_id" readonly="1"/>
+                    <field name="omni_bot_paused"/>
+                    <field name="omni_bot_pause_reason" readonly="1"/>
+                    <field name="omni_last_human_reply_at" readonly="1"/>
+                    <field name="omni_last_bot_reply_at" readonly="1"/>
                 </group>
             </xpath>
         </field>
