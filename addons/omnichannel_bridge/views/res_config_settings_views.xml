@@ -64,6 +64,9 @@
                         <setting string="Скільки останніх повідомлень">
                             <field name="omnichannel_llm_transcript_messages"/>
                         </setting>
+                        <setting string="Debug джерел фактів" help="Додає технічний блок DATA_SOURCES_DEBUG у контекст LLM (для внутрішньої валідації).">
+                            <field name="omnichannel_llm_debug_data_sources"/>
+                        </setting>
                         <setting string="Ollama URL">
                             <field name="omnichannel_ollama_base_url"/>
                         </setting>

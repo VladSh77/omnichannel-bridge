@@ -19,6 +19,14 @@ class OmniKnowledge(models.AbstractModel):
         return str(val).lower() in ('1', 'true', 'yes')
 
     @api.model
+    def _omni_debug_sources_enabled(self):
+        val = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.llm_debug_data_sources',
+            'False',
+        )
+        return str(val).lower() in ('1', 'true', 'yes')
+
+    @api.model
     def omni_partner_payment_summary(self, partner):
         if not partner:
             return _('No partner linked yet.')
@@ -59,7 +67,7 @@ class OmniKnowledge(models.AbstractModel):
 
     @api.model
     def omni_catalog_context_for_llm(self, partner, limit=40):
-        """Published/sale_ok products with list price, optional places, terms."""
+        """Camp-focused catalog facts: price, program, places, terms."""
         if self._omni_compact_mode():
             limit = min(limit, 12)
         Product = self.env['product.template'].sudo()
@@ -67,13 +75,14 @@ class OmniKnowledge(models.AbstractModel):
         if 'is_published' in Product._fields:
             domain.append(('is_published', '=', True))
         order = 'website_sequence, name' if 'website_sequence' in Product._fields else 'name'
-        products = Product.search(domain, order=order, limit=limit)
+        products = Product.search(domain, order=order, limit=max(limit * 3, 40))
         chunks = []
         if partner:
             pricelist = partner.property_product_pricelist
         else:
             pricelist = self.env.company.property_product_pricelist_id
-        for tmpl in products:
+        camp_products = [p for p in products if self._omni_is_camp_product(p)]
+        for tmpl in camp_products[:limit]:
             variant = tmpl.product_variant_id
             price = tmpl.list_price
             if pricelist and variant:
@@ -85,21 +94,9 @@ class OmniKnowledge(models.AbstractModel):
                     )
                 except TypeError:
                     price = pricelist._get_product_price(variant, 1.0, partner=partner or False)
-            if tmpl.omni_places_remaining is not False:
-                places = tmpl.omni_places_remaining
-            else:
-                places = None
-                if variant and hasattr(variant, 'free_qty'):
-                    try:
-                        places = int(variant.free_qty)
-                    except (TypeError, ValueError):
-                        places = None
-                if places is None and variant and hasattr(variant, 'qty_available'):
-                    try:
-                        places = int(variant.qty_available)
-                    except (TypeError, ValueError):
-                        places = None
-            terms = (tmpl.omni_chat_terms or tmpl.description_sale or '').strip()
+            places, places_src = self._omni_extract_places_with_source(tmpl)
+            program, program_src = self._omni_extract_program_with_source(tmpl)
+            terms = (tmpl.omni_chat_terms or '').strip()
             currency = tmpl.currency_id or self.env.company.currency_id
             line = '- %s | price: %s %s' % (
                 tmpl.name,
@@ -107,14 +104,22 @@ class OmniKnowledge(models.AbstractModel):
                 currency.name or '',
             )
             if places is not None:
-                line += ' | places/qty: %s' % places
+                line += ' | places_left: %s' % places
+            if program:
+                prog_len = 140 if self._omni_compact_mode() else 260
+                line += ' | program: %s' % program[:prog_len]
             if terms:
                 term_len = 160 if self._omni_compact_mode() else 500
                 line += ' | terms: %s' % terms[:term_len]
+            if self._omni_debug_sources_enabled():
+                line += ' | src(price=pricelist/list_price, program=%s, places=%s)' % (
+                    program_src,
+                    places_src,
+                )
             chunks.append(line)
         if not chunks:
-            return _('No catalog lines available (check sale_ok / website publish).')
-        header = _('Use only this catalog data for offers; do not invent prices or seats.')
+            return _('No camp catalog lines available (check product data and camp markers).')
+        header = _('Use only these CAMP catalog facts for offers: price, program, places_left.')
         return header + '\n' + '\n'.join(chunks)
 
     @api.model
@@ -127,9 +132,12 @@ class OmniKnowledge(models.AbstractModel):
         domain = [('sale_ok', '=', True)]
         if 'is_published' in Product._fields:
             domain.append(('is_published', '=', True))
-        products = Product.search(domain, limit=60)
+        products = Product.search(domain, limit=80)
         if not products:
             return 'RECOMMENDED_CAMPS: no recommendations available.'
+        products = [p for p in products if self._omni_is_camp_product(p)]
+        if not products:
+            return 'RECOMMENDED_CAMPS: no camp products matched.'
 
         period = ((partner.omni_preferred_period or '').strip().lower() if partner else '')
         budget = float(partner.omni_budget_amount or 0.0) if partner else 0.0
@@ -149,12 +157,14 @@ class OmniKnowledge(models.AbstractModel):
                 except TypeError:
                     price = pricelist._get_product_price(variant, 1.0, partner=partner or False)
             terms = (tmpl.omni_chat_terms or tmpl.description_sale or '').lower()
+            program, _program_src = self._omni_extract_program_with_source(tmpl)
+            program = program.lower()
             score = 0
-            if period and (period in (tmpl.name or '').lower() or period in terms):
+            if period and (period in (tmpl.name or '').lower() or period in terms or period in program):
                 score += 3
             if budget > 0 and float(price or 0.0) <= budget:
                 score += 2
-            places = tmpl.omni_places_remaining if tmpl.omni_places_remaining is not False else None
+            places, places_src = self._omni_extract_places_with_source(tmpl)
             if places is not None:
                 if places > 0:
                     score += 2
@@ -170,12 +180,71 @@ class OmniKnowledge(models.AbstractModel):
             line = '- %s | price: %s %s' % (tmpl.name, price, (tmpl.currency_id or currency).name or '')
             if places is not None:
                 line += ' | places: %s' % places
+            program, program_src = self._omni_extract_program_with_source(tmpl)
+            if program:
+                line += ' | program: %s' % program[:140].replace('\n', ' ')
             if tmpl.omni_chat_terms:
                 line += ' | terms: %s' % (tmpl.omni_chat_terms[:200].replace('\n', ' '))
+            if self._omni_debug_sources_enabled():
+                line += ' | src(program=%s, places=%s)' % (program_src, places_src)
             line += ' | score: %s' % score
             lines.append(line)
         lines.append('Policy: offer at most 1-2 options first, ask one clarifying question if needed.')
         return '\n'.join(lines)
+
+    @api.model
+    def _omni_is_camp_product(self, tmpl):
+        name = (tmpl.name or '').lower()
+        cat = (tmpl.categ_id.name or '').lower() if tmpl.categ_id else ''
+        terms = (tmpl.omni_chat_terms or '').lower()
+        markers = ('таб', 'camp', 'obóz', 'kolonia', 'заїзд', 'turnus')
+        return any(m in name or m in cat or m in terms for m in markers)
+
+    @api.model
+    def _omni_extract_program_with_source(self, tmpl):
+        parts = []
+        sources = []
+        for field_name in ('omni_chat_terms', 'description_sale', 'website_description'):
+            if field_name in tmpl._fields:
+                val = getattr(tmpl, field_name, '') or ''
+                txt = re.sub(r'\s+', ' ', str(val)).strip()
+                if txt:
+                    parts.append(txt)
+                    sources.append(field_name)
+        if not parts:
+            return '', 'none'
+        # Prefer explicit chatbot terms first, then supplement with short description.
+        return ' | '.join(parts[:2]), '+'.join(sources[:2])
+
+    @api.model
+    def _omni_extract_places_with_source(self, tmpl):
+        # Priority 1: dedicated camp/chat field in this module.
+        if 'omni_places_remaining' in tmpl._fields and tmpl.omni_places_remaining is not False:
+            try:
+                return int(tmpl.omni_places_remaining), 'omni_places_remaining'
+            except (TypeError, ValueError):
+                pass
+        # Priority 2: common event fields in custom Odoo builds.
+        for fname in ('seats_available', 'seats_expected', 'seats_max'):
+            if fname in tmpl._fields:
+                try:
+                    val = int(getattr(tmpl, fname))
+                    return val, fname
+                except (TypeError, ValueError):
+                    continue
+        # Priority 3: stock fallback for product variant.
+        variant = tmpl.product_variant_id
+        if variant and hasattr(variant, 'free_qty'):
+            try:
+                return int(variant.free_qty), 'product_variant.free_qty'
+            except (TypeError, ValueError):
+                pass
+        if variant and hasattr(variant, 'qty_available'):
+            try:
+                return int(variant.qty_available), 'product_variant.qty_available'
+            except (TypeError, ValueError):
+                pass
+        return None, 'none'
 
     @api.model
     def omni_partner_core_facts(self, partner):

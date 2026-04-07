@@ -383,3 +383,41 @@
 
 - Keeps dialog moving toward booking readiness with minimal token cost.
 - No server-side actions performed.
+
+## 2026-04-07 — Camp Facts Resolver (Price/Program/Places)
+
+### Scope
+
+- Refactored catalog facts to camp-focused output with explicit fields per camp.
+- Added robust source resolution for `places_left` with field-priority fallback.
+- Added program extraction from product terms/descriptions for sales answers.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- Resolver is designed for custom Odoo schemas and degrades gracefully if a field is missing.
+- No server-side actions performed.
+
+## 2026-04-07 — Debug Data Source Tracing
+
+### Scope
+
+- Added settings toggle to expose fact-source markers in LLM context.
+- Catalog and recommendation lines now can include source traces for `program` and `places`.
+- Keeps debug output internal and opt-in via config flag.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- Intended for fast production diagnostics of field mapping without code changes.
+- No server-side actions performed.

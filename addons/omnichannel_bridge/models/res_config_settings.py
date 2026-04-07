@@ -101,6 +101,10 @@ class ResConfigSettings(models.TransientModel):
         default='8',
         config_parameter='omnichannel_bridge.llm_transcript_messages',
     )
+    omnichannel_llm_debug_data_sources = fields.Boolean(
+        string='Debug: show fact data sources in context',
+        config_parameter='omnichannel_bridge.llm_debug_data_sources',
+    )
     omnichannel_openai_enabled = fields.Boolean(
         string='Legacy: OpenAI toggle (same as LLM if backend=openai)',
         config_parameter='omnichannel_bridge.openai_enabled',

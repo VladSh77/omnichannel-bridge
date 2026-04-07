@@ -43,6 +43,7 @@
 ### C. Fact Grounding
 
 - Prices/places come from ORM-derived facts.
+- For each recommended camp, response includes: price, short program, places_left (from explicit field or fallback source).
 - Missing fact path returns explicit uncertainty + escalation.
 - No fabricated legal terms in response.
 - Bot stays within camp domain; off-topic asks are escalated to manager.
@@ -52,6 +53,7 @@
 - When qualifiers are sufficient, bot proposes 1-2 recommended camps from catalog context (not a long list).
 - Compact mode check: transcript and FAQ snippets are shortened (token-saving mode).
 - Auto-next-question: if reply has no question mark and qualifiers are missing, bot appends exactly one next-step qualifier question.
+- Debug mode check: when enabled, catalog/recommendation lines include source markers for program and places fields.
 
 ### D. Human Handoff
 
