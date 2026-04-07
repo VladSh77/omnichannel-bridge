@@ -60,3 +60,39 @@ Each incident must include:
 - Root cause.
 - Mitigation.
 - Permanent fix backlog item.
+
+## Go-Live Livechat Checklist
+
+Use this checklist on production right before client-facing bot tests.
+
+1. Deploy and module update
+- Pull latest `main` on production code path.
+- Upgrade module `omnichannel_bridge` in Odoo.
+- Confirm commit hash on server matches git remote target.
+
+2. Critical settings
+- `omnichannel_bridge.llm_enabled = True`
+- `omnichannel_bridge.site_livechat_enabled = True`
+- `omnichannel_bridge.llm_backend = ollama`
+- `omnichannel_bridge.ollama_base_url = http://77.42.20.195:11434`
+- `omnichannel_bridge.llm_strict_grounding = True`
+
+3. Live widget and routing
+- Odoo website livechat widget is visible on public page.
+- New visitor message appears in `Discuss` as `discuss.channel`.
+- No frontend RPC errors on feedback/notifications.
+
+4. Functional smoke (must pass all)
+- RU/BE inbound -> normal Ukrainian answer (no policy explanation).
+- PL inbound -> normal Polish answer.
+- Camp question -> answer includes factual camp context.
+- Qualification -> bot asks next missing question (age/period/city/budget/contact).
+- Manager request -> bot pauses and escalation is sent.
+
+5. Data quality checks
+- Partner card updates `omni_*` sales profile fields.
+- `omni_sales_stage` transitions are visible (`qualifying/proposal/handoff`).
+- Recommendation block uses 1-2 camp options, not long catalog dump.
+
+6. Rollback trigger
+- If any P1/P2 symptom appears, disable bot (`llm_enabled=False`) and keep livechat human-only until fix.
