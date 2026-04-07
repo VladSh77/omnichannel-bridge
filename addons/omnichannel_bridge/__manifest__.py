@@ -16,6 +16,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/omni_defaults.xml',
         'data/omni_ai_job_cron.xml',
         'views/omni_integration_views.xml',
         'views/res_config_settings_views.xml',
@@ -28,6 +29,6 @@
         'python': ['requests', 'pytz'],
     },
     'installable': True,
-    'application': False,
+    'application': True,
     'auto_install': False,
 }

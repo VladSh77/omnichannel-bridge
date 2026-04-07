@@ -43,3 +43,28 @@ class OmniIntegration(models.Model):
             ('twilio_whatsapp', 'Twilio (WhatsApp)'),
             ('site_livechat', 'Website Live Chat'),
         ]
+
+    @api.model
+    def omni_ensure_site_livechat_defaults(self):
+        """Ensure website live chat is the default enabled channel."""
+        companies = self.env['res.company'].sudo().search([])
+        for company in companies:
+            integration = self.sudo().search([
+                ('company_id', '=', company.id),
+                ('provider', '=', 'site_livechat'),
+            ], limit=1)
+            if not integration:
+                self.sudo().create({
+                    'company_id': company.id,
+                    'provider': 'site_livechat',
+                    'active': True,
+                })
+            elif not integration.active:
+                integration.sudo().write({'active': True})
+
+        icp_model = self.env['ir.config_parameter'].sudo()
+        key = 'omnichannel_bridge.site_livechat_enabled'
+        exists = icp_model.search_count([('key', '=', key)])
+        if not exists:
+            icp_model.set_param(key, 'True')
+        return True

@@ -43,9 +43,12 @@
     <menuitem
         id="menu_omni_root"
         name="Чати CampScout"
-        parent="base.menu_custom"
+        action="action_omni_integration"
         sequence="45"
     />
+    <record id="menu_omni_root" model="ir.ui.menu">
+        <field name="web_icon">omnichannel_bridge,static/description/icon.svg</field>
+    </record>
     <menuitem
         id="menu_omni_integration"
         name="Integrations"
