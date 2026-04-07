@@ -117,7 +117,7 @@ class MailChannel(models.Model):
         for channel in self:
             if message.author_id == odoobot:
                 channel.sudo().write({'omni_last_bot_reply_at': fields.Datetime.now()})
-            elif channel.omni_customer_partner_id and message.author_id != channel.omni_customer_partner_id:
+            elif message.author_id and channel._omni_is_internal_author(message.author_id):
                 channel.sudo().write({'omni_last_human_reply_at': fields.Datetime.now()})
             channel._omni_handle_website_livechat_inbound(message)
             channel._omni_route_operator_reply_to_messenger(message)
@@ -143,9 +143,9 @@ class MailChannel(models.Model):
             return
         if message.subtype_id and getattr(message.subtype_id, 'internal', False):
             return
-        author = message.author_id
+        author = message.author_id or self.omni_customer_partner_id
         odoobot = self.env.ref('base.partner_root')
-        if not author or author == odoobot:
+        if author == odoobot:
             return
         if self._omni_is_internal_author(author):
             # Manager joined the dialog -> stop bot until explicit resume.
@@ -160,7 +160,8 @@ class MailChannel(models.Model):
                 'omni_bot_paused': True,
                 'omni_bot_pause_reason': 'client_requested_human',
             })
-            author.sudo().write({'omni_sales_stage': 'handoff'})
+            if author:
+                author.sudo().write({'omni_sales_stage': 'handoff'})
             self.message_post(
                 body=_('Передаю діалог менеджеру. Будь ласка, зачекайте трохи.'),
                 message_type='comment',
@@ -173,6 +174,17 @@ class MailChannel(models.Model):
                 reason='🧑‍💼 Клієнт попросив менеджера у live chat',
             )
             return
+        if not author:
+            # Guest visitor messages can come without author_id.
+            # Keep AI dialog working; partner enrichment will be skipped.
+            author = self.env.ref('base.public_partner')
+        # Auto-resume after manager takeover when client writes again.
+        # Keep pause if client explicitly requested a human.
+        if self.omni_bot_paused and self.omni_bot_pause_reason == 'manager_joined_livechat':
+            self.sudo().write({
+                'omni_bot_paused': False,
+                'omni_bot_pause_reason': False,
+            })
         # Website visitor message -> same AI queue and sales/memory pipeline.
         self.sudo().write({'omni_customer_partner_id': author.id})
         self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
@@ -182,14 +194,23 @@ class MailChannel(models.Model):
             provider='site_livechat',
         )
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(author, body)
-        self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
-            channel=self,
-            partner=author,
-            text=body,
-            provider='site_livechat',
-            # Bot-first for website chat: respond immediately.
-            delay_seconds=0,
-        )
+        # Livechat is bot-first; reply synchronously to avoid cron delays.
+        try:
+            self.env['omni.ai'].sudo().omni_maybe_autoreply(
+                channel=self,
+                partner=author,
+                text=body,
+                provider='site_livechat',
+            )
+        except Exception:
+            _logger.exception('Immediate livechat AI reply failed, enqueue fallback job')
+            self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
+                channel=self,
+                partner=author,
+                text=body,
+                provider='site_livechat',
+                delay_seconds=0,
+            )
 
     def _omni_route_operator_reply_to_messenger(self, message):
         self.ensure_one()

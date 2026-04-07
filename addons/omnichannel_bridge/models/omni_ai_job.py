@@ -96,8 +96,9 @@ class OmniAiJob(models.Model):
             })
             return
 
-        # Do not let bot race with recent human answer.
-        if channel.omni_last_human_reply_at:
+        # Do not let bot race with recent human answer in messenger threads.
+        # Website livechat is bot-first and should reply immediately.
+        if self.provider != 'site_livechat' and channel.omni_last_human_reply_at:
             icp = self.env['ir.config_parameter'].sudo()
             try:
                 guard_seconds = int(icp.get_param('omnichannel_bridge.sla_no_human_seconds', '180'))
