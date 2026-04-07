@@ -304,10 +304,22 @@ class OmniKnowledge(models.AbstractModel):
         return '\n'.join(lines)
 
     @api.model
+    def omni_camp_scope_block(self):
+        return (
+            'CAMP_SCOPE_POLICY:\n'
+            '- Scope: only CampScout camp sales/support topics (programs, safety, logistics, payment, registration).\n'
+            '- If question is outside scope, suggest manager handoff.\n'
+            '- Reply language: Ukrainian or Polish according to client message.\n'
+            '- Russian reply is disabled by policy.'
+        )
+
+    @api.model
     def omni_strict_grounding_bundle(self, channel, partner, user_text=''):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
         parts = [
             '=== FACTS_FROM_DATABASE (єдине джерело правди про ціни, місця, оплати, ПІБ) ===',
+            self.omni_camp_scope_block(),
+            '---',
             self.omni_partner_core_facts(partner),
             '---',
             self.omni_greeting_instruction_block(partner),

@@ -217,3 +217,22 @@
 ### Notes
 
 - No server-side actions performed.
+
+## 2026-04-07 — Livechat-First Defaults and Test Gate
+
+### Scope
+
+- Enforced `site_livechat` enable flag on every defaults run.
+- Updated project quick start to validate website live chat before messengers.
+- Expanded test plan with mandatory livechat-first acceptance suite.
+
+### Code/Docs Artifacts
+
+- `addons/omnichannel_bridge/models/omni_integration.py`
+- `README.md`
+- `docs/TEST_PLAN.md`
+
+### Notes
+
+- Keeps rollout aligned with current business priority: website chat first, then Meta/Telegram.
+- No server-side actions performed.

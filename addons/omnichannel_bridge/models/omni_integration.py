@@ -64,7 +64,6 @@ class OmniIntegration(models.Model):
 
         icp_model = self.env['ir.config_parameter'].sudo()
         key = 'omnichannel_bridge.site_livechat_enabled'
-        exists = icp_model.search_count([('key', '=', key)])
-        if not exists:
-            icp_model.set_param(key, 'True')
+        # Live chat is the mandatory first testing channel.
+        icp_model.set_param(key, 'True')
         return True

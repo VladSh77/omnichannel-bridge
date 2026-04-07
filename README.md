@@ -54,9 +54,10 @@ Fajna/
 
 1. Додайте шлях до `addons/` у `addons_path` конфігурації Odoo.
 2. Оновіть список додатків, встановіть модуль **Omnichannel Bridge**.
-3. **Налаштування → Omnichannel** (група System): Meta, розклад бота, **LLM** (увімкнути автовідповіді, бекенд **Ollama** або OpenAI, суворе підґрунтя фактів).
-4. Альтернативно: **Продажі → Налаштування → Omnichannel → Integrations** — токени по компаніях.
-5. Вебхуки:
+3. Перевірте, що `Website Live Chat` увімкнено як дефолтний канал (`site_livechat`) і віджет живого чату видимий на сайті.
+4. **Налаштування → Omnichannel** (група System): Meta, розклад бота, **LLM** (увімкнути автовідповіді, бекенд **Ollama** або OpenAI, суворе підґрунтя фактів).
+5. Альтернативно: **Продажі → Налаштування → Omnichannel → Integrations** — токени по компаніях.
+6. Вебхуки (після валідації livechat-first):
    - Meta: `GET/POST` `https://<ваш-домен>/omni/webhook/meta`
    - Telegram: `POST` `https://<ваш-домен>/omni/webhook/telegram`
 
