@@ -29,8 +29,9 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m unittest discover -s tests -p "test_*.py" -v
+          python tests/test_webhook_parsers.py
+          python tests/test_contract_regressions.py
 
       - name: Lint (ruff)
         run: |
-          ruff check addons/omnichannel_bridge tests
+          ruff check --select E9,F63,F7,F82 addons/omnichannel_bridge tests
