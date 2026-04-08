@@ -32,6 +32,7 @@
 
 - Current implementation targets Meta WhatsApp Cloud webhook shape.
 - Twilio-specific inbound parser remains separate backlog item.
+- Deployed on production via git bundle sync + module upgrade; server commit now `5c3f183`.
 
 ## 2026-04-08 — TZ Item 1: Baseline Freeze + DoD Matrix
 
