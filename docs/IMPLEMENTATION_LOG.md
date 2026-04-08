@@ -21,6 +21,11 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+### Deployment Notes
+
+- Initial production upgrade failed because this runtime expected `tree` view type instead of `list` in analytics line view.
+- Fixed by switching `omni_crm_analytics_views.xml` to `tree`; module upgrade then completed successfully.
+
 ### Notes
 
 - FSM transition telemetry is now persisted in `omni.stage.event`.
