@@ -154,6 +154,11 @@ class OmniBridge(models.AbstractModel):
             text=text,
             provider=provider,
         )
+        channel.sudo().write({
+            'omni_last_customer_inbound_at': fields.Datetime.now(),
+            # New inbound resets reminder cycle window.
+            'omni_window_reminder_sent_at': False,
+        })
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(partner, text)
         delay = self.env['omni.ai'].sudo().omni_autoreply_delay_seconds_for_inbound()
         self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(

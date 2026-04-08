@@ -1,5 +1,33 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-08 — 24h Window Reminder Automation (Meta/WhatsApp)
+
+### Scope
+
+- Implemented configurable reminder automation for channels with 24h policy constraints.
+- Added one-reminder-per-inbound-cycle anti-spam guard.
+- Reset reminder cycle when customer sends new inbound.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - New fields: `omni_last_customer_inbound_at`, `omni_window_reminder_sent_at`, `omni_window_reminder_count`.
+  - New cron handler: `omni_cron_send_window_reminders`.
+- `addons/omnichannel_bridge/models/omni_bridge.py`
+  - On inbound delivery: set `omni_last_customer_inbound_at` and reset `omni_window_reminder_sent_at`.
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+  - New settings: `window_reminder_enabled`, `window_reminder_trigger_hours`, `window_message_window_hours`, `window_reminder_text`.
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+  - Added settings UI block in Bot schedule section.
+- `addons/omnichannel_bridge/data/omni_ai_job_cron.xml`
+  - Added cron `ir_cron_omni_24h_window_reminders` (every 5 minutes).
+
+### Notes
+
+- Current provider scope: `meta`, `whatsapp`, `twilio_whatsapp`.
+- Handoff stage is excluded from auto-reminder sending.
+- No server-side actions performed.
+
 ## 2026-04-07 — Phase 0 Bootstrap
 
 ### Scope

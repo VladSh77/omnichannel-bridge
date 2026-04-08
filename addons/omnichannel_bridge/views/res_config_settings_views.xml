@@ -46,6 +46,18 @@
                         <setting string="Max webhook body (bytes)" help="Reject oversized webhook POST payloads.">
                             <field name="omnichannel_webhook_max_body_bytes"/>
                         </setting>
+                        <setting string="Enable 24h window reminder automation" help="For Meta/WhatsApp-like channels: send one soft reminder around the configured hour in active message window.">
+                            <field name="omnichannel_window_reminder_enabled"/>
+                        </setting>
+                        <setting string="Reminder trigger (hours)" invisible="not omnichannel_window_reminder_enabled">
+                            <field name="omnichannel_window_reminder_trigger_hours"/>
+                        </setting>
+                        <setting string="Window max (hours)" invisible="not omnichannel_window_reminder_enabled">
+                            <field name="omnichannel_window_message_window_hours"/>
+                        </setting>
+                        <setting string="Reminder text" invisible="not omnichannel_window_reminder_enabled">
+                            <field name="omnichannel_window_reminder_text" placeholder="Підкажіть, будь ласка, чи встигли обрати програму табору?..."/>
+                        </setting>
                     </block>
                     <block title="CRM" name="omnichannel_block_crm">
                         <setting help="Creates a CRM lead when a brand-new messenger identity appears.">

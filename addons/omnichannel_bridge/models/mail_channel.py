@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
 import re
+from datetime import timedelta
 
 from odoo import _, api, fields, models
+from odoo.fields import Datetime
 
 _logger = logging.getLogger(__name__)
 
@@ -23,6 +25,9 @@ class MailChannel(models.Model):
     omni_legal_notice_sent_at = fields.Datetime()
     omni_reserve_lead_id = fields.Many2one('crm.lead', ondelete='set null')
     omni_reserve_requested_at = fields.Datetime()
+    omni_last_customer_inbound_at = fields.Datetime()
+    omni_window_reminder_sent_at = fields.Datetime()
+    omni_window_reminder_count = fields.Integer(default=0)
 
     _sql_constraints = [
         (
@@ -265,3 +270,61 @@ class MailChannel(models.Model):
             )
         except Exception:
             _logger.exception('Omnichannel outbound failed for channel %s', self.id)
+
+    @api.model
+    def omni_cron_send_window_reminders(self, limit=80):
+        ICP = self.env['ir.config_parameter'].sudo()
+        enabled = str(ICP.get_param('omnichannel_bridge.window_reminder_enabled', 'False')).lower() in (
+            '1', 'true', 'yes',
+        )
+        if not enabled:
+            return
+        try:
+            trigger_h = float(ICP.get_param('omnichannel_bridge.window_reminder_trigger_hours', '20'))
+        except ValueError:
+            trigger_h = 20.0
+        try:
+            max_h = float(ICP.get_param('omnichannel_bridge.window_message_window_hours', '24'))
+        except ValueError:
+            max_h = 24.0
+        reminder_text = (
+            ICP.get_param('omnichannel_bridge.window_reminder_text') or
+            'Підкажіть, будь ласка, чи встигли обрати програму табору? '
+            'Якщо зручно, допоможу коротко звузити до 1-2 варіантів.'
+        ).strip()
+        now = Datetime.now()
+        domain = [
+            ('omni_provider', 'in', ('meta', 'whatsapp', 'twilio_whatsapp')),
+            ('omni_external_thread_id', '!=', False),
+            ('omni_customer_partner_id', '!=', False),
+            ('omni_last_customer_inbound_at', '!=', False),
+            ('omni_bot_paused', '=', False),
+        ]
+        channels = self.sudo().search(domain, order='omni_last_customer_inbound_at asc', limit=max(1, int(limit)))
+        for ch in channels:
+            inbound_at = ch.omni_last_customer_inbound_at
+            if not inbound_at:
+                continue
+            if now < inbound_at + timedelta(hours=max(0.1, trigger_h)):
+                continue
+            if now > inbound_at + timedelta(hours=max(0.5, max_h)):
+                continue
+            if ch.omni_window_reminder_sent_at and ch.omni_window_reminder_sent_at >= inbound_at:
+                continue
+            # Do not remind when handoff is already in progress.
+            customer = ch.omni_customer_partner_id.sudo()
+            if customer and customer.omni_sales_stage == 'handoff':
+                continue
+            try:
+                self.env['omni.bridge'].sudo().omni_send_outbound(
+                    ch.omni_provider,
+                    ch.omni_external_thread_id,
+                    customer,
+                    reminder_text,
+                )
+                ch.write({
+                    'omni_window_reminder_sent_at': now,
+                    'omni_window_reminder_count': (ch.omni_window_reminder_count or 0) + 1,
+                })
+            except Exception:
+                _logger.exception('Window reminder send failed for channel %s', ch.id)

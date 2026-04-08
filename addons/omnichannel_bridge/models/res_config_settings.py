@@ -212,3 +212,22 @@ class ResConfigSettings(models.TransientModel):
         string='Notify on problematic flag',
         config_parameter='omnichannel_bridge.internal_notify_problem',
     )
+    omnichannel_window_reminder_enabled = fields.Boolean(
+        string='Enable 24h window reminder automation',
+        config_parameter='omnichannel_bridge.window_reminder_enabled',
+        default=False,
+    )
+    omnichannel_window_reminder_trigger_hours = fields.Float(
+        string='Reminder trigger hours after last inbound',
+        config_parameter='omnichannel_bridge.window_reminder_trigger_hours',
+        default=20.0,
+    )
+    omnichannel_window_message_window_hours = fields.Float(
+        string='Max platform window hours',
+        config_parameter='omnichannel_bridge.window_message_window_hours',
+        default=24.0,
+    )
+    omnichannel_window_reminder_text = fields.Text(
+        string='24h reminder text',
+        config_parameter='omnichannel_bridge.window_reminder_text',
+    )

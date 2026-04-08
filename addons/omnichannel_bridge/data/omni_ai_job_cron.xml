@@ -10,4 +10,14 @@
         <field name="numbercall">-1</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_omni_24h_window_reminders" model="ir.cron">
+        <field name="name">Omnichannel 24h Window Reminder Processor</field>
+        <field name="model_id" ref="mail.model_discuss_channel"/>
+        <field name="state">code</field>
+        <field name="code">model.omni_cron_send_window_reminders()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
 </odoo>
