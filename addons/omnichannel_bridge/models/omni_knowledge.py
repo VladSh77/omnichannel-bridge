@@ -568,6 +568,17 @@ class OmniKnowledge(models.AbstractModel):
         )
 
     @api.model
+    def omni_payment_policy_block(self):
+        return (
+            'PAYMENT_POLICY:\n'
+            '- Payment facts are allowed only from ORM statuses (sale.order/account.move/payment.transaction).\n'
+            '- Never promise bank settlement timing or payment provider guarantees.\n'
+            '- Do not claim "paid" unless status explicitly indicates paid/in_payment/done/authorized in ORM.\n'
+            '- If status is unclear or missing, say so and offer manager/billing handoff.\n'
+            '- For legal/payment dispute wording, keep neutral and route to manager.'
+        )
+
+    @api.model
     def omni_promo_context_block(self):
         today = fields.Date.context_today(self)
         promos = self.env['omni.promo'].sudo().search([('active', '=', True)], order='id desc', limit=8)
@@ -611,6 +622,8 @@ class OmniKnowledge(models.AbstractModel):
             self.omni_promo_context_block(),
             '---',
             self.omni_reserve_policy_block(),
+            '---',
+            self.omni_payment_policy_block(),
             '---',
             self.omni_partner_core_facts(partner),
             '---',

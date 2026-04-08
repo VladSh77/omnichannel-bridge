@@ -1402,3 +1402,19 @@
   - `_omni_extract_places_with_source(...)` with event registration truth-sync
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Payment wording legal guardrails (TZ §5)
+
+### Scope
+
+- Added explicit `PAYMENT_POLICY` block to strict grounding context for LLM.
+- Policy limits payment wording to ORM-confirmed statuses and forbids unsupported guarantees/promises.
+- Added fallback requirement: if payment status is unclear, bot must state uncertainty and offer manager/billing handoff.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+  - `omni_payment_policy_block(...)`
+  - included in `omni_strict_grounding_bundle(...)`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

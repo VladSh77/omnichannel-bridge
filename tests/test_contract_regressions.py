@@ -143,6 +143,11 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('event.registration.state_count', knowledge)
         self.assertIn('event_ticket.future_events.event_registration_truth', knowledge)
 
+    def test_payment_policy_markers_present(self):
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('omni_payment_policy_block', knowledge)
+        self.assertIn('PAYMENT_POLICY:', knowledge)
+
     def test_reserve_waitlist_model_markers_present(self):
         reserve = (ROOT / 'addons/omnichannel_bridge/models/omni_reserve_entry.py').read_text()
         ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
