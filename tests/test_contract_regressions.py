@@ -80,6 +80,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('mail.activity', notify)
         self.assertIn('omnichannel_bridge.default_manager_user_id', settings)
 
+    def test_outbound_ordering_guard_markers_present(self):
+        channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        self.assertIn('omni_last_outbound_hash', channel)
+        self.assertIn('Skip bot outbound due manager recent reply', channel)
+        self.assertIn('omnichannel_bridge.outbound_conflict_guard_seconds', settings)
+
 
 if __name__ == '__main__':
     unittest.main()

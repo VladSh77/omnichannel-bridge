@@ -109,6 +109,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.manager_session_timeout_minutes',
         help='After manager message bot stays paused for this window in messenger channels.',
     )
+    omnichannel_outbound_conflict_guard_seconds = fields.Integer(
+        string='Outbound conflict/duplicate guard (seconds)',
+        default=20,
+        config_parameter='omnichannel_bridge.outbound_conflict_guard_seconds',
+        help='Suppress bot outbound right after manager reply and skip duplicate outbound text in this window.',
+    )
     omnichannel_llm_enabled = fields.Boolean(
         string='Enable LLM autoreplies',
         config_parameter='omnichannel_bridge.llm_enabled',

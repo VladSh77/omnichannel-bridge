@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import hashlib
 import re
 from datetime import timedelta
 
@@ -23,6 +24,11 @@ class MailChannel(models.Model):
     omni_last_human_reply_at = fields.Datetime()
     omni_last_bot_reply_at = fields.Datetime()
     omni_last_manager_activity_at = fields.Datetime()
+    omni_last_outbound_at = fields.Datetime()
+    omni_last_outbound_hash = fields.Char()
+    omni_last_outbound_author_kind = fields.Selection(
+        selection=[('bot', 'Bot'), ('manager', 'Manager')],
+    )
     omni_legal_notice_sent_at = fields.Datetime()
     omni_reserve_lead_id = fields.Many2one('crm.lead', ondelete='set null')
     omni_reserve_requested_at = fields.Datetime()
@@ -406,6 +412,36 @@ class MailChannel(models.Model):
         body = message.body
         if not body:
             return
+        odoobot = self.env.ref('base.partner_root')
+        is_bot_author = author == odoobot
+        now = fields.Datetime.now()
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            conflict_sec = int(icp.get_param('omnichannel_bridge.outbound_conflict_guard_seconds', '20'))
+        except ValueError:
+            conflict_sec = 20
+        conflict_sec = max(5, conflict_sec)
+        # If manager has just replied, suppress near-simultaneous bot outbound.
+        if is_bot_author and self.omni_last_human_reply_at:
+            if now <= self.omni_last_human_reply_at + timedelta(seconds=conflict_sec):
+                _logger.info(
+                    'Skip bot outbound due manager recent reply channel=%s guard=%ss',
+                    self.id,
+                    conflict_sec,
+                )
+                return
+        plain = re.sub(r'<[^>]+>', ' ', body or '')
+        plain = re.sub(r'\s+', ' ', plain).strip().lower()
+        outbound_hash = hashlib.sha1(plain.encode('utf-8')).hexdigest() if plain else ''
+        # Anti-duplicate safeguard for retried posts.
+        if (
+            outbound_hash and
+            self.omni_last_outbound_hash == outbound_hash and
+            self.omni_last_outbound_at and
+            now <= self.omni_last_outbound_at + timedelta(seconds=conflict_sec)
+        ):
+            _logger.info('Skip duplicate outbound channel=%s', self.id)
+            return
         try:
             self.env['omni.bridge'].sudo().omni_send_outbound(
                 self.omni_provider,
@@ -413,6 +449,11 @@ class MailChannel(models.Model):
                 customer,
                 body,
             )
+            self.sudo().write({
+                'omni_last_outbound_at': now,
+                'omni_last_outbound_hash': outbound_hash or False,
+                'omni_last_outbound_author_kind': 'bot' if is_bot_author else 'manager',
+            })
         except Exception:
             _logger.exception('Omnichannel outbound failed for channel %s', self.id)
 

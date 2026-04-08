@@ -103,6 +103,25 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+## 2026-04-08 — Message ordering guard (TZ §14.2)
+
+### Scope
+
+- Added outbound conflict guard to prevent near-simultaneous bot reply after manager reply.
+- Added outbound duplicate suppression (same normalized text hash in short guard window).
+- Exposed guard window in settings.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - new fields: `omni_last_outbound_at`, `omni_last_outbound_hash`, `omni_last_outbound_author_kind`
+  - updated `_omni_route_operator_reply_to_messenger` with conflict + duplicate guards
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+  - `omnichannel_outbound_conflict_guard_seconds`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

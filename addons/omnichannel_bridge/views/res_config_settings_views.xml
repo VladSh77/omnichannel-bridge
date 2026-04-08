@@ -43,6 +43,9 @@
                         <setting string="Manager session lock timeout (minutes)" help="After manager message, bot remains paused in messenger threads for this duration.">
                             <field name="omnichannel_manager_session_timeout_minutes"/>
                         </setting>
+                        <setting string="Outbound conflict guard (seconds)" help="Suppress bot reply right after manager message and deduplicate repeated outbound text in the same short window.">
+                            <field name="omnichannel_outbound_conflict_guard_seconds"/>
+                        </setting>
                         <setting string="Manager hours start">
                             <field name="omnichannel_manager_hour_start"/>
                         </setting>
