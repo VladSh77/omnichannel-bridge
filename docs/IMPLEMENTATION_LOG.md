@@ -565,3 +565,21 @@
 ### Notes
 
 - Deploy: upgrade module `omnichannel_bridge` on Odoo after pull.
+
+## 2026-04-07 — Sensitive-topic guardrail and mandatory human handoff
+
+### Scope
+
+- Added baseline sensitive-topic detection for live dialogs (children safety, medical, legal, insurance-dispute markers in UA/PL/EN).
+- On match, bot avoids freeform LLM answer and routes to manager with escalation notice.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `_omni_is_sensitive_message(...)`
+  - `_omni_send_sensitive_escalation_reply(...)`
+  - guardrail call at start of `omni_maybe_autoreply(...)` before out-of-scope/LLM generation
+
+### Notes
+
+- This is a baseline keyword policy; full moderation policy engine remains in backlog (severity levels, configurable dictionaries, analytics).

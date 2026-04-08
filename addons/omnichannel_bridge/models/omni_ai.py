@@ -165,6 +165,16 @@ class OmniAi(models.AbstractModel):
         if not self._omni_llm_enabled():
             return
         normalized = (text or '').strip()
+        if self._omni_is_sensitive_message(normalized):
+            self._omni_send_sensitive_escalation_reply(channel, normalized)
+            if partner:
+                partner.sudo().write({'omni_sales_stage': 'handoff'})
+            self.env['omni.notify'].sudo().notify_escalation(
+                channel=channel,
+                partner=partner,
+                reason='🛟 Чутлива тема (діти/медицина/юридичне/безпека) — передано менеджеру',
+            )
+            return
         if not self._omni_is_camp_scope_message(normalized):
             self._omni_send_out_of_scope_reply(channel)
             if partner:
@@ -265,6 +275,42 @@ class OmniAi(models.AbstractModel):
             subtype_xmlid='mail.mt_comment',
             author_id=self.env.ref('base.partner_root').id,
         )
+
+    def _omni_send_sensitive_escalation_reply(self, channel, user_text):
+        is_pl = self._omni_is_polish_message(user_text or '')
+        body = (
+            'Дякую за довіру. Це чутливе питання, тому передаю діалог менеджеру, '
+            'щоб надати коректну і безпечну відповідь.'
+            if not is_pl else
+            'Dziękuję za zaufanie. To wrażliwy temat, dlatego przekazuję rozmowę '
+            'do managera, aby udzielić poprawnej i bezpiecznej odpowiedzi.'
+        )
+        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
+            body=body,
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+            author_id=self.env.ref('base.partner_root').id,
+        )
+
+    def _omni_is_sensitive_message(self, user_text):
+        txt = (user_text or '').lower()
+        if not txt:
+            return False
+        sensitive_markers = (
+            # child safety / abuse / police
+            'насиль', 'побив', 'домаган', 'абюз', 'булінг', 'суїцид', 'самогуб', 'поліці',
+            'abuse', 'violence', 'suicide', 'self-harm', 'harassment', 'policja',
+            # medical / emergency
+            'алергі', 'епілеп', 'астм', 'діабет', 'лікар', 'медич', 'травм', 'швидк',
+            'allerg', 'epilep', 'asthma', 'diabet', 'medical', 'injury', 'ambulans',
+            # legal / claims
+            'суд', 'претензі', 'позов', 'адвокат', 'відповідальн', 'договор',
+            'lawsuit', 'legal', 'claim', 'attorney', 'lawyer', 'umowa', 'roszczen',
+            # insurance disputes
+            'страхов', 'відшкодуван', 'компенсац',
+            'insurance', 'compensation',
+        )
+        return any(k in txt for k in sensitive_markers)
 
     def _omni_is_ru_or_be_message(self, user_text):
         txt = (user_text or '').lower()
