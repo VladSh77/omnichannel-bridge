@@ -101,6 +101,26 @@
                             <field name="omnichannel_openai_system_prompt" placeholder="Тон, емпатія, сценарій продажу — без вигаданих цифр (їх дає блок фактів)."/>
                         </setting>
                     </block>
+                    <block title="Sales objections playbook" name="omnichannel_block_objections">
+                        <setting string="Price objection">
+                            <field name="omnichannel_objection_playbook_price" placeholder="Empathize, use ORM facts only, ask one budget-calibration question."/>
+                        </setting>
+                        <setting string="Timing objection">
+                            <field name="omnichannel_objection_playbook_timing" placeholder="Respect timing, suggest low-friction next step, no pressure."/>
+                        </setting>
+                        <setting string="Trust objection">
+                            <field name="omnichannel_objection_playbook_trust" placeholder="Use only verifiable links/facts, offer manager handoff."/>
+                        </setting>
+                        <setting string="Need to think">
+                            <field name="omnichannel_objection_playbook_need_to_think" placeholder="Clarify blocker and answer one concrete concern with facts."/>
+                        </setting>
+                        <setting string="Competitor objection">
+                            <field name="omnichannel_objection_playbook_competitor" placeholder="Do not attack competitors; compare only own offer from ORM/legal links."/>
+                        </setting>
+                        <setting string="Not decision maker">
+                            <field name="omnichannel_objection_playbook_not_decision_maker" placeholder="Ask who decides and suggest a convenient handoff/call slot."/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

@@ -87,7 +87,12 @@ class OmniSalesIntel(models.AbstractModel):
         objection_type = self.omni_detect_objection_type(text)
         if not objection_type:
             return ''
-        templates = {
+        templates = self._omni_objection_playbook_templates()
+        return templates.get(objection_type, '')
+
+    @api.model
+    def _omni_objection_playbook_templates(self):
+        defaults = {
             'price': (
                 'OBJECTION_PLAYBOOK: type=price. Empathize first, then use only ORM facts '
                 '(price components, installment availability if present), then ask one budget-calibration question.'
@@ -113,7 +118,20 @@ class OmniSalesIntel(models.AbstractModel):
                 'handoff/call slot.'
             ),
         }
-        return templates.get(objection_type, '')
+        ICP = self.env['ir.config_parameter'].sudo()
+        overrides = {
+            'price': (ICP.get_param('omnichannel_bridge.objection_playbook_price') or '').strip(),
+            'timing': (ICP.get_param('omnichannel_bridge.objection_playbook_timing') or '').strip(),
+            'trust': (ICP.get_param('omnichannel_bridge.objection_playbook_trust') or '').strip(),
+            'need_to_think': (
+                ICP.get_param('omnichannel_bridge.objection_playbook_need_to_think') or ''
+            ).strip(),
+            'competitor': (ICP.get_param('omnichannel_bridge.objection_playbook_competitor') or '').strip(),
+            'not_decision_maker': (
+                ICP.get_param('omnichannel_bridge.objection_playbook_not_decision_maker') or ''
+            ).strip(),
+        }
+        return {k: (overrides.get(k) or v) for k, v in defaults.items()}
 
     @api.model
     def _omni_log_objection(self, channel, partner, objection_type):

@@ -149,6 +149,30 @@ class ResConfigSettings(models.TransientModel):
     omnichannel_openai_system_prompt = fields.Text(
         config_parameter='omnichannel_bridge.openai_system_prompt',
     )
+    omnichannel_objection_playbook_price = fields.Text(
+        string='Objection playbook: price',
+        config_parameter='omnichannel_bridge.objection_playbook_price',
+    )
+    omnichannel_objection_playbook_timing = fields.Text(
+        string='Objection playbook: timing',
+        config_parameter='omnichannel_bridge.objection_playbook_timing',
+    )
+    omnichannel_objection_playbook_trust = fields.Text(
+        string='Objection playbook: trust',
+        config_parameter='omnichannel_bridge.objection_playbook_trust',
+    )
+    omnichannel_objection_playbook_need_to_think = fields.Text(
+        string='Objection playbook: need_to_think',
+        config_parameter='omnichannel_bridge.objection_playbook_need_to_think',
+    )
+    omnichannel_objection_playbook_competitor = fields.Text(
+        string='Objection playbook: competitor',
+        config_parameter='omnichannel_bridge.objection_playbook_competitor',
+    )
+    omnichannel_objection_playbook_not_decision_maker = fields.Text(
+        string='Objection playbook: not_decision_maker',
+        config_parameter='omnichannel_bridge.objection_playbook_not_decision_maker',
+    )
 
     # --- Bot kill switch via Telegram ---
     omnichannel_admin_tg_user_ids = fields.Char(

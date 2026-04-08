@@ -605,3 +605,20 @@
 ### Notes
 
 - This is baseline logic, not a full FSM/policy editor; configurable templates/analytics remain backlog.
+
+## 2026-04-07 — Objection playbooks configurable via Settings
+
+### Scope
+
+- Added Odoo Settings fields for objection playbook texts (price/timing/trust/need_to_think/competitor/not_decision_maker).
+- `omni.sales.intel` now loads playbook text from `ir.config_parameter` with safe defaults from code.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+
+### Notes
+
+- Behavior remains backward-compatible: if no custom text is set, default playbooks are used.
