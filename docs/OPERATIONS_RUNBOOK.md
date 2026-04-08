@@ -65,6 +65,8 @@
 - Secret encryption baseline policy documented in `docs/SECRET_ENCRYPTION_POLICY.md`.
 - Child-sensitive retention policy documented in `docs/CHILD_DATA_RETENTION_POLICY.md`.
 - Right-to-erasure procedure documented in `docs/RIGHT_TO_ERASURE_SOP.md`.
+- DPIA baseline categories documented in `docs/DPIA_DATA_CATEGORIES.md`.
+- No-finetune learning policy documented in `docs/LEARNING_POLICY_NO_FINETUNE.md`.
 
 ## Platform Window Policy
 

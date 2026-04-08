@@ -203,10 +203,17 @@ class OmniNotify(models.AbstractModel):
             subject='Purchase confirmed',
             summary='%s / %s' % (ref_norm or '—', amount_norm or '—'),
         )
+        partner.omni_set_sales_stage(
+            'handoff',
+            channel=channel,
+            reason='payment_confirmed',
+            source=source,
+        )
         cp.write({
             'omni_last_purchase_notify_at': Datetime.now(),
             'omni_last_purchase_notify_ref': ref_norm,
             'omni_last_purchase_notify_amount': amount_norm,
+            'omni_purchase_confirmed_at': Datetime.now(),
         })
 
     # ------------------------------------------------------------------

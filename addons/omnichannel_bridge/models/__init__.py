@@ -3,6 +3,7 @@ from . import omni_partner_identity
 from . import omni_webhook_event
 from . import omni_integration
 from . import omni_stage_event
+from . import omni_stage_transition
 from . import omni_prompt_audit
 from . import omni_objection_policy
 from . import omni_moderation_rule
@@ -30,6 +31,7 @@ from . import omni_crm_analytics
 from . import omni_tg_broadcast
 from . import res_config_settings
 from . import omni_coupon_redemption
+from . import omni_payment_event
 from . import sale_order
 from . import payment_transaction
 from . import account_move

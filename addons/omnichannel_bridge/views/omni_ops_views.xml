@@ -142,6 +142,13 @@
         sequence="26"
     />
     <menuitem
+        id="menu_omni_stage_transitions"
+        name="Stage Transitions"
+        parent="menu_omni_ops_root"
+        action="action_omni_stage_transition"
+        sequence="27"
+    />
+    <menuitem
         id="menu_omni_manager_reply_templates"
         name="Manager Reply Templates"
         parent="menu_omni_ops_root"
@@ -182,6 +189,13 @@
         parent="menu_omni_ops_root"
         action="action_omni_outbound_log"
         sequence="30"
+    />
+    <menuitem
+        id="menu_omni_payment_events"
+        name="Payment Events"
+        parent="menu_omni_ops_root"
+        action="action_omni_payment_event"
+        sequence="31"
     />
     <menuitem
         id="menu_omni_crm_analytics"

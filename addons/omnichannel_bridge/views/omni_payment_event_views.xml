@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_payment_event_tree" model="ir.ui.view">
+        <field name="name">omni.payment.event.tree</field>
+        <field name="model">omni.payment.event</field>
+        <field name="arch" type="xml">
+            <tree create="false">
+                <field name="happened_at"/>
+                <field name="partner_id"/>
+                <field name="source"/>
+                <field name="state"/>
+                <field name="external_ref"/>
+                <field name="amount_line"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_payment_event_form" model="ir.ui.view">
+        <field name="name">omni.payment.event.form</field>
+        <field name="model">omni.payment.event</field>
+        <field name="arch" type="xml">
+            <form string="Payment Event">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="happened_at" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="source" readonly="1"/>
+                            <field name="state" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="order_id" readonly="1"/>
+                            <field name="transaction_id" readonly="1"/>
+                            <field name="move_id" readonly="1"/>
+                            <field name="external_ref" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="amount_line" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_payment_event" model="ir.actions.act_window">
+        <field name="name">Payment Events</field>
+        <field name="res_model">omni.payment.event</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

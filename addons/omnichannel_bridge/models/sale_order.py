@@ -107,6 +107,7 @@ class SaleOrder(models.Model):
             if not order.omni_coupon_validated:
                 continue
             code = (order.omni_coupon_code or '').strip().upper()
+            promo = self.env['omni.promo'].sudo().omni_find_active_by_code(code)
             if not code:
                 continue
             exists = self.env['omni.coupon.redemption'].sudo().search_count([
@@ -118,10 +119,13 @@ class SaleOrder(models.Model):
             self.env['omni.coupon.redemption'].sudo().create({
                 'partner_id': order.partner_id.id,
                 'order_id': order.id,
+                'promo_id': promo.id if promo else False,
+                'campaign_code': (promo.code or '').strip().upper() if promo else '',
                 'code': code,
                 'discount_percent': (order._omni_coupon_config() or (None, 0.0))[1],
                 'discount_amount': order.omni_coupon_discount_amount,
                 'currency_id': order.currency_id.id,
+                'valid_until': promo.date_end if promo else False,
             })
 
     @api.model_create_multi
@@ -157,4 +161,12 @@ class SaleOrder(models.Model):
                     order=order,
                     source='sale_order_state',
                 )
+                self.env['omni.payment.event'].sudo().create({
+                    'partner_id': order.partner_id.id,
+                    'order_id': order.id,
+                    'source': 'sale.order',
+                    'state': now,
+                    'amount_line': '%s %s' % (order.amount_total or 0.0, order.currency_id.name or ''),
+                    'external_ref': order.name or '',
+                })
         return res

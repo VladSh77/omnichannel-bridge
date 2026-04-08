@@ -1832,3 +1832,42 @@
 - `addons/omnichannel_bridge/__manifest__.py`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 10/6 continuation (FSM editor + payment contour + minimization hardening)
+
+### Scope
+
+- Added FSM transition editor:
+  - model `omni.stage.transition`,
+  - UI/action/menu under Operations,
+  - runtime integration in `res.partner.omni_set_sales_stage` with fallback to defaults.
+- Extended payment contour:
+  - model `omni.payment.event` for sale/payment/invoice reconciliation timeline,
+  - event writes from `sale.order`, `payment.transaction`, `account.move`,
+  - purchase-confirmed signal now stores `omni_purchase_confirmed_at` and enforces stage handoff.
+- Hardening for anti-hallucination and compliance:
+  - `places unknown` now forces reserve-manager path in knowledge context,
+  - coupon redemption enriched with campaign metadata and validity window,
+  - added `DPIA_DATA_CATEGORIES` and `LEARNING_POLICY_NO_FINETUNE` docs.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_stage_transition.py` (new)
+- `addons/omnichannel_bridge/views/omni_stage_transition_views.xml` (new)
+- `addons/omnichannel_bridge/models/omni_payment_event.py` (new)
+- `addons/omnichannel_bridge/views/omni_payment_event_views.xml` (new)
+- `addons/omnichannel_bridge/models/res_partner.py`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/models/omni_coupon_redemption.py`
+- `addons/omnichannel_bridge/models/sale_order.py`
+- `addons/omnichannel_bridge/models/payment_transaction.py`
+- `addons/omnichannel_bridge/models/account_move.py`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `docs/DPIA_DATA_CATEGORIES.md` (new)
+- `docs/LEARNING_POLICY_NO_FINETUNE.md` (new)
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

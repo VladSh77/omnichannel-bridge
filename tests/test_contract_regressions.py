@@ -196,6 +196,23 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('menu_omni_knowledge_articles', ops)
         self.assertIn("self.env['omni.knowledge.article']", knowledge)
 
+    def test_stage_transition_and_payment_event_markers_present(self):
+        partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
+        transition_model = (ROOT / 'addons/omnichannel_bridge/models/omni_stage_transition.py').read_text()
+        payment_model = (ROOT / 'addons/omnichannel_bridge/models/omni_payment_event.py').read_text()
+        payment_views = (ROOT / 'addons/omnichannel_bridge/views/omni_payment_event_views.xml').read_text()
+        notify = (ROOT / 'addons/omnichannel_bridge/models/omni_notify.py').read_text()
+        self.assertIn('omni.stage.transition', transition_model)
+        self.assertIn("self.env['omni.stage.transition']", partner)
+        self.assertIn('omni.payment.event', payment_model)
+        self.assertIn('action_omni_payment_event', payment_views)
+        self.assertIn('omni_purchase_confirmed_at', notify)
+
+    def test_learning_and_dpia_docs_present(self):
+        runbook = (ROOT / 'docs/OPERATIONS_RUNBOOK.md').read_text()
+        self.assertIn('DPIA_DATA_CATEGORIES.md', runbook)
+        self.assertIn('LEARNING_POLICY_NO_FINETUNE.md', runbook)
+
     def test_outbound_log_and_message_tags_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         log_model = (ROOT / 'addons/omnichannel_bridge/models/omni_outbound_log.py').read_text()

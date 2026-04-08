@@ -27,4 +27,13 @@ class PaymentTransaction(models.Model):
                 order_ref=tx.reference or tx.provider_reference or tx.name or 'payment_tx',
                 amount_line=amount_line.strip(),
             )
+            self.env['omni.payment.event'].sudo().create({
+                'partner_id': partner.id,
+                'order_id': tx.sale_order_ids[:1].id if tx.sale_order_ids else False,
+                'transaction_id': tx.id,
+                'source': 'payment.transaction',
+                'state': now,
+                'amount_line': amount_line.strip(),
+                'external_ref': tx.reference or tx.provider_reference or tx.name or '',
+            })
         return res

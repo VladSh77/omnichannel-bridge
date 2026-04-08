@@ -72,6 +72,7 @@ class ResPartner(models.Model):
     omni_last_purchase_notify_at = fields.Datetime(string='Last purchase notify at')
     omni_last_purchase_notify_ref = fields.Char(string='Last purchase notify reference')
     omni_last_purchase_notify_amount = fields.Char(string='Last purchase notify amount')
+    omni_purchase_confirmed_at = fields.Datetime(string='Purchase confirmed at')
     omni_tg_marketing_opt_in = fields.Boolean(string='Telegram marketing consent')
     omni_tg_marketing_opt_in_at = fields.Datetime(string='Telegram marketing consent at')
     omni_tg_last_broadcast_at = fields.Datetime(string='Telegram last broadcast at')
@@ -86,7 +87,12 @@ class ResPartner(models.Model):
         old_stage = self.omni_sales_stage or 'new'
         if old_stage == new_stage:
             return old_stage, new_stage, False
-        allowed = self._OMNI_STAGE_TRANSITIONS.get(old_stage, set())
+        Transition = self.env['omni.stage.transition'].sudo()
+        custom = Transition.search([('active', '=', True), ('from_stage', '=', old_stage)])
+        if custom:
+            allowed = set(custom.mapped('to_stage'))
+        else:
+            allowed = self._OMNI_STAGE_TRANSITIONS.get(old_stage, set())
         if new_stage not in allowed:
             return old_stage, old_stage, False
         self.sudo().write({

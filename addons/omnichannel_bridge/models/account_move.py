@@ -24,4 +24,12 @@ class AccountMove(models.Model):
                 order_ref=move.name or move.ref or 'invoice',
                 amount_line=amount_line.strip(),
             )
+            self.env['omni.payment.event'].sudo().create({
+                'partner_id': move.partner_id.id,
+                'move_id': move.id,
+                'source': 'account.move',
+                'state': now,
+                'amount_line': amount_line.strip(),
+                'external_ref': move.name or move.ref or '',
+            })
         return res

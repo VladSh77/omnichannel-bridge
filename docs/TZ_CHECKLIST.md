@@ -13,8 +13,8 @@
 
 **Статус-зріз (2026-04-08):**
 
-- `[x]` — 148
-- `[~]` — 11
+- `[x]` — 155
+- `[~]` — 4
 - `[ ]` — 0
 
 **Контекст:** паралельно може існувати **SendPulse + Odoo**; цей проєкт — **нове підключення** (окремі вебхуки в Odoo), **міграція не обов’язкова**. Мета — **прибрати обмеження** сценарних ботів без ШІ (повтори питань, глюки, дратування клієнтів, довге очікування) і дати **гнучкість і якість** під продажі **на відкритому стеку** (без купівлі модулів на маркетплейсі; LLM — локальний Ollama або опційно хмара).
@@ -69,13 +69,13 @@
 
 - [x] Python/ORM перевірка вільних місць: runtime resolver у `omni_knowledge` підтверджено прод-аудитом (`get_camp_availability` / `bs_event_id.seats_available` / `event.ticket -> event.seats_available`).
 - [x] Якщо місць **немає**: runtime reserve flow через менеджера реалізовано (CTA клієнту + CRM lead + escalation notify + stage=handoff).
-- [~] Анти-галюцинація по місцях: facts bundle містить тільки ORM-derived `places`; при `places<=0` додається `reserve: manager_waitlist_required` і reserve policy у prompt.
+- [x] Анти-галюцинація по місцях: facts bundle містить тільки ORM-derived `places`; при `places<=0`/`unknown` додається `reserve: manager_waitlist_required` і strict reserve policy у prompt.
 
 **Знижка −5% (лише на табір):**
 
 - [x] Клієнт отримує **номер купона**; вводить його при **реєстрації / оформленні**: додано `sale.order.omni_coupon_code` + валідацію коду.
 - [x] У Odoo: реалізовано public-coupon flow (код + % в Settings), автоматичне застосування знижки лише до camp lines (`bs_event_id` / event-type).
-- [~] Облік використання купона: додано `omni.coupon.redemption` з one-use-per-partner-per-code; строк дії/масові кампанії лишаються в backlog.
+- [x] Облік використання купона: `omni.coupon.redemption` (one-use-per-partner-per-code) + campaign linkage (`promo_id`, `campaign_code`) + `valid_until` з promo-window.
 
 **Організація продажів:**
 
@@ -166,7 +166,7 @@
 - [x] Витяг **e-mail і телефону з тексту** повідомлення; переприв’язка ідентичності до знайденого партнера
 - [x] Оновлення треду Discuss при зміні «кращого» партнера
 - [x] **Анти-повтор:** не питати поле, яке вже заповнене в партнері / у стані звернення (runtime prefill з inbound + next-question тільки по missing slots).
-- [~] Явна **модель стану діалогу** (FSM / етап кваліфікації): guard-метод `res.partner.omni_set_sales_stage` + журнал переходів `omni.stage.event`; повний state-machine editor/UI ще в backlog.
+- [x] Явна **модель стану діалогу** (FSM / етап кваліфікації): guard-метод `res.partner.omni_set_sales_stage` + журнал переходів `omni.stage.event` + editor/UI `omni.stage.transition`.
 - [x] Злиття дублікатів партнерів за правилами (не лише переприв’язка identity) — `omni_merge_duplicates_by_rules`.
 
 ### 3.1 Точні факти, звернення, «навчання» без галюцинацій
@@ -201,7 +201,7 @@
 ## 5. Оплати та «клієнт уже платив»
 
 - [x] Зведення по **рахунках** (`account.move`): оплачено / в оплаті / без оплат
-- [~] Платежі **онлайн** (`payment.transaction`) і зв’язок із замовленням: додано notify-тригери на `state in (authorized, done)`; повний платіжний контур і reconciliation-логіка ще в backlog.
+- [x] Платежі **онлайн** (`payment.transaction`) і зв’язок із замовленням: notify-тригери + payment/reconciliation журнал `omni.payment.event` (sale/payment/invoice джерела).
 - [x] Правила формулювань для бота (що саме можна казати про оплату з юридичної точки зору): додано `PAYMENT_POLICY` у strict grounding bundle.
 
 ---
@@ -213,7 +213,7 @@
 - [x] **System prompt** + єдиний блок **omni_strict_grounding_bundle** (каталог, оплати, картка, звернення, пам’ять, тред)
 - [x] Режими відповіді: **завжди / лише поза годинами менеджера / вимкнено**
 - [x] Години менеджера (інтервал + timezone компанії)
-- [~] «Навчання» без fine-tuning: **пам’ять на картці** + правила з тексту; не автоматичне дотренування ваг моделі
+- [x] «Навчання» без fine-tuning: **пам’ять на картці** + правила з тексту + policy `docs/LEARNING_POLICY_NO_FINETUNE.md` (без auto retrain ваг).
 - [x] **База знань** (статті FAQ, політики, страхування) з окремого UI + RAG/сегментована подача: додано керований UI `omni.knowledge.article` + включення в `RAG_CONTEXT`.
 - [x] Версіонування промптів і A/B або черги експериментів (baseline: `llm_prompt_version` + `llm_experiment_tag` у Settings і `PROMPT_VERSIONING` в grounding).
 - [x] Fine-tuning / окремий ассистент — за потреби, не як заміна даним Odoo (baseline assistant profiles: `default/sales_closer/support_safe`).
@@ -287,7 +287,7 @@
 
 - [x] **Конфлікт**, **непорозуміння**, явний **запит людини** (runtime detection + problematic notify).
 - [x] **Технічні проблеми** (оплата, сайт, купон, реєстрація) — runtime detection + problematic notify.
-- [~] Клієнт **оформлює покупку** / готовність до оплати — додано baseline детектор purchase-intent + PRIORITY notify + stage→handoff; потрібен фінішний FSM/підтвердження оплати.
+- [x] Клієнт **оформлює покупку** / готовність до оплати — purchase-intent + PRIORITY notify + stage→handoff + payment-confirmed фіксація (`omni_purchase_confirmed_at`).
 - [x] **Поза темою** або **повторні помилки / плутанина** в повідомленнях — щоб не «ломати» довіру преміум-бренду.
 - [x] Будь-які **чутливі** питання щодо **дітей**, здоров’я, безпеки — пріоритет менеджеру (детектор у `omni.ai`).
 
@@ -406,7 +406,7 @@
 
 ### 14.3 Персональні дані, діти, контекст LLM
 
-- [~] **Мінімізація:** policy/rules у prompt + runtime retention/purge для omni-даних; повний DPIA/категорії даних ще в backlog.
+- [x] **Мінімізація:** policy/rules у prompt + runtime retention/purge + базові DPIA категорії в `docs/DPIA_DATA_CATEGORIES.md`.
 - [x] **Логи:** додано маскування email/phone у bridge-логах + retention cron для `mail.message`/`omni.webhook.event`.
 - [x] **Право на видалення:** `res.partner.action_omni_right_to_erasure` + окремий SOP з platform limitations (`docs/RIGHT_TO_ERASURE_SOP.md`).
 

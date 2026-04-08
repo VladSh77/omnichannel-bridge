@@ -107,6 +107,8 @@ class OmniKnowledge(models.AbstractModel):
                 line += ' | places_left: %s' % places
                 if places <= 0:
                     line += ' | reserve: manager_waitlist_required'
+            else:
+                line += ' | places_left: unknown | reserve: manager_waitlist_required'
             if program:
                 prog_len = 140 if self._omni_compact_mode() else 260
                 line += ' | program: %s' % program[:prog_len]
@@ -184,6 +186,8 @@ class OmniKnowledge(models.AbstractModel):
                 line += ' | places: %s' % places
                 if places <= 0:
                     line += ' | reserve: manager_waitlist_required'
+            else:
+                line += ' | places: unknown | reserve: manager_waitlist_required'
             program, program_src = self._omni_extract_program_with_source(tmpl)
             if program:
                 line += ' | program: %s' % program[:140].replace('\n', ' ')
@@ -605,6 +609,7 @@ class OmniKnowledge(models.AbstractModel):
         return (
             'RESERVE_POLICY:\n'
             '- If places_left/places is 0 for requested camp/event, do NOT claim availability.\n'
+            '- If places_left/places is unknown, do NOT invent number; route to manager waitlist flow.\n'
             '- Mandatory next step: offer manager contact to add client to reserve/waitlist.\n'
             '- Ask one contact point (phone or email) and handoff to manager.'
         )
