@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit_omni_coupon" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.omni.coupon</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="omni_coupon_code" placeholder="Public Telegram coupon code"/>
+                <field name="omni_coupon_validated" readonly="1"/>
+                <field name="omni_coupon_discount_amount" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

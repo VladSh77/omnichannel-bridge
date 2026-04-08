@@ -22,6 +22,7 @@ class MailChannel(models.Model):
     omni_bot_pause_reason = fields.Char()
     omni_last_human_reply_at = fields.Datetime()
     omni_last_bot_reply_at = fields.Datetime()
+    omni_last_manager_activity_at = fields.Datetime()
     omni_legal_notice_sent_at = fields.Datetime()
     omni_reserve_lead_id = fields.Many2one('crm.lead', ondelete='set null')
     omni_reserve_requested_at = fields.Datetime()
@@ -131,10 +132,33 @@ class MailChannel(models.Model):
             if message.author_id == odoobot:
                 channel.sudo().write({'omni_last_bot_reply_at': fields.Datetime.now()})
             elif message.author_id and channel._omni_is_internal_author(message.author_id):
-                channel.sudo().write({'omni_last_human_reply_at': fields.Datetime.now()})
+                now = fields.Datetime.now()
+                vals = {
+                    'omni_last_human_reply_at': now,
+                    'omni_last_manager_activity_at': now,
+                }
+                # Final race semantics: manager reply in thread pauses bot session.
+                if channel.omni_provider:
+                    vals.update({
+                        'omni_bot_paused': True,
+                        'omni_bot_pause_reason': 'manager_session_active',
+                    })
+                channel.sudo().write(vals)
             channel._omni_handle_website_livechat_inbound(message)
             channel._omni_route_operator_reply_to_messenger(message)
         return message
+
+    def omni_manager_session_active_now(self):
+        self.ensure_one()
+        if not self.omni_last_manager_activity_at:
+            return False
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            timeout_min = int(icp.get_param('omnichannel_bridge.manager_session_timeout_minutes', '30'))
+        except ValueError:
+            timeout_min = 30
+        timeout_min = max(5, timeout_min)
+        return Datetime.now() < (self.omni_last_manager_activity_at + timedelta(minutes=timeout_min))
 
     def _omni_handle_website_livechat_inbound(self, message):
         self.ensure_one()
@@ -328,3 +352,28 @@ class MailChannel(models.Model):
                 })
             except Exception:
                 _logger.exception('Window reminder send failed for channel %s', ch.id)
+
+    @api.model
+    def omni_cron_purge_old_messages(self, limit=500):
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            retention_days = int(icp.get_param('omnichannel_bridge.retention_message_days', '180'))
+        except ValueError:
+            retention_days = 180
+        retention_days = max(7, retention_days)
+        cutoff = Datetime.now() - timedelta(days=retention_days)
+        omni_channels = self.sudo().search([('omni_provider', '!=', False)]).ids
+        if not omni_channels:
+            return
+        messages = self.env['mail.message'].sudo().search(
+            [
+                ('model', '=', 'discuss.channel'),
+                ('res_id', 'in', omni_channels),
+                ('create_date', '<', cutoff),
+                ('message_type', '=', 'comment'),
+            ],
+            order='id asc',
+            limit=max(1, int(limit)),
+        )
+        if messages:
+            messages.unlink()

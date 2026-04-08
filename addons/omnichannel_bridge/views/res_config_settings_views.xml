@@ -25,6 +25,9 @@
                         <setting string="SLA wait before bot reply (sec)" help="Typical value: 180 seconds. If manager replies before timeout, queued bot reply is cancelled.">
                             <field name="omnichannel_sla_no_human_seconds"/>
                         </setting>
+                        <setting string="Manager session lock timeout (minutes)" help="After manager message, bot remains paused in messenger threads for this duration.">
+                            <field name="omnichannel_manager_session_timeout_minutes"/>
+                        </setting>
                         <setting string="Manager hours start">
                             <field name="omnichannel_manager_hour_start"/>
                         </setting>
@@ -58,6 +61,15 @@
                         <setting string="Reminder text" invisible="not omnichannel_window_reminder_enabled">
                             <field name="omnichannel_window_reminder_text" placeholder="Підкажіть, будь ласка, чи встигли обрати програму табору?..."/>
                         </setting>
+                        <setting string="Retention: omni chat messages (days)">
+                            <field name="omnichannel_retention_message_days"/>
+                        </setting>
+                        <setting string="Retention: webhook events (days)">
+                            <field name="omnichannel_retention_webhook_days"/>
+                        </setting>
+                        <setting string="Mask PII in bridge logs">
+                            <field name="omnichannel_log_pii_masking"/>
+                        </setting>
                     </block>
                     <block title="CRM" name="omnichannel_block_crm">
                         <setting help="Creates a CRM lead when a brand-new messenger identity appears.">
@@ -73,6 +85,12 @@
                         </setting>
                         <setting string="Public coupon channel URL" help="Clients should open this public channel to copy current -5% code.">
                             <field name="omnichannel_coupon_public_channel_url"/>
+                        </setting>
+                        <setting string="Public coupon code" help="Current promo code published in Telegram channel.">
+                            <field name="omnichannel_coupon_public_code"/>
+                        </setting>
+                        <setting string="Coupon discount (%)" help="Applied only to camp lines on sale order.">
+                            <field name="omnichannel_coupon_discount_percent"/>
                         </setting>
                     </block>
                     <block title="Internal notifications" name="omnichannel_block_internal_notify">

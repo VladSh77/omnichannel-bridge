@@ -23,6 +23,13 @@ def _normalize_phone(phone):
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
+    _OMNI_STAGE_TRANSITIONS = {
+        'new': {'qualifying', 'handoff'},
+        'qualifying': {'proposal', 'handoff'},
+        'proposal': {'handoff', 'qualifying'},
+        'handoff': {'qualifying'},
+    }
+
     omni_identity_ids = fields.One2many(
         'omni.partner.identity',
         'partner_id',
@@ -64,6 +71,43 @@ class ResPartner(models.Model):
     omni_last_purchase_notify_at = fields.Datetime(string='Last purchase notify at')
     omni_last_purchase_notify_ref = fields.Char(string='Last purchase notify reference')
     omni_last_purchase_notify_amount = fields.Char(string='Last purchase notify amount')
+    omni_erased_at = fields.Datetime(string='Omni data erased at')
+
+    def omni_set_sales_stage(self, new_stage):
+        self.ensure_one()
+        old_stage = self.omni_sales_stage or 'new'
+        if old_stage == new_stage:
+            return old_stage, new_stage, False
+        allowed = self._OMNI_STAGE_TRANSITIONS.get(old_stage, set())
+        if new_stage not in allowed:
+            return old_stage, old_stage, False
+        self.sudo().write({'omni_sales_stage': new_stage})
+        return old_stage, new_stage, True
+
+    def action_omni_right_to_erasure(self):
+        """Anonymize omnichannel personal data while keeping accounting references."""
+        for partner in self.sudo():
+            anon_name = _('Removed Contact #%s') % partner.id
+            vals = {
+                'name': anon_name,
+                'phone': False,
+                'mobile': False,
+                'email': False,
+                'omni_addressing_vocative': False,
+                'omni_chat_memory': False,
+                'omni_child_age': False,
+                'omni_preferred_period': False,
+                'omni_departure_city': False,
+                'omni_budget_amount': False,
+                'omni_budget_currency': False,
+                'omni_erased_at': fields.Datetime.now(),
+            }
+            partner.write(vals)
+            partner.omni_identity_ids.sudo().write({
+                'display_name': 'erased',
+                'metadata_json': '{"erased": true}',
+            })
+        return True
 
     def _omni_find_by_phone(self, phone):
         needle = _normalize_phone(phone)

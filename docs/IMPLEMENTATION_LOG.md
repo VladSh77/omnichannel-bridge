@@ -1,5 +1,55 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-08 — Prod mapping audit + coupon E2E + FSM/race + retention
+
+### Scope
+
+- Performed read-only production audit for camp places mapping against real DB/custom addons.
+- Implemented public coupon E2E flow in Odoo sales (`sale.order`) with one-use-per-partner accounting.
+- Added FSM transition guard for chat sales stages and finalized manager-vs-bot race semantics.
+- Added retention/purge jobs and right-to-erasure action; added log PII masking.
+- Expanded contract regression checks and CI compile coverage.
+
+### Production Audit (Read-Only)
+
+- SSH host checked: `91.98.122.195`, db `campscout`, container `campscout_web`.
+- Confirmed runtime fields/models:
+  - `discuss.channel` (no `mail.channel`)
+  - `product.template.bs_event_id`, `bs_seats_available`
+  - `event.event.seats_available` with registration/sales impact.
+- Confirmed server code mapping:
+  - `campscout_management.get_camp_availability`
+  - `bs_campscout_addon` event/product seat logic.
+- Artifact:
+  - `docs/PROD_CAMP_MAPPING_AUDIT_2026-04-08.md`
+
+### Code Artifacts
+
+- Coupon E2E:
+  - `models/omni_coupon_redemption.py` (usage registry)
+  - `models/sale_order.py` (coupon validation/apply/redemption)
+  - `views/sale_order_views.xml` (order fields)
+  - `models/res_config_settings.py` + `views/res_config_settings_views.xml` (coupon code/% settings)
+- FSM + race semantics:
+  - `models/res_partner.py` (`_OMNI_STAGE_TRANSITIONS`, `omni_set_sales_stage`)
+  - `models/omni_ai.py` and `models/omni_sales_intel.py` switched to FSM-safe stage updates
+  - `models/mail_channel.py` manager-session lock fields/logic
+  - `models/omni_bridge.py` no-enqueue during active manager session
+- Compliance and retention:
+  - `models/res_partner.py` (`action_omni_right_to_erasure`)
+  - `models/mail_channel.py` (`omni_cron_purge_old_messages`)
+  - `models/omni_webhook_event.py` (`omni_cron_purge_old_events`)
+  - `models/omni_bridge.py` (`_omni_mask_pii_for_logs`)
+  - `data/omni_ai_job_cron.xml` (daily retention jobs)
+- CI/tests/docs:
+  - `tests/test_contract_regressions.py` expanded
+  - `.github/workflows/ci.yml` compiles `tests` too
+  - `docs/TZ_CHECKLIST.md` updated statuses
+
+### Notes
+
+- Production audit was read-only (no restart, no module upgrade, no write operations).
+
 ## 2026-04-08 — 24h Window Reminder Automation (Meta/WhatsApp)
 
 ### Scope

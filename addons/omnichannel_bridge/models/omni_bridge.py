@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import time
 
 import requests
@@ -14,6 +15,8 @@ from odoo.tools import html2plaintext
 from ..utils.webhook_parsers import extract_meta_mid, extract_telegram_update_id
 
 _logger = logging.getLogger(__name__)
+_EMAIL_LOG_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+_PHONE_LOG_RE = re.compile(r'\+?\d[\d\-\s\(\)]{7,}\d')
 
 META_GRAPH_VERSION = 'v21.0'
 
@@ -159,6 +162,14 @@ class OmniBridge(models.AbstractModel):
             # New inbound resets reminder cycle window.
             'omni_window_reminder_sent_at': False,
         })
+        # Manager session lock: do not race bot against active manager.
+        if channel.omni_bot_paused and channel.omni_bot_pause_reason == 'manager_session_active':
+            if channel.omni_manager_session_active_now():
+                return
+            channel.sudo().write({
+                'omni_bot_paused': False,
+                'omni_bot_pause_reason': False,
+            })
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(partner, text)
         delay = self.env['omni.ai'].sudo().omni_autoreply_delay_seconds_for_inbound()
         self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
@@ -430,6 +441,19 @@ class OmniBridge(models.AbstractModel):
             return resp
         return last_resp
 
+    def _omni_mask_pii_for_logs(self, text):
+        if not text:
+            return ''
+        icp = self.env['ir.config_parameter'].sudo()
+        enabled = str(icp.get_param('omnichannel_bridge.log_pii_masking', 'True')).lower() in (
+            '1', 'true', 'yes',
+        )
+        if not enabled:
+            return text
+        result = _EMAIL_LOG_RE.sub('[email]', str(text))
+        result = _PHONE_LOG_RE.sub('[phone]', result)
+        return result[:500]
+
     def _omni_telegram_send_message(self, chat_id, text):
         token = self._omni_telegram_token()
         if not token:
@@ -445,7 +469,11 @@ class OmniBridge(models.AbstractModel):
             _logger.exception('Telegram sendMessage failed after retries')
             return
         if not resp.ok:
-            _logger.error('Telegram sendMessage failed: %s %s', resp.status_code, resp.text)
+            _logger.error(
+                'Telegram sendMessage failed: %s %s',
+                resp.status_code,
+                self._omni_mask_pii_for_logs(resp.text),
+            )
 
     def _omni_meta_send_psid(self, psid, text):
         token, _ = self._omni_meta_credentials()
@@ -467,4 +495,8 @@ class OmniBridge(models.AbstractModel):
             _logger.exception('Meta send message failed after retries')
             return
         if not resp.ok:
-            _logger.error('Meta send message failed: %s %s', resp.status_code, resp.text)
+            _logger.error(
+                'Meta send message failed: %s %s',
+                resp.status_code,
+                self._omni_mask_pii_for_logs(resp.text),
+            )

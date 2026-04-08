@@ -24,6 +24,7 @@ jobs:
       - name: Compile module
         run: |
           python -m compileall addons/omnichannel_bridge
+          python -m compileall tests
 
       - name: Run tests
         run: |

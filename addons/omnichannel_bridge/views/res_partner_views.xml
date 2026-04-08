@@ -7,6 +7,11 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Omnichannel" name="omnichannel_page" groups="sales_team.group_sale_salesman">
+                    <group>
+                        <button name="action_omni_right_to_erasure" type="object" string="Right to Erasure (Anonymize)"
+                                class="btn-secondary"/>
+                        <field name="omni_erased_at" readonly="1"/>
+                    </group>
                     <group string="Звертання для бота">
                         <field name="omni_addressing_style"/>
                         <field name="omni_addressing_vocative" placeholder="Наприклад: Ольго"/>

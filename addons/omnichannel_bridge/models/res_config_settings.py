@@ -83,6 +83,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.sla_no_human_seconds',
         help='If no human manager reply appears in channel within this window, bot may reply.',
     )
+    omnichannel_manager_session_timeout_minutes = fields.Integer(
+        string='Manager session lock timeout (minutes)',
+        default=30,
+        config_parameter='omnichannel_bridge.manager_session_timeout_minutes',
+        help='After manager message bot stays paused for this window in messenger channels.',
+    )
     omnichannel_llm_enabled = fields.Boolean(
         string='Enable LLM autoreplies',
         config_parameter='omnichannel_bridge.llm_enabled',
@@ -179,6 +185,15 @@ class ResConfigSettings(models.TransientModel):
         default='https://t.me/campscouting',
         help='Clients open this public Telegram channel and take the current promo code from pinned/latest post.',
     )
+    omnichannel_coupon_public_code = fields.Char(
+        string='Public coupon code (from Telegram channel)',
+        config_parameter='omnichannel_bridge.coupon_public_code',
+    )
+    omnichannel_coupon_discount_percent = fields.Float(
+        string='Public coupon discount percent',
+        config_parameter='omnichannel_bridge.coupon_discount_percent',
+        default=5.0,
+    )
 
     # --- Bot kill switch via Telegram ---
     omnichannel_admin_tg_user_ids = fields.Char(
@@ -230,4 +245,19 @@ class ResConfigSettings(models.TransientModel):
     omnichannel_window_reminder_text = fields.Text(
         string='24h reminder text',
         config_parameter='omnichannel_bridge.window_reminder_text',
+    )
+    omnichannel_retention_message_days = fields.Integer(
+        string='Retention: omni chat messages (days)',
+        config_parameter='omnichannel_bridge.retention_message_days',
+        default=180,
+    )
+    omnichannel_retention_webhook_days = fields.Integer(
+        string='Retention: webhook event records (days)',
+        config_parameter='omnichannel_bridge.retention_webhook_days',
+        default=30,
+    )
+    omnichannel_log_pii_masking = fields.Boolean(
+        string='Mask emails/phones in bridge logs',
+        config_parameter='omnichannel_bridge.log_pii_masking',
+        default=True,
     )

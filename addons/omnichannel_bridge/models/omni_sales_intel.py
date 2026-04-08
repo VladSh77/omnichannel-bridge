@@ -204,16 +204,15 @@ class OmniSalesIntel(models.AbstractModel):
         if not partner:
             return
         partner = partner.sudo()
-        old_stage = partner.omni_sales_stage
-        if old_stage == 'handoff':
+        old_stage, new_stage, changed = partner.omni_set_sales_stage('handoff')
+        if not changed:
             return
-        partner.write({'omni_sales_stage': 'handoff'})
         if channel:
             self.env['omni.notify'].sudo().notify_stage_change(
                 channel=channel,
                 partner=partner,
                 old_stage=old_stage,
-                new_stage='handoff',
+                new_stage=new_stage,
                 reason=reason or 'purchase_intent',
             )
 

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import hashlib
 import json
+from datetime import timedelta
 
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.fields import Datetime
 
 
 class OmniWebhookEvent(models.Model):
@@ -53,3 +55,20 @@ class OmniWebhookEvent(models.Model):
         else:
             raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode('utf-8')
         return hashlib.sha256(raw).hexdigest()
+
+    @api.model
+    def omni_cron_purge_old_events(self, limit=2000):
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            retention_days = int(icp.get_param('omnichannel_bridge.retention_webhook_days', '30'))
+        except ValueError:
+            retention_days = 30
+        retention_days = max(3, retention_days)
+        cutoff = Datetime.now() - timedelta(days=retention_days)
+        old_rows = self.sudo().search(
+            [('received_at', '<', cutoff)],
+            order='id asc',
+            limit=max(1, int(limit)),
+        )
+        if old_rows:
+            old_rows.unlink()

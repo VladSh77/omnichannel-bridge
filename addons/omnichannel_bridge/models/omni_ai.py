@@ -604,16 +604,15 @@ class OmniAi(models.AbstractModel):
         if not partner or not new_stage:
             return
         partner = partner.sudo()
-        old_stage = partner.omni_sales_stage
-        if old_stage == new_stage:
+        old_stage, final_stage, changed = partner.omni_set_sales_stage(new_stage)
+        if not changed:
             return
-        partner.write({'omni_sales_stage': new_stage})
         if channel:
             self.env['omni.notify'].sudo().notify_stage_change(
                 channel=channel,
                 partner=partner,
                 old_stage=old_stage,
-                new_stage=new_stage,
+                new_stage=final_stage,
                 reason=reason,
             )
 

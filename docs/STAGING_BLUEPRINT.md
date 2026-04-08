@@ -82,3 +82,17 @@ Create a staging environment with production-like behavior for safe validation o
 ## Rollout Rule
 
 No production deploy is allowed until staging checklist passes and is recorded in implementation log.
+
+## Production Parity Snapshot (2026-04-08)
+
+Observed on production host `91.98.122.195`:
+
+- Custom addons root:
+  - `/opt/campscout/custom-addons/campscout_management`
+  - `/opt/campscout/custom-addons/odoo_chatwoot_connector`
+  - `/opt/campscout/custom-addons/omnichannel_bridge`
+  - `/opt/campscout/custom-addons/zadarma_odoo`
+- Additional addon path used by business logic:
+  - `/opt/campscout/addons/bs_campscout_addon`
+
+Staging parity target is this exact addon set and compatible module versions.
