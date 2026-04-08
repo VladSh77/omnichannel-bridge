@@ -604,7 +604,12 @@ class OmniAi(models.AbstractModel):
         if not partner or not new_stage:
             return
         partner = partner.sudo()
-        old_stage, final_stage, changed = partner.omni_set_sales_stage(new_stage)
+        old_stage, final_stage, changed = partner.omni_set_sales_stage(
+            new_stage,
+            channel=channel,
+            reason=reason or '',
+            source='omni_ai',
+        )
         if not changed:
             return
         if channel:

@@ -72,8 +72,10 @@ class ResPartner(models.Model):
     omni_last_purchase_notify_ref = fields.Char(string='Last purchase notify reference')
     omni_last_purchase_notify_amount = fields.Char(string='Last purchase notify amount')
     omni_erased_at = fields.Datetime(string='Omni data erased at')
+    omni_last_stage_change_at = fields.Datetime(string='Last stage change at')
+    omni_last_stage_change_reason = fields.Char(string='Last stage change reason')
 
-    def omni_set_sales_stage(self, new_stage):
+    def omni_set_sales_stage(self, new_stage, channel=None, reason='', source=''):
         self.ensure_one()
         old_stage = self.omni_sales_stage or 'new'
         if old_stage == new_stage:
@@ -81,7 +83,19 @@ class ResPartner(models.Model):
         allowed = self._OMNI_STAGE_TRANSITIONS.get(old_stage, set())
         if new_stage not in allowed:
             return old_stage, old_stage, False
-        self.sudo().write({'omni_sales_stage': new_stage})
+        self.sudo().write({
+            'omni_sales_stage': new_stage,
+            'omni_last_stage_change_at': fields.Datetime.now(),
+            'omni_last_stage_change_reason': reason or False,
+        })
+        self.env['omni.stage.event'].sudo().create({
+            'partner_id': self.id,
+            'channel_id': channel.id if channel else False,
+            'old_stage': old_stage,
+            'new_stage': new_stage,
+            'reason': reason or '',
+            'source': source or '',
+        })
         return old_stage, new_stage, True
 
     def action_omni_right_to_erasure(self):

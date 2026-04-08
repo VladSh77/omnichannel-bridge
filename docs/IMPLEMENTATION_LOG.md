@@ -1,5 +1,30 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-08 — FSM v2: stage transition events and unified writes
+
+### Scope
+
+- Added transition event log model for sales stage changes.
+- Unified stage writes through `res.partner.omni_set_sales_stage(...)` with reason/source metadata.
+- Removed remaining direct `omni_sales_stage` writes in livechat flow.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_stage_event.py` (new)
+- `addons/omnichannel_bridge/models/res_partner.py`
+  - `omni_last_stage_change_at`, `omni_last_stage_change_reason`
+  - `omni_set_sales_stage(new_stage, channel=None, reason='', source='')`
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+### Notes
+
+- FSM transition telemetry is now persisted in `omni.stage.event`.
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

@@ -320,14 +320,18 @@ class MailChannel(models.Model):
             })
             if author:
                 author = author.sudo()
-                old_stage = author.omni_sales_stage
-                if old_stage != 'handoff':
-                    author.write({'omni_sales_stage': 'handoff'})
+                old_stage, new_stage, changed = author.omni_set_sales_stage(
+                    'handoff',
+                    channel=self.sudo(),
+                    reason='client_requested_human_livechat',
+                    source='mail_channel',
+                )
+                if changed:
                     self.env['omni.notify'].sudo().notify_stage_change(
                         channel=self.sudo(),
                         partner=author,
                         old_stage=old_stage,
-                        new_stage='handoff',
+                        new_stage=new_stage,
                         reason='client_requested_human_livechat',
                     )
             self.with_context(omni_skip_livechat_inbound=True).message_post(

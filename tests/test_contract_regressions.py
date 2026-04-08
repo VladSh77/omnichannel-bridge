@@ -46,6 +46,8 @@ class ContractRegressionTests(unittest.TestCase):
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
         self.assertIn('_OMNI_STAGE_TRANSITIONS', partner)
         self.assertIn('omni_set_sales_stage', partner)
+        self.assertIn('omni.stage.event', partner)
+        self.assertTrue((ROOT / 'addons/omnichannel_bridge/models/omni_stage_event.py').exists())
         self.assertIn('manager_session_active', channel)
         self.assertIn('omni_manager_session_active_now', channel)
 
