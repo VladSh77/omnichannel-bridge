@@ -45,6 +45,7 @@ class MailChannel(models.Model):
     omni_livechat_entry_state = fields.Selection(
         selection=[
             ('new', 'New'),
+            ('awaiting_name', 'Awaiting name'),
             ('awaiting_contact', 'Awaiting contact'),
             ('ready', 'Ready'),
         ],
@@ -178,6 +179,11 @@ class MailChannel(models.Model):
             'Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
         )
 
+    def _omni_livechat_name_prompt_text_lang(self, is_pl=False):
+        if is_pl:
+            return 'Na start napisz proszę, jak mamy się do Ciebie zwracać (imię).'
+        return 'Для початку підкажіть, будь ласка, як до вас звертатися (імʼя).'
+
     def _omni_livechat_contact_invalid_text(self, is_pl=False):
         if is_pl:
             return (
@@ -205,6 +211,22 @@ class MailChannel(models.Model):
         email = Partner.omni_parse_email(text or '')
         phone = Partner.omni_parse_phone(text or '')
         return email, phone
+
+    def _omni_extract_name_from_text(self, text):
+        txt = re.sub(r'\s+', ' ', (text or '').strip())
+        if not txt:
+            return ''
+        if any(ch.isdigit() for ch in txt):
+            return ''
+        if '@' in txt:
+            return ''
+        if len(txt) > 60:
+            return ''
+        bad = ('ціна', 'табір', 'camp', 'kontakt', 'phone', 'email')
+        lowered = txt.lower()
+        if any(k in lowered for k in bad):
+            return ''
+        return txt[:60]
 
     def _omni_is_visitor_name(self, name):
         txt = (name or '').strip().lower()
@@ -244,6 +266,16 @@ class MailChannel(models.Model):
         manager_hours_now = self.env['omni.ai'].sudo()._omni_manager_hours_active_now()
         if state == 'new':
             vals = {'omni_livechat_entry_topic': topic}
+            if self._omni_is_visitor_name(author.name):
+                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                    body=self._omni_livechat_name_prompt_text_lang(is_pl=is_pl),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                    author_id=odoobot.id,
+                )
+                vals['omni_livechat_entry_state'] = 'awaiting_name'
+                self.sudo().write(vals)
+                return True
             # Off-hours policy: before long bot dialog we require at least one contact point.
             if not manager_hours_now and not has_contact:
                 self.with_context(omni_skip_livechat_inbound=True).message_post(
@@ -285,6 +317,32 @@ class MailChannel(models.Model):
             vals['omni_livechat_contact_attempts'] = 0
             self.sudo().write(vals)
             return False
+        if state == 'awaiting_name':
+            guessed_name = self._omni_extract_name_from_text(body)
+            if guessed_name:
+                author.write({'name': guessed_name})
+                self._omni_refresh_livechat_channel_label(author)
+                if not has_contact:
+                    self.with_context(omni_skip_livechat_inbound=True).message_post(
+                        body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_comment',
+                        author_id=odoobot.id,
+                    )
+                    self.sudo().write({
+                        'omni_livechat_entry_state': 'awaiting_contact',
+                        'omni_livechat_contact_attempts': 0,
+                    })
+                    return True
+                self.sudo().write({'omni_livechat_entry_state': 'ready'})
+                return False
+            self.with_context(omni_skip_livechat_inbound=True).message_post(
+                body=self._omni_livechat_name_prompt_text_lang(is_pl=is_pl),
+                message_type='comment',
+                subtype_xmlid='mail.mt_comment',
+                author_id=odoobot.id,
+            )
+            return True
         if state == 'awaiting_contact':
             if email or phone or author.email or author.phone or author.mobile:
                 upd = {}

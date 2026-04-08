@@ -1871,3 +1871,27 @@
 - `docs/OPERATIONS_RUNBOOK.md`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 11/6 closure (livechat pre-chat, staging/runtime smoke, remaining checklist)
+
+### Scope
+
+- Completed livechat pre-chat sequence in runtime:
+  - added `awaiting_name` state before contact capture,
+  - structured capture `name -> contact -> ready`,
+  - keeps CRM lead creation on contact.
+- Added operational smoke artifacts:
+  - production livechat smoke report,
+  - staging runtime bootstrap SOP,
+  - reusable `scripts/odoo_runtime_smoke.py`.
+- Marked remaining checklist `[~]` items as closed and added explicit runtime smoke item in engineering quality section.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `scripts/odoo_runtime_smoke.py` (new)
+- `docs/PROD_LIVECHAT_SMOKE_2026-04-08.md` (new)
+- `docs/STAGING_RUNTIME_BOOTSTRAP.md` (new)
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

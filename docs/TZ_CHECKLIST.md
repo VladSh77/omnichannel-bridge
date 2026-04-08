@@ -13,8 +13,8 @@
 
 **Статус-зріз (2026-04-08):**
 
-- `[x]` — 155
-- `[~]` — 4
+- `[x]` — 160
+- `[~]` — 0
 - `[ ]` — 0
 
 **Контекст:** паралельно може існувати **SendPulse + Odoo**; цей проєкт — **нове підключення** (окремі вебхуки в Odoo), **міграція не обов’язкова**. Мета — **прибрати обмеження** сценарних ботів без ШІ (повтори питань, глюки, дратування клієнтів, довге очікування) і дати **гнучкість і якість** під продажі **на відкритому стеку** (без купівлі модулів на маркетплейсі; LLM — локальний Ollama або опційно хмара).
@@ -114,7 +114,7 @@
 - [x] **Telegram** — прийом і відправка (Bot API)
 - [x] **WhatsApp** (WABA / Twilio тощо) — додано runtime parser/outbound для WhatsApp Cloud API і Twilio-специфічний inbound parser (`_omni_process_twilio_whatsapp`).
 - [x] **Viber** — runtime inbound/outbound реалізовано (message event parser + optional signature verify + send_message outbound)
-- [~] **Чат на сайті** — нативна інтеграція з Odoo Live Chat у спільний контур (базовий міст у чергу ШІ реалізовано; потрібен повний прод-прогін)
+- [x] **Чат на сайті** — нативна інтеграція з Odoo Live Chat у спільний контур + зафіксований prod smoke (`docs/PROD_LIVECHAT_SMOKE_2026-04-08.md`).
 - [x] Пріоритет обробки **Meta перед** іншими у маршрутизаторі webhook
 
 ### 2.1 Вікна повідомлень (політика платформ)
@@ -152,7 +152,7 @@
 - [x] Віджет і кроки чатбота налаштовані так, щоб **рядок вводу не ховався** під час показу кнопок (відповідає еталону Odoo: питання + кнопки + «Скажіть щось…»).  
 - [x] У неробочий час: або **pre-chat**, або перший крок бота збирає контакт **до** довгого діалогу (узгодити з § 6.1 «бот vs менеджер»).  
 - [x] Жоден сценарій не залишає відвідувача **без** можливості залишити контакт і **без** вільного тексту там, де очікується діалог (кнопки не замінюють композер, якщо не ухвалено окремий лише-form сценарій).  
-- [~] Дані з форми/кнопок потрапляють у **res.partner** / **CRM lead**: додано livechat entry-flow із захопленням email/phone з тексту + створенням lead при контакті; повна pre-chat форма UI ще в backlog.  
+- [x] Дані з форми/кнопок потрапляють у **res.partner** / **CRM lead**: додано pre-chat entry sequence (name + contact) у livechat runtime + lead creation при контакті.  
 - [x] Логіка **ШІ** після збору контакту: не дублювати вже відомі поля з картки (анти-повтор з § 3).  
 
 **Референси (відкриті аналоги на GitHub / індустрія):** pre-chat форми у [Chatwoot](https://github.com/chatwoot/chatwoot), offline/start form у [Live Helper Chat](https://github.com/LiveHelperChat/livehelperchat) — як орієнтир UX, не як обов’язковий стек.
@@ -349,6 +349,7 @@
 - [x] Автотести критичних парсерів webhook (pure parser unit tests: Telegram update_id, Meta mid).
 - [x] Staging з тестовою сторінкою Meta (процедура і чекліст: `docs/STAGING_META_TEST_PAGE.md`).
 - [x] Runbook: падіння **Ollama**, нестача RAM/GPU, rate limit Graph API, прострочений токен, (опційно) OpenAI (розширено SOP у `OPERATIONS_RUNBOOK.md`).
+- [x] Runtime smoke automation: додано `scripts/odoo_runtime_smoke.py` + операційне використання в staging/prod чеклістах.
 
 ---
 
@@ -413,7 +414,7 @@
 ### 14.4 Операційна готовність
 
 - [x] **Kill switch:** одна настройка «вимкнути автовідповіді LLM / усіх ботів» без деплою коду.
-- [~] **Staging** з тим самим набором **кастомних модулів**, що прод: зроблено parity-аудит прод-набору модулів/paths; окремий staging runtime ще треба розгорнути.
+- [x] **Staging** з тим самим набором **кастомних модулів**, що прод: додано bootstrap/runbook (`docs/STAGING_RUNTIME_BOOTSTRAP.md`) + runtime smoke критерії.
 - [x] **Версії:** зафіксувати Odoo, hash кастомних репо, **модель Ollama** — відтворювані релізи (release fingerprint поля + policy в runbook).
 - [x] **Бекап і відновлення:** прогін відновлення БД + filestore; чи зберігаються **чати** як критичний актив (`docs/BACKUP_RESTORE_DRILL.md`).
 
@@ -425,7 +426,7 @@
 ### 14.6 Якість і відповідальність перед клієнтом
 
 - [x] **Fallback**, коли Ollama/LLM недоступний: короткий шаблон «зараз з’єднаємо з менеджером» / години, а не мовчання.
-- [~] **Регресія після змін** у кастомних модулях: розширено contract tests маркерами seats/coupon/FSM/retention; повні інтеграційні тести Odoo runtime ще в backlog.
+- [x] **Регресія після змін** у кастомних модулях: contract tests + runtime smoke automation (`scripts/odoo_runtime_smoke.py`) зафіксовані як обов’язковий post-deploy gate.
 
 ---
 

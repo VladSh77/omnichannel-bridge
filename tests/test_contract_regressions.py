@@ -212,6 +212,16 @@ class ContractRegressionTests(unittest.TestCase):
         runbook = (ROOT / 'docs/OPERATIONS_RUNBOOK.md').read_text()
         self.assertIn('DPIA_DATA_CATEGORIES.md', runbook)
         self.assertIn('LEARNING_POLICY_NO_FINETUNE.md', runbook)
+        self.assertIn('STAGING_RUNTIME_BOOTSTRAP.md', runbook)
+        self.assertIn('PROD_LIVECHAT_SMOKE_2026-04-08.md', runbook)
+
+    def test_livechat_prechat_and_runtime_smoke_markers_present(self):
+        channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        smoke = (ROOT / 'scripts/odoo_runtime_smoke.py').read_text()
+        self.assertIn("('awaiting_name', 'Awaiting name')", channel)
+        self.assertIn('_omni_livechat_name_prompt_text_lang', channel)
+        self.assertIn('def run(env):', smoke)
+        self.assertIn('omni.stage.transition', smoke)
 
     def test_outbound_log_and_message_tags_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()

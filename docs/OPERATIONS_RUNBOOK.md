@@ -61,6 +61,7 @@
 - Baseline load criteria documented in `docs/LOAD_CRITERIA.md`.
 - Pre-go-live manual scenarios on production DB copy documented in `docs/PROD_COPY_MANUAL_SCENARIOS.md`.
 - Staging Meta test checklist documented in `docs/STAGING_META_TEST_PAGE.md`.
+- Staging runtime bootstrap documented in `docs/STAGING_RUNTIME_BOOTSTRAP.md`.
 - Backup/restore drill procedure documented in `docs/BACKUP_RESTORE_DRILL.md`.
 - Secret encryption baseline policy documented in `docs/SECRET_ENCRYPTION_POLICY.md`.
 - Child-sensitive retention policy documented in `docs/CHILD_DATA_RETENTION_POLICY.md`.
@@ -164,3 +165,4 @@ Use this checklist on production right before client-facing bot tests.
 
 6. Rollback trigger
 - If any P1/P2 symptom appears, disable bot (`llm_enabled=False`) and keep livechat human-only until fix.
+- Last production smoke reference: `docs/PROD_LIVECHAT_SMOKE_2026-04-08.md`.
