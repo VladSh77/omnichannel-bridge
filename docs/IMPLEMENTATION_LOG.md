@@ -725,3 +725,24 @@
 
 - Channel mapping uses the latest omnichannel thread for partner/commercial partner.
 - This closes event-level visibility; payment.transaction-specific hooks can be added later if needed.
+
+## 2026-04-07 — Confirmed purchase from payment/accounting layers
+
+### Scope
+
+- Extended confirmed-purchase event triggers beyond `sale.order` to payment and accounting events.
+- Added hooks for:
+  - `payment.transaction` state transitions to `authorized/done`,
+  - `account.move` customer invoices transitions to `in_payment/paid`.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/payment_transaction.py`
+- `addons/omnichannel_bridge/models/account_move.py`
+- `addons/omnichannel_bridge/models/omni_notify.py` (`notify_purchase_confirmed` generic reference/amount args)
+- `addons/omnichannel_bridge/models/__init__.py`
+
+### Notes
+
+- This improves factual coverage of purchase confirmation signals in internal Telegram.
+- De-duplication/reconciliation fine-tuning across `sale.order` + payments + invoices remains an optimization step.

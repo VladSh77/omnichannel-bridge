@@ -139,27 +139,35 @@ class OmniNotify(models.AbstractModel):
         self._send(text, parse_mode='Markdown', priority=True)
 
     @api.model
-    def notify_purchase_confirmed(self, partner, order=None, source='sale_order'):
+    def notify_purchase_confirmed(
+        self,
+        partner,
+        order=None,
+        source='sale_order',
+        order_ref='',
+        amount_line='',
+    ):
         if not partner:
             return
         partner = partner.sudo()
         channel = self._find_channel_for_partner(partner)
         if not channel:
             return
-        amount_line = '—'
+        amount = amount_line or '—'
+        ref = order_ref or '—'
         if order:
             currency = (order.currency_id.name or '').strip() if hasattr(order, 'currency_id') else ''
-            amount = getattr(order, 'amount_total', 0.0) or 0.0
-            amount_line = '%s %s' % (amount, currency)
-        order_ref = (order.name or '—') if order else '—'
+            total = getattr(order, 'amount_total', 0.0) or 0.0
+            amount = '%s %s' % (total, currency)
+            ref = order.name or ref
         text = self._event_summary_text(
             event='purchase_confirmed',
             channel=channel,
             partner=partner,
             lines=[
                 '✅ Підтверджене замовлення/оплата',
-                '🧾 %s' % self._escape(order_ref),
-                '💳 %s' % self._escape(amount_line.strip()),
+                '🧾 %s' % self._escape(ref),
+                '💳 %s' % self._escape(str(amount).strip()),
                 '🔎 %s' % self._escape(source),
             ],
             priority=True,

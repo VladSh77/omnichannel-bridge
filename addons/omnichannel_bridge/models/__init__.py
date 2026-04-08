@@ -16,3 +16,5 @@ from . import omni_ai_job
 from . import omni_notify
 from . import res_config_settings
 from . import sale_order
+from . import payment_transaction
+from . import account_move
