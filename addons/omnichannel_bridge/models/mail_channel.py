@@ -172,7 +172,17 @@ class MailChannel(models.Model):
                 'omni_bot_pause_reason': 'client_requested_human',
             })
             if author:
-                author.sudo().write({'omni_sales_stage': 'handoff'})
+                author = author.sudo()
+                old_stage = author.omni_sales_stage
+                if old_stage != 'handoff':
+                    author.write({'omni_sales_stage': 'handoff'})
+                    self.env['omni.notify'].sudo().notify_stage_change(
+                        channel=self.sudo(),
+                        partner=author,
+                        old_stage=old_stage,
+                        new_stage='handoff',
+                        reason='client_requested_human_livechat',
+                    )
             self.with_context(omni_skip_livechat_inbound=True).message_post(
                 body=_('Передаю діалог менеджеру. Будь ласка, зачекайте трохи.'),
                 message_type='comment',

@@ -658,3 +658,26 @@
 ### Notes
 
 - If priority chat is empty, priority events stay in main internal chat but are clearly prefixed with `PRIORITY`.
+
+## 2026-04-07 — Unified internal event summary + stage-change notify
+
+### Scope
+
+- Unified internal Telegram message format across events: new thread, escalation, problematic, stage change.
+- Added `notify_stage_change(...)` and wired stage transitions in AI/livechat flows.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_notify.py`
+  - `_event_summary_text(...)`
+  - `notify_stage_change(...)`
+  - `notify_new_thread/notify_escalation/notify_problematic` switched to shared formatter
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `_omni_set_sales_stage(...)` helper with automatic `notify_stage_change`
+  - stage writes routed through helper in sensitive/out-of-scope/fallback/manager-request/profile progression
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - livechat human-request handoff now emits stage-change notification
+
+### Notes
+
+- Priority routing behavior from previous step is preserved.

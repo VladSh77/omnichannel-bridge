@@ -45,19 +45,16 @@ class OmniNotify(models.AbstractModel):
         if partner:
             partner = partner.sudo()
         provider_label = self._provider_label(provider)
-        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
         phone = (partner.phone or partner.mobile or '—') if partner else '—'
-        text = (
-            '🆕 *Новий тред* — %(provider)s\n'
-            '👤 %(name)s\n'
-            '📞 %(phone)s\n'
-            '🔗 %(url)s'
-        ) % {
-            'provider': provider_label,
-            'name': self._escape(name),
-            'phone': self._escape(phone),
-            'url': self._channel_url(channel),
-        }
+        text = self._event_summary_text(
+            event='new_thread',
+            channel=channel,
+            partner=partner,
+            provider_label=provider_label,
+            lines=[
+                '📞 %s' % self._escape(phone),
+            ],
+        )
         self._send(text, parse_mode='Markdown')
 
     @api.model
@@ -69,23 +66,17 @@ class OmniNotify(models.AbstractModel):
             channel = channel.sudo()
         if partner:
             partner = partner.sudo()
-        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
-        packet = self._handoff_packet(partner)
         is_priority = self._is_priority_reason(reason)
-        title = '🚨 *PRIORITY*\\n🔺 *Ескалація* — потрібен менеджер' if is_priority else '🔺 *Ескалація* — потрібен менеджер'
-        text = (
-            '%(title)s\n'
-            '👤 %(name)s\n'
-            '💬 %(reason)s\n'
-            '🧾 %(packet)s\n'
-            '🔗 %(url)s'
-        ) % {
-            'title': title,
-            'name': self._escape(name),
-            'reason': self._escape(reason or _('клієнт запитав менеджера')),
-            'packet': self._escape(packet),
-            'url': self._channel_url(channel),
-        }
+        text = self._event_summary_text(
+            event='escalation',
+            channel=channel,
+            partner=partner,
+            lines=[
+                '💬 %s' % self._escape(reason or _('клієнт запитав менеджера')),
+                '🧾 %s' % self._escape(self._handoff_packet(partner)),
+            ],
+            priority=is_priority,
+        )
         self._send(text, parse_mode='Markdown', priority=is_priority)
 
     @api.model
@@ -97,19 +88,34 @@ class OmniNotify(models.AbstractModel):
             channel = channel.sudo()
         if partner:
             partner = partner.sudo()
-        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
-        text = (
-            '🚨 *PRIORITY*\n'
-            '⚠️ *Проблемний тред*\n'
-            '👤 %(name)s\n'
-            '📝 %(note)s\n'
-            '🔗 %(url)s'
-        ) % {
-            'name': self._escape(name),
-            'note': self._escape(note or '—'),
-            'url': self._channel_url(channel),
-        }
+        text = self._event_summary_text(
+            event='problematic',
+            channel=channel,
+            partner=partner,
+            lines=['📝 %s' % self._escape(note or '—')],
+            priority=True,
+        )
         self._send(text, parse_mode='Markdown', priority=True)
+
+    @api.model
+    def notify_stage_change(self, channel, partner, old_stage, new_stage, reason=''):
+        if not channel or not partner or old_stage == new_stage:
+            return
+        channel = channel.sudo()
+        partner = partner.sudo()
+        stage_labels = dict(partner._fields['omni_sales_stage'].selection)
+        old_lbl = stage_labels.get(old_stage, old_stage or '—')
+        new_lbl = stage_labels.get(new_stage, new_stage or '—')
+        text = self._event_summary_text(
+            event='stage_change',
+            channel=channel,
+            partner=partner,
+            lines=[
+                '📈 %s → %s' % (self._escape(old_lbl), self._escape(new_lbl)),
+                '💬 %s' % self._escape(reason or 'auto'),
+            ],
+        )
+        self._send(text, parse_mode='Markdown')
 
     # ------------------------------------------------------------------
     # Внутрішнє
@@ -164,6 +170,27 @@ class OmniNotify(models.AbstractModel):
             'дитин', 'безпек', 'safety', 'medical', 'юрид', 'legal',
         )
         return any(k in txt for k in keys)
+
+    def _event_summary_text(self, event, channel, partner, lines=None, priority=False, provider_label=''):
+        lines = list(lines or [])
+        title_map = {
+            'new_thread': '🆕 *Новий тред*',
+            'escalation': '🔺 *Ескалація*',
+            'problematic': '⚠️ *Проблемний тред*',
+            'stage_change': '🧭 *Зміна етапу*',
+        }
+        title = title_map.get(event, 'ℹ️ *Подія*')
+        if provider_label:
+            title = '%s — %s' % (title, self._escape(provider_label))
+        prefix = '🚨 *PRIORITY*\\n' if priority else ''
+        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
+        body = [
+            '%s%s' % (prefix, title),
+            '👤 %s' % self._escape(name),
+        ]
+        body.extend(lines)
+        body.append('🔗 %s' % self._channel_url(channel))
+        return '\n'.join(body)
 
     def _flag_enabled(self, key):
         val = self.env['ir.config_parameter'].sudo().get_param(key, 'False')

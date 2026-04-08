@@ -167,8 +167,7 @@ class OmniAi(models.AbstractModel):
         normalized = (text or '').strip()
         if self._omni_is_sensitive_message(normalized):
             self._omni_send_sensitive_escalation_reply(channel, normalized)
-            if partner:
-                partner.sudo().write({'omni_sales_stage': 'handoff'})
+            self._omni_set_sales_stage(partner, 'handoff', channel, 'sensitive_topic')
             self.env['omni.notify'].sudo().notify_escalation(
                 channel=channel,
                 partner=partner,
@@ -177,8 +176,7 @@ class OmniAi(models.AbstractModel):
             return
         if not self._omni_is_camp_scope_message(normalized):
             self._omni_send_out_of_scope_reply(channel)
-            if partner:
-                partner.sudo().write({'omni_sales_stage': 'handoff'})
+            self._omni_set_sales_stage(partner, 'handoff', channel, 'out_of_scope')
             self.env['omni.notify'].sudo().notify_escalation(
                 channel=channel,
                 partner=partner,
@@ -235,7 +233,7 @@ class OmniAi(models.AbstractModel):
             subtype_xmlid='mail.mt_comment',
             author_id=self.env.ref('base.partner_root').id,
         )
-        self._omni_update_sales_stage_after_reply(partner)
+        self._omni_update_sales_stage_after_reply(partner, channel=channel)
         self._omni_route_manager_mention_if_needed(channel, partner, text, reply)
 
     def _omni_send_fallback(self, channel, partner, icp):
@@ -264,8 +262,7 @@ class OmniAi(models.AbstractModel):
             partner=partner,
             reason='⚙️ LLM недоступний — надіслано fallback повідомлення клієнту',
         )
-        if partner:
-            partner.sudo().write({'omni_sales_stage': 'handoff'})
+        self._omni_set_sales_stage(partner, 'handoff', channel, 'llm_fallback')
 
     def _omni_send_out_of_scope_reply(self, channel):
         channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
@@ -505,24 +502,40 @@ class OmniAi(models.AbstractModel):
     def _omni_route_manager_mention_if_needed(self, channel, partner, user_text, bot_reply):
         lowered = (user_text or '').lower()
         if any(k in lowered for k in ('менеджер', 'manager', 'людина', 'human')):
-            if partner:
-                partner.sudo().write({'omni_sales_stage': 'handoff'})
+            self._omni_set_sales_stage(partner, 'handoff', channel, 'client_requested_human')
             channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                 body='[auto] Client asked for a human — assign in Discuss / CRM.',
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
             )
 
-    def _omni_update_sales_stage_after_reply(self, partner):
+    def _omni_update_sales_stage_after_reply(self, partner, channel=None):
         if not partner:
             return
         partner = partner.sudo()
         if partner.omni_sales_stage in ('handoff', 'proposal'):
             return
         if partner.omni_child_age and partner.omni_preferred_period:
-            partner.write({'omni_sales_stage': 'proposal'})
+            self._omni_set_sales_stage(partner, 'proposal', channel, 'profile_ready')
         elif partner.omni_sales_stage == 'new':
-            partner.write({'omni_sales_stage': 'qualifying'})
+            self._omni_set_sales_stage(partner, 'qualifying', channel, 'first_qualification_step')
+
+    def _omni_set_sales_stage(self, partner, new_stage, channel=None, reason=''):
+        if not partner or not new_stage:
+            return
+        partner = partner.sudo()
+        old_stage = partner.omni_sales_stage
+        if old_stage == new_stage:
+            return
+        partner.write({'omni_sales_stage': new_stage})
+        if channel:
+            self.env['omni.notify'].sudo().notify_stage_change(
+                channel=channel,
+                partner=partner,
+                old_stage=old_stage,
+                new_stage=new_stage,
+                reason=reason,
+            )
 
     def _omni_append_next_question(self, reply, partner, user_text):
         base = (reply or '').strip()
