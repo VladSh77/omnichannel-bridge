@@ -23,9 +23,14 @@ class ContractRegressionTests(unittest.TestCase):
 
     def test_coupon_e2e_markers_present(self):
         content = (ROOT / 'addons/omnichannel_bridge/models/sale_order.py').read_text()
+        promo = (ROOT / 'addons/omnichannel_bridge/models/omni_promo.py').read_text()
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
         self.assertIn('omni_coupon_code', content)
         self.assertIn('_omni_apply_public_coupon', content)
         self.assertIn('_omni_register_coupon_redemption', content)
+        self.assertIn('_omni_coupon_allowed_categories', content)
+        self.assertIn('coupon_allowed_categ_ids', settings)
+        self.assertIn('omni_find_active_by_code', promo)
         self.assertTrue((ROOT / 'addons/omnichannel_bridge/models/omni_coupon_redemption.py').exists())
 
     def test_whatsapp_runtime_markers_present(self):
@@ -51,10 +56,13 @@ class ContractRegressionTests(unittest.TestCase):
     def test_fsm_and_race_markers_present(self):
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        memory = (ROOT / 'addons/omnichannel_bridge/models/omni_memory.py').read_text()
         self.assertIn('_OMNI_STAGE_TRANSITIONS', partner)
         self.assertIn('omni_set_sales_stage', partner)
         self.assertIn('omni.stage.event', partner)
         self.assertTrue((ROOT / 'addons/omnichannel_bridge/models/omni_stage_event.py').exists())
+        self.assertIn("source='omni_memory'", memory)
+        self.assertIn('omni_set_sales_stage(', memory)
         self.assertIn('manager_session_active', channel)
         self.assertIn('omni_manager_session_active_now', channel)
 
@@ -95,6 +103,19 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_coupon_meta_offer_text', ai)
         self.assertIn('coupon_public_channel_url', ai)
 
+    def test_language_policy_markers_present(self):
+        ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
+        channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        self.assertIn('_omni_detect_and_store_channel_language', ai)
+        self.assertIn('_omni_ru_language_policy_reply', ai)
+        self.assertIn('omni_detected_lang', channel)
+
+    def test_anti_repeat_prefill_markers_present(self):
+        ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
+        self.assertIn('_omni_prefill_partner_from_inbound_text', ai)
+        self.assertIn('_omni_text_has_contact', ai)
+        self.assertIn('profile_prefill_from_inbound', ai)
+
     def test_tg_marketing_consent_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
@@ -115,6 +136,12 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('omni.promo', promo)
         self.assertIn('omni_promo_context_block', knowledge)
         self.assertIn('PROMOTIONS:', knowledge)
+
+    def test_event_registration_truth_sync_markers_present(self):
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('event.registration', knowledge)
+        self.assertIn('event.registration.state_count', knowledge)
+        self.assertIn('event_ticket.future_events.event_registration_truth', knowledge)
 
     def test_reserve_waitlist_model_markers_present(self):
         reserve = (ROOT / 'addons/omnichannel_bridge/models/omni_reserve_entry.py').read_text()

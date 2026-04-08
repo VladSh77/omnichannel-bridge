@@ -2,7 +2,7 @@
 import os
 import re
 
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 
 
@@ -222,6 +222,27 @@ class OmniKnowledge(models.AbstractModel):
 
     @api.model
     def _omni_extract_places_with_source(self, tmpl):
+        def _event_truth_available(event):
+            event = event.sudo()
+            # Prefer explicit registration truth-sync when event.registration model is present.
+            if 'event.registration' in self.env and 'seats_max' in event._fields:
+                Registration = self.env['event.registration'].sudo()
+                reg_domain = [
+                    ('event_id', '=', event.id),
+                    ('state', 'not in', ('cancel', 'cancelled', 'draft')),
+                ]
+                try:
+                    reserved = Registration.search_count(reg_domain)
+                    return max(0, int((event.seats_max or 0) - reserved)), 'event.registration.state_count'
+                except Exception:
+                    pass
+            if 'seats_available' in event._fields:
+                try:
+                    return int(event.seats_available), 'event.seats_available'
+                except (TypeError, ValueError):
+                    pass
+            return None, 'none'
+
         # Priority 0: CampScout custom helper method from campscout-management.
         if hasattr(tmpl, 'get_camp_availability'):
             try:
@@ -232,21 +253,15 @@ class OmniKnowledge(models.AbstractModel):
                 pass
         # Priority 0.1: Bonsens custom event link on template.
         if 'bs_event_id' in tmpl._fields and tmpl.bs_event_id:
-            event = tmpl.bs_event_id.sudo()
-            if 'seats_available' in event._fields:
-                try:
-                    return int(event.seats_available), 'bs_event_id.seats_available'
-                except (TypeError, ValueError):
-                    pass
+            places, src = _event_truth_available(tmpl.bs_event_id)
+            if places is not None:
+                return places, 'bs_event_id.%s' % src
         # Priority 0.2: Bonsens custom event link on variant.
         variant = tmpl.product_variant_id
         if variant and 'bs_event_id' in variant._fields and variant.bs_event_id:
-            event = variant.bs_event_id.sudo()
-            if 'seats_available' in event._fields:
-                try:
-                    return int(event.seats_available), 'product_variant.bs_event_id.seats_available'
-                except (TypeError, ValueError):
-                    pass
+            places, src = _event_truth_available(variant.bs_event_id)
+            if places is not None:
+                return places, 'product_variant.bs_event_id.%s' % src
         # Priority 0.3: event tickets -> future events seats_available sum.
         if tmpl.product_variant_ids:
             Ticket = self.env['event.event.ticket'].sudo()
@@ -254,9 +269,21 @@ class OmniKnowledge(models.AbstractModel):
             if tickets:
                 now_dt = fields.Datetime.now()
                 events = tickets.mapped('event_id').filtered(lambda e: not e.date_begin or e.date_begin >= now_dt)
-                if events and 'seats_available' in events._fields:
+                if events:
                     try:
-                        return int(sum(events.mapped('seats_available'))), 'event_ticket.future_events.seats_available'
+                        total = 0
+                        used_truth = False
+                        for event in events:
+                            ev_places, ev_src = _event_truth_available(event)
+                            if ev_places is None:
+                                continue
+                            total += int(ev_places)
+                            if ev_src == 'event.registration.state_count':
+                                used_truth = True
+                        if total >= 0:
+                            if used_truth:
+                                return total, 'event_ticket.future_events.event_registration_truth'
+                            return total, 'event_ticket.future_events.seats_available'
                     except Exception:
                         pass
         # Priority 1: dedicated camp/chat field in this module.

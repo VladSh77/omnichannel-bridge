@@ -1314,3 +1314,91 @@
 ### Notes
 
 - Tests are Odoo-runtime independent (run in plain Python), enabling fast CI signal before full Odoo integration tests.
+
+## 2026-04-08 — Coupon/promo Odoo rule hardening (camp-only + promo whitelist)
+
+### Scope
+
+- Linked order-level coupon validation with `omni.promo` active campaigns (code + date window).
+- Kept backward compatibility with configured public coupon from settings when no matching promo exists.
+- Enforced strict application to camp lines only, with optional `omni.promo.product_tmpl_ids` whitelist.
+- Prevented false-positive validation when code exists but no eligible line is discountable.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_promo.py`
+  - `omni_find_active_by_code(...)`
+- `addons/omnichannel_bridge/models/sale_order.py`
+  - `_omni_apply_public_coupon(...)` promo-aware validation and line eligibility enforcement
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Language policy hardening (UA/PL detection + no-RU replies)
+
+### Scope
+
+- Added runtime language detection with per-thread persistence on `discuss.channel`.
+- Bot now stores detected language hint as `omni_detected_lang` (`uk` / `pl`) and reuses it in follow-up replies.
+- Added strict no-Russian reply gate: for RU/BE inbound texts bot returns neutral UA/PL language-policy reply and does not generate a Russian answer.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - `omni_detected_lang`
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `_omni_detect_and_store_channel_language(...)`
+  - `_omni_detect_language(...)`
+  - `_omni_ru_language_policy_reply(...)`
+  - `omni_maybe_autoreply(...)` early policy branch for RU/BE input
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Full anti-repeat block hardening (TZ §3)
+
+### Scope
+
+- Added inbound prefill in AI runtime to capture known slots before generating next qualification question.
+- Next-question selector now checks both CRM fields and current inbound text (age/period/city/budget/contact) to avoid duplicate asks in the same turn.
+- Removed direct stage write from memory capture flow; switched to guarded FSM transition via `omni_set_sales_stage(...)`.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `_omni_prefill_partner_from_inbound_text(...)`
+  - `_omni_extract_age/_period/_departure_city/_budget(...)`
+  - `_omni_text_has_*` checks used by `_omni_pick_next_question(...)`
+- `addons/omnichannel_bridge/models/omni_memory.py`
+  - `_omni_capture_sales_clues(...)` now uses `partner.omni_set_sales_stage(..., source='omni_memory')`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Coupon category restriction (TZ §4)
+
+### Scope
+
+- Added explicit coupon category allowlist in Settings (`coupon_allowed_categ_ids`).
+- Coupon validation on `sale.order` now enforces category restriction (including subcategories) in addition to camp-line and promo/template rules.
+- Kept backward compatibility: if category list is empty, previous behavior remains unchanged.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/models/sale_order.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Event/registration truth-sync for places (TZ §4)
+
+### Scope
+
+- Enhanced places resolver to prioritize event registration truth when event models are available.
+- For linked events (`bs_event_id` on template/variant) and ticket-derived events, available places are now computed from `event.seats_max - active event.registration` (excluding cancel/draft states), with safe fallback to `seats_available`.
+- Preserved compatibility with existing custom CampScout helpers (`get_camp_availability`) and previous fallback chain.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+  - `_omni_extract_places_with_source(...)` with event registration truth-sync
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

@@ -167,6 +167,11 @@ class OmniAi(models.AbstractModel):
         if not self._omni_llm_enabled():
             return
         normalized = (text or '').strip()
+        self._omni_prefill_partner_from_inbound_text(partner, normalized, channel=channel)
+        detected_lang = self._omni_detect_and_store_channel_language(channel, normalized)
+        if self._omni_is_ru_or_be_message(normalized):
+            self._omni_post_bot_message(channel, self._omni_ru_language_policy_reply(detected_lang))
+            return
         if provider == 'meta' and self._omni_is_coupon_question(normalized):
             self._omni_post_bot_message(channel, self._omni_coupon_meta_offer_text())
             return
@@ -223,7 +228,7 @@ class OmniAi(models.AbstractModel):
             system_parts.append(_CAMP_DOMAIN_POLICY_UK)
         if objection_guidance:
             system_parts.append(objection_guidance)
-        system_parts.append(self._omni_reply_language_instruction(normalized))
+        system_parts.append(self._omni_reply_language_instruction(normalized, channel=channel))
         system_parts.append(facts)
         system = '\n\n'.join(system_parts)
 
@@ -477,11 +482,42 @@ class OmniAi(models.AbstractModel):
         )
         return any(w in txt for w in ru_be_words)
 
-    def _omni_reply_language_instruction(self, user_text):
+    def _omni_detect_and_store_channel_language(self, channel, user_text):
+        detected = self._omni_detect_language(user_text, channel=channel)
+        if channel and detected in ('uk', 'pl') and channel.omni_detected_lang != detected:
+            channel.sudo().write({'omni_detected_lang': detected})
+        return detected
+
+    def _omni_detect_language(self, user_text, channel=None):
+        txt = (user_text or '').strip()
+        if self._omni_is_polish_message(txt):
+            return 'pl'
+        if self._omni_is_ru_or_be_message(txt):
+            return 'uk'
+        if channel and channel.omni_detected_lang in ('uk', 'pl'):
+            return channel.omni_detected_lang
+        return 'uk'
+
+    def _omni_ru_language_policy_reply(self, detected_lang='uk'):
+        if detected_lang == 'pl':
+            return (
+                'Dla jakości i zgodności prowadzimy komunikację po ukraińsku lub po polsku. '
+                'Proszę kontynuować po polsku lub po ukraińsku, a od razu pomogę z wyborem obozu.'
+            )
+        return (
+            'Для якості та відповідності ми ведемо спілкування українською або польською. '
+            'Будь ласка, продовжимо українською або польською — і я одразу допоможу з підбором табору.'
+        )
+
+    def _omni_reply_language_instruction(self, user_text, channel=None):
         txt = (user_text or '').lower()
         if self._omni_is_polish_message(txt):
             return 'LANGUAGE_RULE: Reply in Polish.'
         if self._omni_is_ru_or_be_message(txt):
+            return 'LANGUAGE_RULE: Reply in Ukrainian.'
+        if channel and channel.omni_detected_lang == 'pl':
+            return 'LANGUAGE_RULE: Reply in Polish.'
+        if channel and channel.omni_detected_lang == 'uk':
             return 'LANGUAGE_RULE: Reply in Ukrainian.'
         return 'LANGUAGE_RULE: Reply in the client language (Ukrainian or Polish).'
 
@@ -693,34 +729,120 @@ class OmniAi(models.AbstractModel):
     def _omni_pick_next_question(self, partner, user_text):
         partner = partner.sudo()
         is_pl = self._omni_is_polish_message(user_text or '')
-        if not partner.omni_child_age:
+        has_age = bool(partner.omni_child_age) or self._omni_text_has_age(user_text)
+        has_period = bool(partner.omni_preferred_period) or self._omni_text_has_period(user_text)
+        has_city = bool(partner.omni_departure_city) or self._omni_text_has_departure_city(user_text)
+        has_budget = bool(partner.omni_budget_amount) or self._omni_text_has_budget(user_text)
+        has_contact = bool(partner.phone or partner.mobile or partner.email) or self._omni_text_has_contact(user_text)
+        if not has_age:
             return (
                 'Підкажіть, будь ласка, який вік дитини?'
                 if not is_pl else
                 'Proszę podać wiek dziecka.'
             )
-        if not partner.omni_preferred_period:
+        if not has_period:
             return (
                 'На який період або зміну розглядаєте табір?'
                 if not is_pl else
                 'Na jaki termin lub turnus rozważają Państwo obóz?'
             )
-        if not partner.omni_departure_city:
+        if not has_city:
             return (
                 'З якого міста вам зручний виїзд?'
                 if not is_pl else
                 'Z jakiego miasta ma być wyjazd?'
             )
-        if not partner.omni_budget_amount:
+        if not has_budget:
             return (
                 'Який орієнтовний бюджет на путівку ви плануєте?'
                 if not is_pl else
                 'Jaki orientacyjny budżet planują Państwo na obóz?'
             )
-        if not (partner.phone or partner.mobile or partner.email):
+        if not has_contact:
             return (
                 'Залиште, будь ласка, контакт (телефон або email), щоб я передав підбір менеджеру.'
                 if not is_pl else
                 'Proszę zostawić kontakt (telefon lub email), a przekażę dobór menedżerowi.'
             )
         return ''
+
+    def _omni_prefill_partner_from_inbound_text(self, partner, user_text, channel=None):
+        if not partner or not user_text:
+            return
+        partner = partner.sudo()
+        txt = user_text.strip()
+        Partner = self.env['res.partner'].sudo()
+        vals = {}
+        email = Partner.omni_parse_email(txt)
+        phone = Partner.omni_parse_phone(txt)
+        if email and not partner.email:
+            vals['email'] = email
+        if phone and not (partner.phone or partner.mobile):
+            vals['phone'] = phone
+        age = self._omni_extract_age(txt)
+        if age and not partner.omni_child_age:
+            vals['omni_child_age'] = age
+        period = self._omni_extract_period(txt)
+        if period and not partner.omni_preferred_period:
+            vals['omni_preferred_period'] = period
+        city = self._omni_extract_departure_city(txt)
+        if city and not partner.omni_departure_city:
+            vals['omni_departure_city'] = city
+        budget_amount, budget_currency = self._omni_extract_budget(txt)
+        if budget_amount and not partner.omni_budget_amount:
+            vals['omni_budget_amount'] = budget_amount
+            if budget_currency and not partner.omni_budget_currency:
+                vals['omni_budget_currency'] = budget_currency
+        if vals:
+            partner.write(vals)
+            self._omni_set_sales_stage(partner, 'qualifying', channel, 'profile_prefill_from_inbound')
+
+    def _omni_extract_age(self, txt):
+        import re
+        m = re.search(r'(\d{1,2})\s*(?:рок[аів]?|р\.|lat|lata)', txt, re.IGNORECASE)
+        if not m:
+            return 0
+        age = int(m.group(1))
+        return age if 5 <= age <= 18 else 0
+
+    def _omni_extract_period(self, txt):
+        import re
+        m = re.search(
+            r'(черв(?:ень|ня)|лип(?:ень|ня)|серп(?:ень|ня)|wrzesie[nń]|lipiec|sierpie[nń]|july|august)',
+            txt,
+            re.IGNORECASE,
+        )
+        return m.group(1).lower() if m else ''
+
+    def _omni_extract_departure_city(self, txt):
+        import re
+        m = re.search(
+            r'(?:з|из|from)\s+([A-Za-zА-Яа-яІіЇїЄєҐґŁłŚśŻżŹźĆćŃńÓóĘęĄą\-]{3,30})',
+            txt,
+            re.IGNORECASE,
+        )
+        return m.group(1) if m else ''
+
+    def _omni_extract_budget(self, txt):
+        import re
+        m = re.search(r'(\d{3,6})\s*(грн|uah|zl|pln|zł|€|eur)', txt, re.IGNORECASE)
+        if not m:
+            return 0.0, ''
+        return float(m.group(1)), m.group(2).lower()
+
+    def _omni_text_has_age(self, txt):
+        return bool(self._omni_extract_age(txt or ''))
+
+    def _omni_text_has_period(self, txt):
+        return bool(self._omni_extract_period(txt or ''))
+
+    def _omni_text_has_departure_city(self, txt):
+        return bool(self._omni_extract_departure_city(txt or ''))
+
+    def _omni_text_has_budget(self, txt):
+        amount, _curr = self._omni_extract_budget(txt or '')
+        return bool(amount)
+
+    def _omni_text_has_contact(self, txt):
+        Partner = self.env['res.partner'].sudo()
+        return bool(Partner.omni_parse_email(txt or '') or Partner.omni_parse_phone(txt or ''))

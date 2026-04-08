@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class OmniPromo(models.Model):
@@ -31,3 +31,23 @@ class OmniPromo(models.Model):
         string='Allowed products',
     )
     terms = fields.Text()
+
+    @api.model
+    def omni_find_active_by_code(self, code):
+        coupon = (code or '').strip().upper()
+        if not coupon:
+            return self.browse()
+        today = fields.Date.context_today(self)
+        promos = self.sudo().search([
+            ('active', '=', True),
+            ('code', '!=', False),
+        ], order='id desc')
+        for promo in promos:
+            if (promo.code or '').strip().upper() != coupon:
+                continue
+            if promo.date_start and promo.date_start > today:
+                continue
+            if promo.date_end and promo.date_end < today:
+                continue
+            return promo
+        return self.browse()

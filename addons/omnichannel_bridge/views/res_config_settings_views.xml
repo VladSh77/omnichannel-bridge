@@ -110,6 +110,9 @@
                         <setting string="Coupon discount (%)" help="Applied only to camp lines on sale order.">
                             <field name="omnichannel_coupon_discount_percent"/>
                         </setting>
+                        <setting string="Coupon allowed camp categories" help="Optional hard limit: coupon applies only to camp products in selected categories/subcategories.">
+                            <field name="omnichannel_coupon_allowed_categ_ids" widget="many2many_tags"/>
+                        </setting>
                     </block>
                     <block title="Internal notifications" name="omnichannel_block_internal_notify">
                         <setting string="Internal Telegram bot token">

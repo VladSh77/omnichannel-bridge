@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from odoo import fields, models
 
 
@@ -220,6 +222,11 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.coupon_discount_percent',
         default=5.0,
     )
+    omnichannel_coupon_allowed_categ_ids = fields.Many2many(
+        'product.category',
+        string='Coupon allowed product categories',
+        help='If set, coupon applies only to camp lines inside these categories (including subcategories).',
+    )
 
     # --- Bot kill switch via Telegram ---
     omnichannel_admin_tg_user_ids = fields.Char(
@@ -297,3 +304,23 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.log_pii_masking',
         default=True,
     )
+
+    def get_values(self):
+        res = super().get_values()
+        icp = self.env['ir.config_parameter'].sudo()
+        raw = icp.get_param('omnichannel_bridge.coupon_allowed_categ_ids', '[]')
+        try:
+            categ_ids = [int(x) for x in json.loads(raw or '[]') if int(x) > 0]
+        except Exception:
+            categ_ids = []
+        res.update({
+            'omnichannel_coupon_allowed_categ_ids': [(6, 0, categ_ids)],
+        })
+        return res
+
+    def set_values(self):
+        super().set_values()
+        icp = self.env['ir.config_parameter'].sudo()
+        for settings in self:
+            ids_payload = json.dumps(settings.omnichannel_coupon_allowed_categ_ids.ids or [])
+            icp.set_param('omnichannel_bridge.coupon_allowed_categ_ids', ids_payload)

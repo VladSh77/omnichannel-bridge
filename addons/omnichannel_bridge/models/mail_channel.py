@@ -55,6 +55,10 @@ class MailChannel(models.Model):
             ('unknown', 'Unknown'),
         ],
     )
+    omni_detected_lang = fields.Selection(
+        selection=[('uk', 'Ukrainian'), ('pl', 'Polish')],
+        help='Detected client language for this thread (runtime hint for AI).',
+    )
 
     _sql_constraints = [
         (

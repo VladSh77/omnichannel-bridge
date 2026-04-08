@@ -94,6 +94,7 @@ class OmniMemory(models.AbstractModel):
         txt = (text or '').strip()
         if not txt:
             return
+        partner = partner.sudo()
         updates = {}
         clues = []
         age_m = re.search(r'(\d{1,2})\s*(?:рок[аів]?|р\.|lat|lata)', txt, re.IGNORECASE)
@@ -132,7 +133,11 @@ class OmniMemory(models.AbstractModel):
             clues.append('city:%s' % city)
             updates['omni_departure_city'] = city
         if updates:
-            updates['omni_sales_stage'] = 'qualifying'
-            partner.sudo().write(updates)
+            partner.write(updates)
+            partner.omni_set_sales_stage(
+                'qualifying',
+                reason='memory_sales_clues',
+                source='omni_memory',
+            )
         if clues:
             self._omni_append_chat_memory(partner, '; '.join(clues))

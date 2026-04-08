@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from odoo import api, fields, models
 
 
@@ -27,11 +29,39 @@ class SaleOrder(models.Model):
         tmpl = product.product_tmpl_id
         return bool(getattr(tmpl, 'bs_event_id', False)) or (product.detailed_type == 'event')
 
+    def _omni_coupon_allowed_categories(self):
+        icp = self.env['ir.config_parameter'].sudo()
+        raw = icp.get_param('omnichannel_bridge.coupon_allowed_categ_ids', '[]')
+        try:
+            categ_ids = [int(x) for x in json.loads(raw or '[]') if int(x) > 0]
+        except Exception:
+            categ_ids = []
+        return self.env['product.category'].sudo().browse(categ_ids)
+
+    def _omni_line_in_allowed_categories(self, line, allowed_categories):
+        if not allowed_categories:
+            return True
+        tmpl = line.product_template_id
+        categ = tmpl.categ_id if tmpl else False
+        if not categ:
+            return False
+        return bool(self.env['product.category'].sudo().search_count([
+            ('id', '=', categ.id),
+            ('id', 'child_of', allowed_categories.ids),
+        ]))
+
     def _omni_apply_public_coupon(self):
-        configured_code, percent = self._omni_coupon_config()
+        configured_code, default_percent = self._omni_coupon_config()
         for order in self.sudo():
             code = (order.omni_coupon_code or '').strip().upper()
-            if not configured_code or not code or code != configured_code:
+            promo = self.env['omni.promo'].sudo().omni_find_active_by_code(code)
+            percent = default_percent
+            allowed_templates = self.env['product.template']
+            allowed_categories = self._omni_coupon_allowed_categories()
+            if promo:
+                percent = max(0.0, promo.discount_percent or default_percent)
+                allowed_templates = promo.product_tmpl_ids
+            if (not promo) and (not configured_code or not code or code != configured_code):
                 order.write({
                     'omni_coupon_validated': False,
                     'omni_coupon_discount_amount': 0.0,
@@ -48,13 +78,25 @@ class SaleOrder(models.Model):
                 })
                 continue
             total_discount = 0.0
+            applied_lines = 0
             for line in order.order_line:
                 if not self._omni_is_camp_line(line):
+                    continue
+                if allowed_templates and line.product_template_id not in allowed_templates:
+                    continue
+                if not self._omni_line_in_allowed_categories(line, allowed_categories):
                     continue
                 if line.discount != percent:
                     line.write({'discount': percent})
                 line_discount = (line.price_unit * line.product_uom_qty) * (percent / 100.0)
                 total_discount += line_discount
+                applied_lines += 1
+            if applied_lines == 0:
+                order.write({
+                    'omni_coupon_validated': False,
+                    'omni_coupon_discount_amount': 0.0,
+                })
+                continue
             order.write({
                 'omni_coupon_validated': True,
                 'omni_coupon_discount_amount': total_discount,
