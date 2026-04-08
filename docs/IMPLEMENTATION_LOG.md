@@ -84,6 +84,25 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+## 2026-04-08 — Handoff block: direct manager assignment + email/ping
+
+### Scope
+
+- Added single-manager direct handoff ownership via settings (`default_manager_user_id`).
+- Added direct manager operational notifications on priority events:
+  - assign partner owner to default manager,
+  - create `mail.activity` TODO on partner,
+  - optional manager email notification.
+- Wired into escalation/problematic/purchase-intent/purchase-confirmed flows in `omni.notify`.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

@@ -247,6 +247,16 @@ class ResConfigSettings(models.TransientModel):
         string='Notify on problematic flag',
         config_parameter='omnichannel_bridge.internal_notify_problem',
     )
+    omnichannel_default_manager_user_id = fields.Many2one(
+        'res.users',
+        string='Default manager user (handoff owner)',
+        config_parameter='omnichannel_bridge.default_manager_user_id',
+    )
+    omnichannel_internal_notify_email_manager = fields.Boolean(
+        string='Also send manager email on escalation/priority',
+        config_parameter='omnichannel_bridge.internal_notify_email_manager',
+        default=False,
+    )
     omnichannel_window_reminder_enabled = fields.Boolean(
         string='Enable 24h window reminder automation',
         config_parameter='omnichannel_bridge.window_reminder_enabled',

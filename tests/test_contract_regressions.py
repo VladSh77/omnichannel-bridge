@@ -73,6 +73,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('avg_response_seconds', analytics)
         self.assertIn('menu_omni_crm_analytics', ops_views)
 
+    def test_direct_manager_handoff_markers_present(self):
+        notify = (ROOT / 'addons/omnichannel_bridge/models/omni_notify.py').read_text()
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        self.assertIn('_notify_manager_direct', notify)
+        self.assertIn('mail.activity', notify)
+        self.assertIn('omnichannel_bridge.default_manager_user_id', settings)
+
 
 if __name__ == '__main__':
     unittest.main()

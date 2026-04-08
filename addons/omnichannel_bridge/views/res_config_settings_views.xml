@@ -127,6 +127,12 @@
                         <setting string="Notify on problematic flag">
                             <field name="omnichannel_internal_notify_problem"/>
                         </setting>
+                        <setting string="Default manager user" help="Used as handoff owner for direct assignment and activities on priority events.">
+                            <field name="omnichannel_default_manager_user_id"/>
+                        </setting>
+                        <setting string="Send manager email on priority events">
+                            <field name="omnichannel_internal_notify_email_manager"/>
+                        </setting>
                     </block>
                     <block title="LLM (факти з Odoo, без вигадок)" name="omnichannel_block_llm">
                         <setting string="Увімкнути автовідповіді" help="Рекомендовано: Ollama (локально, відкриті ваги). OpenAI — опційно, пропрієтарний хмарний API.">

@@ -80,6 +80,12 @@ class OmniNotify(models.AbstractModel):
             priority=is_priority,
         )
         self._send(text, parse_mode='Markdown', priority=is_priority)
+        self._notify_manager_direct(
+            channel=channel,
+            partner=partner,
+            subject='Escalation',
+            summary=reason or _('клієнт запитав менеджера'),
+        )
 
     @api.model
     def notify_problematic(self, channel, partner, note=''):
@@ -98,6 +104,12 @@ class OmniNotify(models.AbstractModel):
             priority=True,
         )
         self._send(text, parse_mode='Markdown', priority=True)
+        self._notify_manager_direct(
+            channel=channel,
+            partner=partner,
+            subject='Problematic thread',
+            summary=note or 'problematic',
+        )
 
     @api.model
     def notify_stage_change(self, channel, partner, old_stage, new_stage, reason=''):
@@ -139,6 +151,12 @@ class OmniNotify(models.AbstractModel):
             priority=True,
         )
         self._send(text, parse_mode='Markdown', priority=True)
+        self._notify_manager_direct(
+            channel=channel,
+            partner=partner,
+            subject='Purchase intent',
+            summary=snippet or 'purchase_intent',
+        )
 
     @api.model
     def notify_purchase_confirmed(
@@ -180,6 +198,12 @@ class OmniNotify(models.AbstractModel):
             priority=True,
         )
         self._send(text, parse_mode='Markdown', priority=True)
+        self._notify_manager_direct(
+            channel=channel,
+            partner=partner,
+            subject='Purchase confirmed',
+            summary='%s / %s' % (ref_norm or '—', amount_norm or '—'),
+        )
         cp.write({
             'omni_last_purchase_notify_at': Datetime.now(),
             'omni_last_purchase_notify_ref': ref_norm,
@@ -297,6 +321,50 @@ class OmniNotify(models.AbstractModel):
             order='write_date desc, id desc',
             limit=1,
         )
+
+    def _default_manager_user(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        user_id_raw = (ICP.get_param('omnichannel_bridge.default_manager_user_id') or '').strip()
+        if not user_id_raw.isdigit():
+            return self.env['res.users']
+        user = self.env['res.users'].sudo().browse(int(user_id_raw))
+        return user if user.exists() else self.env['res.users']
+
+    def _notify_manager_direct(self, channel, partner, subject, summary):
+        manager = self._default_manager_user()
+        if not manager:
+            return
+        partner = partner.sudo() if partner else partner
+        partner_name = (partner.display_name if partner else 'Unknown')
+        url = self._channel_url(channel) if channel else ''
+        note = '%s\nClient: %s\nThread: %s' % (subject, partner_name, url or '—')
+        # Direct owner assignment on partner card for one-manager flow.
+        if partner and partner.user_id != manager:
+            partner.write({'user_id': manager.id})
+        # Persistent in-app task visible in Activities.
+        if partner:
+            self.env['mail.activity'].sudo().create({
+                'res_model_id': self.env['ir.model']._get_id('res.partner'),
+                'res_id': partner.id,
+                'activity_type_id': self.env.ref('mail.mail_activity_data_todo').id,
+                'summary': '[Omni] %s' % subject,
+                'note': note,
+                'user_id': manager.id,
+            })
+        ICP = self.env['ir.config_parameter'].sudo()
+        send_email = str(
+            ICP.get_param('omnichannel_bridge.internal_notify_email_manager', 'False')
+        ).lower() in ('1', 'true', 'yes')
+        if send_email and manager.partner_id.email:
+            self.env['mail.mail'].sudo().create({
+                'subject': '[Omni] %s' % subject,
+                'body_html': '<p>%s</p><p>%s</p><p><a href="%s">Open thread</a></p>' % (
+                    self._escape(summary or '—'),
+                    self._escape(partner_name),
+                    url or '#',
+                ),
+                'email_to': manager.partner_id.email,
+            }).send()
 
     def _is_purchase_notify_duplicate(self, partner, ref_norm, amount_norm):
         """Dedupe cross-layer events (sale/payment/invoice) in a short window."""
