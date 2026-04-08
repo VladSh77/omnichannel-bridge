@@ -200,6 +200,32 @@ class MailChannel(models.Model):
         phone = Partner.omni_parse_phone(text or '')
         return email, phone
 
+    def _omni_is_visitor_name(self, name):
+        txt = (name or '').strip().lower()
+        return bool(re.match(r'^(visitor|відвідувач)\s*#\d+', txt))
+
+    def _omni_refresh_livechat_contact_identity(self, author):
+        author = author.sudo()
+        if not self._omni_is_visitor_name(author.name):
+            return
+        new_name = ''
+        if author.email:
+            new_name = (author.email.split('@')[0] or '').strip()
+        if not new_name and (author.phone or author.mobile):
+            digits = re.sub(r'\D', '', author.phone or author.mobile or '')
+            new_name = 'Клієнт сайту %s' % (digits[-4:] if digits else '')
+        if not new_name:
+            new_name = 'Клієнт сайту'
+        author.write({'name': new_name[:80]})
+
+    def _omni_refresh_livechat_channel_label(self, author):
+        author = author.sudo()
+        display = (author.display_name or author.name or 'Клієнт сайту').strip()
+        if self._omni_is_visitor_name(display):
+            return
+        if self.name != display:
+            self.sudo().write({'name': display[:120]})
+
     def _omni_handle_livechat_entry_flow(self, author, body, odoobot):
         """Returns True when entry flow consumed message and AI should be skipped."""
         self.ensure_one()
@@ -262,9 +288,12 @@ class MailChannel(models.Model):
                     upd['phone'] = phone
                 if upd:
                     author.write(upd)
+                self._omni_refresh_livechat_contact_identity(author)
+                self._omni_refresh_livechat_channel_label(author)
                 self.sudo().write({
                     'omni_livechat_entry_state': 'ready',
                     'omni_livechat_contact_attempts': 0,
+                    'omni_customer_partner_id': author.id,
                 })
                 self.env['omni.bridge'].sudo()._omni_maybe_create_crm_lead(author, 'site_livechat')
                 return False

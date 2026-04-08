@@ -148,6 +148,9 @@
                         <setting string="Send manager email on priority events">
                             <field name="omnichannel_internal_notify_email_manager"/>
                         </setting>
+                        <setting string="Purchase dedup window (minutes)">
+                            <field name="omnichannel_purchase_dedup_minutes"/>
+                        </setting>
                     </block>
                     <block title="LLM (факти з Odoo, без вигадок)" name="omnichannel_block_llm">
                         <setting string="Увімкнути автовідповіді" help="Рекомендовано: Ollama (локально, відкриті ваги). OpenAI — опційно, пропрієтарний хмарний API.">

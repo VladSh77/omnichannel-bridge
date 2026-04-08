@@ -1622,3 +1622,29 @@
 - `addons/omnichannel_bridge/views/res_config_settings_views.xml`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 2/6 partial closure (delivery observability + tagging)
+
+### Scope
+
+- Added outbound delivery audit model `omni.outbound.log` and Operations UI.
+- Logged provider outbound attempts/results (status code + masked error snippet) for Telegram/Meta/WhatsApp/Viber sends.
+- Enabled runtime `mail.message` tagging pipeline:
+  - `omni:objection`,
+  - `objection:<type>`,
+  - `omni:purchase_intent`,
+  - `omni:handoff`.
+- Hardened cross-model purchase dedup with configurable dedup window (`purchase_dedup_minutes`).
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_outbound_log.py` (new)
+- `addons/omnichannel_bridge/views/omni_outbound_log_views.xml` (new)
+- `addons/omnichannel_bridge/models/omni_bridge.py`
+- `addons/omnichannel_bridge/models/mail_message.py`
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `docs/TZ_CHECKLIST.md`

@@ -323,8 +323,8 @@
 ## 9. CRM, теги, аналітика
 
 - [x] Опція створення **CRM lead** при новому контакті з месенджера
-- [~] Поле тегів на **mail.message** (розмітка діалогів) — є технічно, без повної воронки
-- [~] De-dup внутрішніх purchase-confirmed подій між `sale.order` / `payment.transaction` / `account.move` (20-хв вікно по partner + ref/amount).
+- [x] Поле тегів на **mail.message** (розмітка діалогів): додано runtime-tagging останнього клієнтського повідомлення для objection / purchase_intent / handoff.
+- [x] De-dup внутрішніх purchase-confirmed подій між `sale.order` / `payment.transaction` / `account.move` (вікно configurable: `purchase_dedup_minutes`, dedup по partner + ref/amount).
 - [x] Звітність: конверсії, час відповіді, причини відмови/заперечень, джерело каналу (новий екран Operations → CRM Analytics).
 - [x] Інтеграція цілей з **маркетинговими кампаніями** Meta (додано goals/fact/achievement у CRM Analytics).
 
@@ -363,7 +363,7 @@
 - [~] **Анти-спам:** зафіксовано "one reminder per inbound cycle" (без дубля того ж шаблону в одному вікні); matrix кулдаунів між типами (акція/FOMO/last-call) лишається TBD.
 - [x] Якщо клієнт **відповів** — цикл скидається (новий inbound скидає marker нагадування), вікно продовжується за тим самим правилом.
 - [x] Технічно: додано **cron-планувальник** з прив’язкою до `discuss.channel` + `omni_provider` + timestamp останнього inbound; перевірка max-вікна платформи (конфіг).
-- [~] Логування: є успіх/помилка через channel поля + exception logs; delivery receipts як окремий SLA-звіт — backlog.
+- [x] Логування: додано окремий журнал `omni.outbound.log` з `provider/thread/status_code/ok/error` для outbound delivery аудиту.
 
 ---
 

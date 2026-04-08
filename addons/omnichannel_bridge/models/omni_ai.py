@@ -466,6 +466,8 @@ class OmniAi(models.AbstractModel):
         channel = channel.sudo()
         legal = self._omni_legal_notice_block(channel)
         final_body = (body or '').strip()
+        if channel._omni_is_website_livechat_channel() and not final_body.startswith('🤖'):
+            final_body = '🤖 %s' % final_body
         if legal:
             final_body = '%s\n\n%s' % (final_body, legal)
         channel.with_context(omni_skip_livechat_inbound=True).message_post(

@@ -149,6 +149,13 @@
         sequence="28"
     />
     <menuitem
+        id="menu_omni_outbound_log"
+        name="Outbound Delivery Log"
+        parent="menu_omni_ops_root"
+        action="action_omni_outbound_log"
+        sequence="29"
+    />
+    <menuitem
         id="menu_omni_crm_analytics"
         name="CRM Analytics"
         parent="menu_omni_ops_root"

@@ -655,6 +655,19 @@ class OmniBridge(models.AbstractModel):
             return resp
         return last_resp
 
+    def _omni_log_outbound_delivery(self, provider, external_thread_id, endpoint, ok, status_code=0, error=''):
+        try:
+            self.env['omni.outbound.log'].sudo().create({
+                'provider': provider or '',
+                'external_thread_id': str(external_thread_id or ''),
+                'endpoint': endpoint or '',
+                'ok': bool(ok),
+                'status_code': int(status_code or 0),
+                'error_snippet': (error or '')[:240],
+            })
+        except Exception:
+            _logger.debug('Failed to write omni.outbound.log', exc_info=True)
+
     def _omni_mask_pii_for_logs(self, text):
         if not text:
             return ''
@@ -681,6 +694,7 @@ class OmniBridge(models.AbstractModel):
             )
         except requests.RequestException:
             _logger.exception('Telegram sendMessage failed after retries')
+            self._omni_log_outbound_delivery('telegram', chat_id, url, False, 0, 'request_exception')
             return
         if not resp.ok:
             _logger.error(
@@ -688,6 +702,14 @@ class OmniBridge(models.AbstractModel):
                 resp.status_code,
                 self._omni_mask_pii_for_logs(resp.text),
             )
+        self._omni_log_outbound_delivery(
+            'telegram',
+            chat_id,
+            url,
+            resp.ok,
+            resp.status_code,
+            '' if resp.ok else self._omni_mask_pii_for_logs(resp.text),
+        )
 
     def _omni_meta_send_psid(self, psid, text):
         token, _ = self._omni_meta_credentials()
@@ -707,6 +729,7 @@ class OmniBridge(models.AbstractModel):
             )
         except requests.RequestException:
             _logger.exception('Meta send message failed after retries')
+            self._omni_log_outbound_delivery('meta', psid, url, False, 0, 'request_exception')
             return
         if not resp.ok:
             _logger.error(
@@ -714,6 +737,14 @@ class OmniBridge(models.AbstractModel):
                 resp.status_code,
                 self._omni_mask_pii_for_logs(resp.text),
             )
+        self._omni_log_outbound_delivery(
+            'meta',
+            psid,
+            url,
+            resp.ok,
+            resp.status_code,
+            '' if resp.ok else self._omni_mask_pii_for_logs(resp.text),
+        )
 
     def _omni_whatsapp_send_to_wa_id(self, wa_id, text):
         token, _, phone_number_id = self._omni_whatsapp_credentials()
@@ -735,6 +766,7 @@ class OmniBridge(models.AbstractModel):
             )
         except requests.RequestException:
             _logger.exception('WhatsApp send message failed after retries')
+            self._omni_log_outbound_delivery('whatsapp', wa_id, url, False, 0, 'request_exception')
             return
         if not resp.ok:
             _logger.error(
@@ -742,6 +774,14 @@ class OmniBridge(models.AbstractModel):
                 resp.status_code,
                 self._omni_mask_pii_for_logs(resp.text),
             )
+        self._omni_log_outbound_delivery(
+            'whatsapp',
+            wa_id,
+            url,
+            resp.ok,
+            resp.status_code,
+            '' if resp.ok else self._omni_mask_pii_for_logs(resp.text),
+        )
 
     def _omni_viber_send_to_user(self, viber_id, text):
         token, _ = self._omni_viber_credentials()
@@ -761,6 +801,7 @@ class OmniBridge(models.AbstractModel):
             )
         except requests.RequestException:
             _logger.exception('Viber send message failed after retries')
+            self._omni_log_outbound_delivery('viber', viber_id, url, False, 0, 'request_exception')
             return
         if not resp.ok:
             _logger.error(
@@ -768,3 +809,11 @@ class OmniBridge(models.AbstractModel):
                 resp.status_code,
                 self._omni_mask_pii_for_logs(resp.text),
             )
+        self._omni_log_outbound_delivery(
+            'viber',
+            viber_id,
+            url,
+            resp.ok,
+            resp.status_code,
+            '' if resp.ok else self._omni_mask_pii_for_logs(resp.text),
+        )

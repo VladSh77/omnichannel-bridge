@@ -56,6 +56,8 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('manager_hours_now', content)
         self.assertIn('omni_livechat_contact_attempts', content)
         self.assertIn('_omni_livechat_contact_invalid_text', content)
+        self.assertIn('_omni_refresh_livechat_channel_label', content)
+        self.assertIn('_omni_refresh_livechat_contact_identity', content)
 
     def test_fsm_and_race_markers_present(self):
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
@@ -98,6 +100,8 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_notify_manager_direct', notify)
         self.assertIn('mail.activity', notify)
         self.assertIn('omnichannel_bridge.default_manager_user_id', settings)
+        self.assertIn('purchase_dedup_minutes', settings)
+        self.assertIn('purchase_dedup_minutes', notify)
 
     def test_outbound_ordering_guard_markers_present(self):
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
@@ -134,6 +138,19 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn("'website_sale' in self.env", knowledge)
         self.assertIn('time.sleep(2)', ai)
         self.assertIn('_pick_online_manager_user', notify)
+        self.assertIn("final_body.startswith('🤖')", ai)
+
+    def test_outbound_log_and_message_tags_markers_present(self):
+        bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
+        log_model = (ROOT / 'addons/omnichannel_bridge/models/omni_outbound_log.py').read_text()
+        message = (ROOT / 'addons/omnichannel_bridge/models/mail_message.py').read_text()
+        intel = (ROOT / 'addons/omnichannel_bridge/models/omni_sales_intel.py').read_text()
+        ops = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
+        self.assertIn('_omni_log_outbound_delivery', bridge)
+        self.assertIn('omni.outbound.log', log_model)
+        self.assertIn('omni_attach_tags', message)
+        self.assertIn('_omni_tag_latest_customer_message', intel)
+        self.assertIn('menu_omni_outbound_log', ops)
 
     def test_anti_repeat_prefill_markers_present(self):
         ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()

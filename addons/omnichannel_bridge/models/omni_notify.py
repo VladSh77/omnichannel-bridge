@@ -411,8 +411,14 @@ class OmniNotify(models.AbstractModel):
         last_at = partner.omni_last_purchase_notify_at
         if not last_at:
             return False
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            dedup_min = int(icp.get_param('omnichannel_bridge.purchase_dedup_minutes', '20'))
+        except ValueError:
+            dedup_min = 20
+        dedup_min = max(5, dedup_min)
         # A short window prevents burst duplicates from multiple model hooks.
-        if (Datetime.now() - last_at) > timedelta(minutes=20):
+        if (Datetime.now() - last_at) > timedelta(minutes=dedup_min):
             return False
         same_ref = bool(ref_norm and ref_norm == (partner.omni_last_purchase_notify_ref or ''))
         same_amount = bool(amount_norm and amount_norm == (partner.omni_last_purchase_notify_amount or ''))

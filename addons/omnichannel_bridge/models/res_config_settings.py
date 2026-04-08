@@ -376,6 +376,11 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.internal_notify_email_manager',
         default=False,
     )
+    omnichannel_purchase_dedup_minutes = fields.Integer(
+        string='Purchase event dedup window (minutes)',
+        config_parameter='omnichannel_bridge.purchase_dedup_minutes',
+        default=20,
+    )
     omnichannel_window_reminder_enabled = fields.Boolean(
         string='Enable 24h window reminder automation',
         config_parameter='omnichannel_bridge.window_reminder_enabled',

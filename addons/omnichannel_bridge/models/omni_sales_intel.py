@@ -234,6 +234,10 @@ class OmniSalesIntel(models.AbstractModel):
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
             )
+            self._omni_tag_latest_customer_message(
+                channel,
+                ['omni:objection', 'objection:%s' % objection_type],
+            )
 
     @api.model
     def _omni_log_purchase_intent(self, channel, partner, text):
@@ -242,6 +246,10 @@ class OmniSalesIntel(models.AbstractModel):
                 body='[auto] purchase_intent_detected',
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
+            )
+            self._omni_tag_latest_customer_message(
+                channel,
+                ['omni:purchase_intent'],
             )
         if partner:
             self.env['omni.notify'].sudo().notify_purchase_intent(
@@ -264,6 +272,7 @@ class OmniSalesIntel(models.AbstractModel):
         if not changed:
             return
         if channel:
+            self._omni_tag_latest_customer_message(channel, ['omni:handoff'])
             self.env['omni.notify'].sudo().notify_stage_change(
                 channel=channel,
                 partner=partner,
@@ -271,6 +280,27 @@ class OmniSalesIntel(models.AbstractModel):
                 new_stage=new_stage,
                 reason=reason or 'purchase_intent',
             )
+
+    @api.model
+    def _omni_tag_latest_customer_message(self, channel, tags):
+        if not channel:
+            return
+        channel = channel.sudo()
+        customer = channel.omni_customer_partner_id
+        if not customer:
+            return
+        msg = self.env['mail.message'].sudo().search(
+            [
+                ('model', '=', 'discuss.channel'),
+                ('res_id', '=', channel.id),
+                ('author_id', '=', customer.id),
+                ('message_type', '=', 'comment'),
+            ],
+            order='id desc',
+            limit=1,
+        )
+        if msg:
+            msg.omni_attach_tags(tags)
 
     @api.model
     def _omni_build_fomo_line_from_message(self, text):
