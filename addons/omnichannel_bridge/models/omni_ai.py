@@ -103,7 +103,8 @@ class OmniAi(models.AbstractModel):
             return True
         if self._omni_night_bot_window_active_now(ICP):
             return True
-        if not self._omni_manager_hours_active_now():
+        sla_scope = (ICP.get_param('omnichannel_bridge.sla_scope') or 'manager_hours').strip()
+        if sla_scope != 'always' and not self._omni_manager_hours_active_now():
             return True
         quiet = str(ICP.get_param('omnichannel_bridge.bot_inside_hours_if_manager_quiet', 'True')).lower() in (
             '1',
@@ -143,7 +144,8 @@ class OmniAi(models.AbstractModel):
             return 0
         if self._omni_night_bot_window_active_now(ICP):
             return 0
-        if not self._omni_manager_hours_active_now():
+        sla_scope = (ICP.get_param('omnichannel_bridge.sla_scope') or 'manager_hours').strip()
+        if sla_scope != 'always' and not self._omni_manager_hours_active_now():
             return 0
         quiet = str(ICP.get_param('omnichannel_bridge.bot_inside_hours_if_manager_quiet', 'True')).lower() in (
             '1',
@@ -232,6 +234,8 @@ class OmniAi(models.AbstractModel):
         )
         objection_guidance = self.env['omni.sales.intel'].sudo().omni_objection_guidance_block(normalized)
         objection_next_step = self.env['omni.sales.intel'].sudo().omni_objection_next_step_block(normalized)
+        pain_script = self.env['omni.sales.intel'].sudo().omni_pain_script_block()
+        upsell_script = self.env['omni.sales.intel'].sudo().omni_upsell_script_block()
         system_parts = [base_system]
         if strict:
             system_parts.append(_STRICT_POLICY_UK)
@@ -240,6 +244,11 @@ class OmniAi(models.AbstractModel):
             system_parts.append(objection_guidance)
         if objection_next_step:
             system_parts.append(objection_next_step)
+        if pain_script:
+            system_parts.append(pain_script)
+        if upsell_script:
+            system_parts.append(upsell_script)
+        system_parts.append(self._omni_warm_style_policy())
         system_parts.append(self._omni_reply_language_instruction(normalized, channel=channel))
         system_parts.append(facts)
         system = '\n\n'.join(system_parts)
@@ -264,6 +273,19 @@ class OmniAi(models.AbstractModel):
             'discount', 'coupon', 'promo code',
         )
         return any(k in txt for k in keys)
+
+    def _omni_warm_style_policy(self):
+        custom = (
+            self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.style_warm_policy', '') or ''
+        ).strip()
+        if custom:
+            return 'STYLE_POLICY:\n%s' % custom
+        return (
+            'STYLE_POLICY:\n'
+            '- Warm, respectful, premium communication for parents.\n'
+            '- No aggressive urgency, no pressure tactics.\n'
+            '- Keep concise, helpful, and factual.'
+        )
 
     def _omni_coupon_meta_offer_text(self):
         icp = self.env['ir.config_parameter'].sudo()

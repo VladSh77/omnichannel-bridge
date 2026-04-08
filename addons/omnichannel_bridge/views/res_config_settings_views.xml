@@ -40,6 +40,9 @@
                         <setting string="SLA wait before bot reply (sec)" help="Typical value: 180 seconds. If manager replies before timeout, queued bot reply is cancelled.">
                             <field name="omnichannel_sla_no_human_seconds"/>
                         </setting>
+                        <setting string="SLA scope">
+                            <field name="omnichannel_sla_scope"/>
+                        </setting>
                         <setting string="Manager session lock timeout (minutes)" help="After manager message, bot remains paused in messenger threads for this duration.">
                             <field name="omnichannel_manager_session_timeout_minutes"/>
                         </setting>
@@ -275,6 +278,18 @@
                         </setting>
                         <setting string="Not decision maker">
                             <field name="omnichannel_objection_playbook_not_decision_maker" placeholder="Ask who decides and suggest a convenient handoff/call slot."/>
+                        </setting>
+                        <setting string="Pain discovery script">
+                            <field name="omnichannel_pain_script" placeholder="Short script to discover blockers and pains in consultative style."/>
+                        </setting>
+                        <setting string="Upsell script">
+                            <field name="omnichannel_upsell_script" placeholder="Short script with non-aggressive upsell/cross-sell hints based on ORM facts."/>
+                        </setting>
+                        <setting string="Warm style policy">
+                            <field name="omnichannel_style_warm_policy" placeholder="Warm, respectful, premium tone; no pressure or aggressive urgency."/>
+                        </setting>
+                        <setting string="FOMO manager internal notify">
+                            <field name="omnichannel_fomo_internal_notify"/>
                         </setting>
                     </block>
                 </app>

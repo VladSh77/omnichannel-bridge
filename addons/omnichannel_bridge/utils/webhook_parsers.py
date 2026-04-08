@@ -28,6 +28,11 @@ def extract_whatsapp_message_id(data):
     return ''
 
 
+def extract_twilio_whatsapp_message_id(data):
+    sid = (data or {}).get('MessageSid') or (data or {}).get('SmsSid')
+    return str(sid) if sid else ''
+
+
 def extract_viber_message_token(data):
     token = (data or {}).get('message_token')
     return str(token) if token is not None else ''

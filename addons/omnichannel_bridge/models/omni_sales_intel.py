@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 
-from odoo import _, api, models
+from odoo import _, api, fields, models
 
 FOMO_THRESHOLD = 5
 
@@ -67,6 +67,7 @@ class OmniSalesIntel(models.AbstractModel):
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
             )
+            self._omni_notify_fomo_hot_lead(channel, partner, fomo_line)
 
         # Детекція запиту ескалації
         if self._omni_detect_escalation(text):
@@ -158,6 +159,51 @@ class OmniSalesIntel(models.AbstractModel):
             'not_decision_maker': 'OBJECTION_NEXT_STEP: Ask who decides and offer convenient manager contact format.',
         }
         return prompts.get(objection_type, '')
+
+    @api.model
+    def omni_pain_script_block(self):
+        script = (
+            self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.pain_script', '') or ''
+        ).strip()
+        if script:
+            return 'PAIN_SCRIPT:\n%s' % script
+        return (
+            'PAIN_SCRIPT:\n'
+            '- Ask one blocker question (budget/timing/logistics/safety).\n'
+            '- Reflect client concern with empathy.\n'
+            '- Resolve only with ORM-confirmed facts and propose one next step.'
+        )
+
+    @api.model
+    def omni_upsell_script_block(self):
+        script = (
+            self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.upsell_script', '') or ''
+        ).strip()
+        if script:
+            return 'UPSELL_SCRIPT:\n%s' % script
+        return (
+            'UPSELL_SCRIPT:\n'
+            '- Offer at most one relevant add-on/upgrade after core fit is confirmed.\n'
+            '- Keep non-aggressive wording and provide manager help option.'
+        )
+
+    @api.model
+    def _omni_notify_fomo_hot_lead(self, channel, partner, fomo_line):
+        if not channel:
+            return
+        icp = self.env['ir.config_parameter'].sudo()
+        enabled = str(icp.get_param('omnichannel_bridge.fomo_internal_notify', 'True')).lower() in ('1', 'true', 'yes')
+        if not enabled:
+            return
+        now = fields.Datetime.now()
+        if channel.omni_last_fomo_notify_at and (now - channel.omni_last_fomo_notify_at).total_seconds() < 600:
+            return
+        channel.sudo().write({'omni_last_fomo_notify_at': now})
+        self.env['omni.notify'].sudo().notify_problematic(
+            channel=channel,
+            partner=partner,
+            note='fomo_hot_lead: %s' % (fomo_line[:180] if fomo_line else 'low_availability'),
+        )
 
     @api.model
     def _omni_objection_playbook_templates(self):

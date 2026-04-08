@@ -105,6 +105,15 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.sla_no_human_seconds',
         help='If no human manager reply appears in channel within this window, bot may reply.',
     )
+    omnichannel_sla_scope = fields.Selection(
+        selection=[
+            ('manager_hours', 'Measure only during manager hours'),
+            ('always', 'Measure 24x7'),
+        ],
+        string='SLA scope',
+        default='manager_hours',
+        config_parameter='omnichannel_bridge.sla_scope',
+    )
     omnichannel_manager_session_timeout_minutes = fields.Integer(
         string='Manager session lock timeout (minutes)',
         default=30,
@@ -226,6 +235,23 @@ class ResConfigSettings(models.TransientModel):
     omnichannel_objection_playbook_not_decision_maker = fields.Text(
         string='Objection playbook: not_decision_maker',
         config_parameter='omnichannel_bridge.objection_playbook_not_decision_maker',
+    )
+    omnichannel_pain_script = fields.Text(
+        string='Pain discovery script',
+        config_parameter='omnichannel_bridge.pain_script',
+    )
+    omnichannel_upsell_script = fields.Text(
+        string='Upsell script',
+        config_parameter='omnichannel_bridge.upsell_script',
+    )
+    omnichannel_style_warm_policy = fields.Text(
+        string='Warm style policy',
+        config_parameter='omnichannel_bridge.style_warm_policy',
+    )
+    omnichannel_fomo_internal_notify = fields.Boolean(
+        string='Notify managers on FOMO low availability hints',
+        config_parameter='omnichannel_bridge.fomo_internal_notify',
+        default=True,
     )
     omnichannel_coupon_public_channel_url = fields.Char(
         string='Public Telegram channel for coupon',

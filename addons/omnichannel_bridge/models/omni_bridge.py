@@ -15,6 +15,7 @@ from odoo.tools import html2plaintext
 from ..utils.webhook_parsers import (
     extract_meta_mid,
     extract_telegram_update_id,
+    extract_twilio_whatsapp_message_id,
     extract_viber_message_token,
     extract_whatsapp_message_id,
 )
@@ -39,7 +40,9 @@ class OmniBridge(models.AbstractModel):
             return self._omni_process_telegram(payload, headers)
         if provider == 'viber':
             return self._omni_process_viber_stub(payload, headers)
-        if provider in ('whatsapp', 'twilio_whatsapp'):
+        if provider == 'twilio_whatsapp':
+            return self._omni_process_twilio_whatsapp(payload, headers)
+        if provider == 'whatsapp':
             return self._omni_process_whatsapp_stub(payload, headers)
         _logger.warning('Unknown omnichannel provider: %s', provider)
         return {'ok': False, 'error': 'unknown_provider'}
@@ -49,8 +52,10 @@ class OmniBridge(models.AbstractModel):
             return extract_telegram_update_id(data)
         if provider == 'meta':
             return extract_meta_mid(data)
-        if provider in ('whatsapp', 'twilio_whatsapp'):
+        if provider == 'whatsapp':
             return extract_whatsapp_message_id(data)
+        if provider == 'twilio_whatsapp':
+            return extract_twilio_whatsapp_message_id(data)
         if provider == 'viber':
             return extract_viber_message_token(data)
         return ''
@@ -585,6 +590,38 @@ class OmniBridge(models.AbstractModel):
                         email='',
                         metadata_obj=msg,
                     )
+        webhook_event.sudo().write({
+            'state': 'processed',
+            'processed_at': fields.Datetime.now(),
+        })
+        return {'ok': True}
+
+    def _omni_process_twilio_whatsapp(self, payload, headers):
+        data = json.loads(payload.decode('utf-8')) if isinstance(payload, (bytes, bytearray)) else (payload or {})
+        webhook_event = self._omni_register_webhook_event('twilio_whatsapp', data)
+        if not webhook_event:
+            return {'ok': True, 'deduplicated': True}
+        body = (data.get('Body') or data.get('body') or '').strip()
+        from_raw = (data.get('From') or data.get('from') or '').strip()
+        sender = from_raw.replace('whatsapp:', '').strip()
+        if not body or not sender:
+            webhook_event.sudo().write({
+                'state': 'processed',
+                'processed_at': fields.Datetime.now(),
+            })
+            return {'ok': True, 'skipped': True}
+        profile = (data.get('ProfileName') or data.get('profile_name') or '').strip()
+        display_name = profile or _('WhatsApp user %s') % sender
+        self._omni_deliver_inbound(
+            'twilio_whatsapp',
+            thread_id=sender,
+            external_user_id=sender,
+            display_name=display_name,
+            text=body,
+            phone=sender,
+            email='',
+            metadata_obj=data,
+        )
         webhook_event.sudo().write({
             'state': 'processed',
             'processed_at': fields.Datetime.now(),

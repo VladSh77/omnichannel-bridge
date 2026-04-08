@@ -36,6 +36,7 @@ class MailChannel(models.Model):
     omni_last_customer_inbound_at = fields.Datetime()
     omni_window_reminder_sent_at = fields.Datetime()
     omni_window_reminder_count = fields.Integer(default=0)
+    omni_last_fomo_notify_at = fields.Datetime()
     omni_livechat_entry_state = fields.Selection(
         selection=[
             ('new', 'New'),

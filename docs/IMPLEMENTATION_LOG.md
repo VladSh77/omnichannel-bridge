@@ -1648,3 +1648,31 @@
 - `addons/omnichannel_bridge/views/res_config_settings_views.xml`
 - `addons/omnichannel_bridge/views/omni_ops_views.xml`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 3/6 closure (SLA scope + Twilio + sales-style controls)
+
+### Scope
+
+- Closed SLA ambiguity for ~3-minute bot pickup by introducing runtime scope switch:
+  - `sla_scope=manager_hours` (existing behavior),
+  - `sla_scope=always` (24x7 measurement).
+- Added Twilio-specific WhatsApp inbound runtime parser (`_omni_process_twilio_whatsapp`) with dedicated event-id extraction from `MessageSid/SmsSid`.
+- Upgraded sales quality controls from hardcoded logic to editable settings:
+  - `pain_script`,
+  - `upsell_script`,
+  - warm style policy override (`style_warm_policy`).
+- Enforced warm premium tone in AI system context via `STYLE_POLICY`.
+- Promoted FOMO low-availability hints to actionable manager alerts:
+  - internal notify toggle (`fomo_internal_notify`),
+  - channel-level cooldown (`omni_last_fomo_notify_at`) to avoid spam.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/omni_bridge.py`
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/utils/webhook_parsers.py`
+- `docs/TZ_CHECKLIST.md`

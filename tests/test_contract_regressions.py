@@ -37,8 +37,10 @@ class ContractRegressionTests(unittest.TestCase):
         content = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         parsers = (ROOT / 'addons/omnichannel_bridge/utils/webhook_parsers.py').read_text()
         self.assertIn('_omni_process_whatsapp_stub', content)
+        self.assertIn('_omni_process_twilio_whatsapp', content)
         self.assertIn('_omni_whatsapp_send_to_wa_id', content)
         self.assertIn('extract_whatsapp_message_id', parsers)
+        self.assertIn('extract_twilio_whatsapp_message_id', parsers)
 
     def test_viber_runtime_markers_present(self):
         content = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
@@ -139,6 +141,11 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('time.sleep(2)', ai)
         self.assertIn('_pick_online_manager_user', notify)
         self.assertIn("final_body.startswith('🤖')", ai)
+        self.assertIn('sla_scope', ai)
+        self.assertIn('omni_pain_script_block', intel)
+        self.assertIn('omni_upsell_script_block', intel)
+        self.assertIn('_omni_warm_style_policy', ai)
+        self.assertIn('fomo_internal_notify', settings)
 
     def test_outbound_log_and_message_tags_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
