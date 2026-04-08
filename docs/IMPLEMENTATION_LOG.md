@@ -60,6 +60,12 @@
   - module state: `installed`
   - new models/fields available at runtime (`omni.coupon.redemption`, coupon/fsm/compliance fields).
 
+### Documentation alignment
+
+- Re-read and aligned:
+  - `README.md` docs index (added production mapping audit doc).
+  - `docs/TZ_CHECKLIST.md` statuses and readiness estimate refreshed to current state.
+
 ## 2026-04-08 — 24h Window Reminder Automation (Meta/WhatsApp)
 
 ### Scope

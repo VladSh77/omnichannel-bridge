@@ -431,11 +431,11 @@
 
 ---
 
-## 16. Оцінка виконання ТЗ (стан на 2026-04-07)
+## 16. Оцінка виконання ТЗ (стан на 2026-04-08)
 
 ### Загальна оцінка
 
-- **Орієнтовне виконання: ~64%**
+- **Орієнтовне виконання: ~79%**
 - Методика: вага по 4 групах
   - core архітектура та омніканал,
   - sales/AI поведінка в діалозі,
@@ -444,27 +444,26 @@
 
 ### Розбивка по блоках
 
-1. **Core платформа та інтеграція каналів — ~78%**
-   - зроблено: Meta/Telegram контур, idempotency, AI queue, fallback, livechat bridge (partial).
-   - бракує: завершена стабілізація livechat на всіх edge-cases і повна прод-обв'язка через git-based deploy.
+1. **Core платформа та інтеграція каналів — ~88%**
+   - зроблено: Meta/Telegram контур, idempotency, AI queue, fallback, livechat bridge, 24h reminder automation.
+   - бракує: прод-ready WhatsApp parser, Viber runtime path, повний livechat UX блок §2.2.
 
-2. **Sales/AI логіка і кваліфікація — ~72%**
-   - зроблено: memory/profile, auto-next-question, stage transitions, compact mode, handoff packet, strict grounding.
-   - бракує: повний FSM, розширений anti-repeat, тонке intent-routing без false-positive out-of-scope.
+2. **Sales/AI логіка і кваліфікація — ~83%**
+   - зроблено: memory/profile, auto-next-question, strict grounding, stage transitions with FSM guard, manager-session race lock.
+   - бракує: повний state-machine editor/UI, глибший anti-repeat, аналітика якості менеджера.
 
-3. **Бізнес-специфіка таборів (місця/резерв/купон) — ~38%**
-   - зроблено: базовий facts resolver price/program/places, рекомендації 1-2 табори.
-   - бракує: event/registration truth-sync, резервний список, повний купонний контур -5% на табір.
+3. **Бізнес-специфіка таборів (місця/резерв/купон) — ~76%**
+   - зроблено: прод-аудит mapping місць, reserve handoff flow, coupon E2E (code + validation + redemption registry).
+   - бракує: окрема сутність/процес reserve-list, expiry/ROMI campaign layer, промо-сутності як окремий домен.
 
-4. **Security/RODO/Operations/CI — ~45%**
-   - зроблено: базові runbook/security docs, часткові hardening кроки, процесні правила.
-   - бракує: завершений hardening, юридично затверджений facts-pack у прод, CI/CD, моніторинг/алерти/бекап-процедури.
+4. **Security/RODO/Operations/CI — ~71%**
+   - зроблено: consent/legal baseline, retention/purge jobs, PII masking у логах, right-to-erasure action, CI+contract tests expansion.
+   - бракує: secrets encryption policy, full legal sign-off pack, backup/restore drills, deeper integration tests.
 
 ### Важливе уточнення
 
 - Це **інженерна оцінка готовності до повного ТЗ**, не "код написано" у вакуумі.
 - Для переходу в режим стабільного прод потрібні:
-  - закриття livechat edge-cases,
-  - переведення сервера на `git pull`-деплой,
-  - доробка доменних блоків (місця/резерв/купон),
-  - завершення compliance/security пакета.
+  - доробити незакриті `[ ]` по WhatsApp/Viber і livechat UX §2.2,
+  - завершити compliance/operations backlog (версіонність legal docs, token rotation, backup drills),
+  - додати Odoo integration test wave на staging parity.

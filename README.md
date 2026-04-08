@@ -81,6 +81,7 @@ Fajna/
 | [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Тест-план для локального/staging/prod контурів |
 | [docs/STAGING_BLUEPRINT.md](docs/STAGING_BLUEPRINT.md) | Blueprint staging-середовища з parity вимогами |
 | [docs/ENGINEERING_DESIGN_V1.md](docs/ENGINEERING_DESIGN_V1.md) | Технічний дизайн v1: idempotency + async queue + race guard |
+| [docs/PROD_CAMP_MAPPING_AUDIT_2026-04-08.md](docs/PROD_CAMP_MAPPING_AUDIT_2026-04-08.md) | Read-only аудит прод-мепінгу місць (кастомні модулі + DB) |
 | [docs/IMPLEMENTATION_LOG.md](docs/IMPLEMENTATION_LOG.md) | Журнал реалізації (ведеться під час розробки) |
 | `addons/omnichannel_bridge/__manifest__.py` | Залежності та дані модуля |
 
