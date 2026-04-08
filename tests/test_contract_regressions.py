@@ -10,6 +10,8 @@ class ContractRegressionTests(unittest.TestCase):
         content = (ROOT / 'addons/omnichannel_bridge/controllers/main.py').read_text()
         self.assertIn('webhook_max_body_bytes', content)
         self.assertIn('payload_too_large', content)
+        self.assertIn('webhook_rate_limit_per_minute', content)
+        self.assertIn('rate_limited', content)
 
     def test_reserve_flow_markers_present(self):
         content = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
@@ -153,6 +155,10 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_moderation_policy_hit', ai)
         self.assertIn('cooldown_global_minutes', settings)
         self.assertIn('_omni_marketing_touch_allowed', (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text())
+
+    def test_ci_lint_step_present(self):
+        ci = (ROOT / '.github/workflows/ci.yml').read_text()
+        self.assertIn('ruff check', ci)
 
     def test_outbound_log_and_message_tags_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()

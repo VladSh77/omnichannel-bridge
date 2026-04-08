@@ -1705,3 +1705,25 @@
 - `addons/omnichannel_bridge/__manifest__.py`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 5/6 partial closure (webhook rate-limit + CI lint)
+
+### Scope
+
+- Extended webhook hardening with per-IP best-effort app-layer rate limit:
+  - new config `webhook_rate_limit_per_minute`,
+  - explicit HTTP `429 rate_limited` response on threshold breach.
+- Kept payload guard (`413`) and added operational recommendation to keep infra-level rate limiting enabled.
+- Expanded CI pipeline with lint/tooling stage (`ruff check`) in addition to compile + tests.
+- Updated contract regressions with markers for:
+  - webhook rate limiting,
+  - CI lint stage.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/controllers/main.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `.github/workflows/ci.yml`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

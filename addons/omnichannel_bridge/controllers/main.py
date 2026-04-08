@@ -1,13 +1,38 @@
 # -*- coding: utf-8 -*-
 import logging
+import time
 
 from odoo import http
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
+_WEBHOOK_IP_BUCKET = {}
 
 
 class OmnichannelWebhookController(http.Controller):
+    def _omni_rate_limit_allowed(self):
+        ip = (
+            request.httprequest.headers.get('X-Forwarded-For', '').split(',')[0].strip() or
+            request.httprequest.remote_addr or
+            'unknown'
+        )
+        icp = request.env['ir.config_parameter'].sudo()
+        try:
+            rpm = max(0, int(icp.get_param('omnichannel_bridge.webhook_rate_limit_per_minute', '0')))
+        except (TypeError, ValueError):
+            rpm = 0
+        if rpm <= 0:
+            return True
+        now = int(time.time())
+        win_start = now - 60
+        bucket = [ts for ts in _WEBHOOK_IP_BUCKET.get(ip, []) if ts >= win_start]
+        if len(bucket) >= rpm:
+            _WEBHOOK_IP_BUCKET[ip] = bucket
+            return False
+        bucket.append(now)
+        _WEBHOOK_IP_BUCKET[ip] = bucket
+        return True
+
     @http.route(
         '/omni/webhook/<string:provider>',
         type='http',
@@ -38,6 +63,11 @@ class OmnichannelWebhookController(http.Controller):
             return request.make_json_response(
                 {'ok': False, 'error': 'payload_too_large'},
                 status=413,
+            )
+        if not self._omni_rate_limit_allowed():
+            return request.make_json_response(
+                {'ok': False, 'error': 'rate_limited'},
+                status=429,
             )
         headers = {k: v for k, v in request.httprequest.headers.items()}
         try:

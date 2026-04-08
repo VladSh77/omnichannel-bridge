@@ -99,6 +99,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.webhook_max_body_bytes',
         help='Reject larger POST bodies on /omni/webhook/* with 413 (TZ §14.5).',
     )
+    omnichannel_webhook_rate_limit_per_minute = fields.Integer(
+        string='Webhook per-IP rate limit (req/min, 0=off)',
+        default=0,
+        config_parameter='omnichannel_bridge.webhook_rate_limit_per_minute',
+        help='Best-effort app-layer limit for /omni/webhook/*; prefer infra-level rate limit in production.',
+    )
     omnichannel_sla_no_human_seconds = fields.Integer(
         string='SLA wait before bot reply (seconds)',
         default=180,

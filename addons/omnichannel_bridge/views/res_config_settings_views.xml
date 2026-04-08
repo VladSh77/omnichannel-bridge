@@ -70,6 +70,9 @@
                         <setting string="Max webhook body (bytes)" help="Reject oversized webhook POST payloads.">
                             <field name="omnichannel_webhook_max_body_bytes"/>
                         </setting>
+                        <setting string="Webhook per-IP rate limit (req/min)">
+                            <field name="omnichannel_webhook_rate_limit_per_minute"/>
+                        </setting>
                         <setting string="Enable 24h window reminder automation" help="For Meta/WhatsApp-like channels: send one soft reminder around the configured hour in active message window.">
                             <field name="omnichannel_window_reminder_enabled"/>
                         </setting>

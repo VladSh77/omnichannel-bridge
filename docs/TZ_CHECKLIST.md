@@ -13,8 +13,8 @@
 
 **Статус-зріз (2026-04-08):**
 
-- `[x]` — 139
-- `[~]` — 20
+- `[x]` — 141
+- `[~]` — 18
 - `[ ]` — 0
 
 **Контекст:** паралельно може існувати **SendPulse + Odoo**; цей проєкт — **нове підключення** (окремі вебхуки в Odoo), **міграція не обов’язкова**. Мета — **прибрати обмеження** сценарних ботів без ШІ (повтори питань, глюки, дратування клієнтів, довге очікування) і дати **гнучкість і якість** під продажі **на відкритому стеку** (без купівлі модулів на маркетплейсі; LLM — локальний Ollama або опційно хмара).
@@ -345,7 +345,7 @@
 
 ## 11. Експлуатація та якість інженерії
 
-- [~] CI: додано GitHub Actions pipeline (compile + unit tests for webhook parsers + contract regression checks); lint/tooling expansion за потреби.
+- [x] CI: додано GitHub Actions pipeline (compile + unit tests for webhook parsers + contract regression checks) + lint/tooling expansion (`ruff check`).
 - [x] Автотести критичних парсерів webhook (pure parser unit tests: Telegram update_id, Meta mid).
 - [x] Staging з тестовою сторінкою Meta (процедура і чекліст: `docs/STAGING_META_TEST_PAGE.md`).
 - [x] Runbook: падіння **Ollama**, нестача RAM/GPU, rate limit Graph API, прострочений токен, (опційно) OpenAI (розширено SOP у `OPERATIONS_RUNBOOK.md`).
@@ -419,7 +419,7 @@
 
 ### 14.5 Безпека та зловживання
 
-- [~] Обмеження **розміру payload** вебхука (`webhook_max_body_bytes`, 413); rate limit по IP — за можливості інфраструктури / окремий шар.
+- [x] Обмеження **розміру payload** вебхука (`webhook_max_body_bytes`, 413) + best-effort app-layer rate limit по IP (`webhook_rate_limit_per_minute`, 429) з рекомендацією infra-layer.
 - [x] **Ротація** токенів Meta/Telegram; хто відповідає за календар оновлення (owner + next date у Settings, SOP в runbook).
 
 ### 14.6 Якість і відповідальність перед клієнтом
