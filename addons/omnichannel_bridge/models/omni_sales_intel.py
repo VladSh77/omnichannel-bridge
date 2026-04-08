@@ -115,9 +115,8 @@ class OmniSalesIntel(models.AbstractModel):
         txt = (text or '').lower()
         if not txt:
             return False
-        return any(k in txt for k in self._CONFLICT_KEYWORDS) or any(
-            k in txt for k in ('менеджер', 'оператор', 'human', 'manager')
-        )
+        human_keys = ('менеджер', 'оператор', 'людина', 'human', 'manager')
+        return any(k in txt for k in self._CONFLICT_KEYWORDS) or any(k in txt for k in human_keys)
 
     @api.model
     def _omni_detect_technical_problem(self, text):
@@ -144,6 +143,21 @@ class OmniSalesIntel(models.AbstractModel):
             return ''
         templates = self._omni_objection_playbook_templates()
         return templates.get(objection_type, '')
+
+    @api.model
+    def omni_objection_next_step_block(self, text):
+        objection_type = self.omni_detect_objection_type(text)
+        if not objection_type:
+            return ''
+        prompts = {
+            'price': 'OBJECTION_NEXT_STEP: Ask for acceptable budget corridor and offer one best-fit camp option.',
+            'timing': 'OBJECTION_NEXT_STEP: Ask preferred reconnect time and offer a manager callback slot.',
+            'trust': 'OBJECTION_NEXT_STEP: Provide one verifiable source link and ask if manager handoff is needed.',
+            'need_to_think': 'OBJECTION_NEXT_STEP: Ask one blocking question and offer low-pressure follow-up.',
+            'competitor': 'OBJECTION_NEXT_STEP: Ask one comparison criterion and answer only with ORM facts.',
+            'not_decision_maker': 'OBJECTION_NEXT_STEP: Ask who decides and offer convenient manager contact format.',
+        }
+        return prompts.get(objection_type, '')
 
     @api.model
     def _omni_objection_playbook_templates(self):

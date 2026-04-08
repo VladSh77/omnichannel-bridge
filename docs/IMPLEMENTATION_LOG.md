@@ -1581,3 +1581,44 @@
 - `docs/BACKUP_RESTORE_DRILL.md` (new)
 - `docs/SECRET_ENCRYPTION_POLICY.md` (new)
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Status sync after 19-block pass
+
+### Status
+
+- `docs/TZ_CHECKLIST.md` synced to current completion snapshot:
+  - `[x]` = 123
+  - `[~]` = 36
+  - `[ ]` = 0
+- `README.md` docs table synced with newly added operational artifacts.
+
+### Git and deployment state
+
+- Local changes committed and pushed to `origin/main` (`fe330e1`).
+- Server auto-check/upgrade from current environment is blocked by SSH connectivity timeout to `91.98.122.195:22`.
+- Pending after connectivity restore:
+  1. pull/fast-forward on server git repo,
+  2. module upgrade via `odoo shell --no-http`,
+  3. runtime verification of module state/log errors.
+
+## 2026-04-08 — Wave 1/6 closure (6 checklist items)
+
+### Scope
+
+- `website_sale` parity filter finalized: `is_published` is used only when `website_sale` is installed.
+- Language detection hardened with explicit Ukrainian lexical markers before fallback.
+- Added confusion/off-topic trust-protection path with safe clarification response and internal note.
+- Added explicit `OBJECTION_NEXT_STEP` guidance block to enforce micro-commitment after objection handling.
+- Improved human-request keyword handling (`менеджер/людина/...`) for internal note consistency.
+- Added configurable priority keyword override for internal alerts (`internal_notify_priority_keywords`).
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

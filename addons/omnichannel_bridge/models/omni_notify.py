@@ -281,10 +281,17 @@ class OmniNotify(models.AbstractModel):
         txt = (reason or '').lower()
         if not txt:
             return False
-        keys = (
+        keys = [
             'термін', 'urgent', 'asap', 'конфлікт', 'агрес', 'скарг', 'ризик',
             'дитин', 'безпек', 'safety', 'medical', 'юрид', 'legal',
+        ]
+        extra = (
+            self.env['ir.config_parameter'].sudo()
+            .get_param('omnichannel_bridge.internal_notify_priority_keywords', '')
+            .strip()
         )
+        if extra:
+            keys.extend([k.strip().lower() for k in extra.split(',') if k.strip()])
         return any(k in txt for k in keys)
 
     def _event_summary_text(self, event, channel, partner, lines=None, priority=False, provider_label=''):
@@ -350,9 +357,17 @@ class OmniNotify(models.AbstractModel):
         ICP = self.env['ir.config_parameter'].sudo()
         user_id_raw = (ICP.get_param('omnichannel_bridge.default_manager_user_id') or '').strip()
         if not user_id_raw.isdigit():
-            return self.env['res.users']
+            return self._pick_online_manager_user()
         user = self.env['res.users'].sudo().browse(int(user_id_raw))
-        return user if user.exists() else self.env['res.users']
+        return user if user.exists() else self._pick_online_manager_user()
+
+    def _pick_online_manager_user(self):
+        users = self.env['res.users'].sudo().search([
+            ('share', '=', False),
+            ('active', '=', True),
+            ('im_status', '=', 'online'),
+        ], limit=1)
+        return users[:1] if users else self.env['res.users']
 
     def _notify_manager_direct(self, channel, partner, subject, summary):
         manager = self._default_manager_user()

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import time
 from datetime import datetime, timedelta, time as time_cls
 
 import pytz
@@ -184,6 +185,14 @@ class OmniAi(models.AbstractModel):
                 reason='🛟 Чутлива тема (діти/медицина/юридичне/безпека) — передано менеджеру',
             )
             return
+        if self._omni_is_confusion_message(normalized):
+            self._omni_send_confusion_safe_reply(channel, normalized)
+            channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
+                body='[auto] confusion_detected: safe clarify + manager_offer',
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+            return
         if not self._omni_is_camp_scope_message(normalized):
             self._omni_send_out_of_scope_reply(channel)
             self._omni_set_sales_stage(partner, 'handoff', channel, 'out_of_scope')
@@ -222,12 +231,15 @@ class OmniAi(models.AbstractModel):
             'yes',
         )
         objection_guidance = self.env['omni.sales.intel'].sudo().omni_objection_guidance_block(normalized)
+        objection_next_step = self.env['omni.sales.intel'].sudo().omni_objection_next_step_block(normalized)
         system_parts = [base_system]
         if strict:
             system_parts.append(_STRICT_POLICY_UK)
             system_parts.append(_CAMP_DOMAIN_POLICY_UK)
         if objection_guidance:
             system_parts.append(objection_guidance)
+        if objection_next_step:
+            system_parts.append(objection_next_step)
         system_parts.append(self._omni_reply_language_instruction(normalized, channel=channel))
         system_parts.append(facts)
         system = '\n\n'.join(system_parts)
@@ -368,14 +380,22 @@ class OmniAi(models.AbstractModel):
         if not msg:
             # Динамічний fallback: якщо зараз неробочий час — з часом відповіді
             if self._omni_manager_hours_active_now():
-                msg = 'Дякуємо за звернення! Менеджер зараз зайнятий і відповість найближчим часом.'
+                msg = (
+                    'Дякуємо за звернення. Зараз підключаю менеджера — '
+                    'він відповість найближчим часом.'
+                )
             else:
                 start = (icp.get_param('omnichannel_bridge.manager_hour_start') or '09:00').strip()
                 msg = (
-                    'Дякуємо за звернення! '
-                    'Наш менеджер відповість вранці о %(start)s. '
+                    'Дякуємо за звернення. Перевірили доступність менеджера: '
+                    'він відповість вранці о %(start)s. '
                     'Якщо питання термінове — залиште номер телефону і ми зателефонуємо.'
                 ) % {'start': start}
+        # UX pacing for livechat so fallback is not visually abrupt.
+        try:
+            time.sleep(2)
+        except Exception:
+            pass
         self._omni_post_bot_message(channel, msg)
         # Сповіщаємо менеджера
         self.env['omni.notify'].sudo().notify_escalation(
@@ -428,7 +448,11 @@ class OmniAi(models.AbstractModel):
         return (
             '%(consent)s\n'
             'Відповідає юридична особа: %(legal_name)s.\n'
-            'Політики: %(privacy)s | %(terms)s | %(cookie)s | %(child)s'
+            'Політики: '
+            '<a href="%(privacy)s">Privacy</a> | '
+            '<a href="%(terms)s">Terms</a> | '
+            '<a href="%(cookie)s">Cookies</a> | '
+            '<a href="%(child)s">Child protection</a>'
         ) % {
             'consent': consent_line,
             'legal_name': legal_name,
@@ -508,9 +532,16 @@ class OmniAi(models.AbstractModel):
 
     def _omni_detect_language(self, user_text, channel=None):
         txt = (user_text or '').strip()
+        low = txt.lower()
         if self._omni_is_polish_message(txt):
             return 'pl'
         if self._omni_is_ru_or_be_message(txt):
+            return 'uk'
+        uk_markers = (
+            'доброго дня', 'будь ласка', 'дякую', 'табір', 'зміна', 'вартість', 'місця',
+            'дитина', 'менеджер', 'реєстрація',
+        )
+        if any(k in low for k in uk_markers):
             return 'uk'
         if channel and channel.omni_detected_lang in ('uk', 'pl'):
             return channel.omni_detected_lang
@@ -609,6 +640,29 @@ class OmniAi(models.AbstractModel):
             'price',
         )
         return any(k in txt for k in camp_terms)
+
+    def _omni_is_confusion_message(self, user_text):
+        txt = (user_text or '').lower()
+        if not txt:
+            return False
+        confusion = (
+            'не зрозум', 'незрозум', 'плута', 'не те', 'знову те саме',
+            'не відповіли', 'не по темі', 'що ви маєте на увазі',
+            'nie rozumiem', 'to nie o tym', 'powtarzasz się',
+            'i do not understand', 'you repeat', 'off topic',
+        )
+        return any(k in txt for k in confusion)
+
+    def _omni_send_confusion_safe_reply(self, channel, user_text):
+        is_pl = self._omni_is_polish_message(user_text or '')
+        body = (
+            'Дякую, бачу що відповідь була не зовсім у точку. Сформулюю коротко і по фактах з системи. '
+            'Якщо зручно, одразу підключу менеджера.'
+            if not is_pl else
+            'Dziękuję, widzę że odpowiedź nie była trafiona. Podam krótko i wyłącznie na podstawie faktów z systemu. '
+            'Jeśli wygodnie, od razu podłączę managera.'
+        )
+        self._omni_post_bot_message(channel, body)
 
     def _llm_complete(self, backend, icp, system_prompt, user_text):
         if backend == 'openai':

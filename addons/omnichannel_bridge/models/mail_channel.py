@@ -55,6 +55,7 @@ class MailChannel(models.Model):
             ('unknown', 'Unknown'),
         ],
     )
+    omni_livechat_contact_attempts = fields.Integer(default=0)
     omni_detected_lang = fields.Selection(
         selection=[('uk', 'Ukrainian'), ('pl', 'Polish')],
         help='Detected client language for this thread (runtime hint for AI).',
@@ -162,11 +163,26 @@ class MailChannel(models.Model):
         if is_pl:
             return (
                 'Aby manager mógł się z Tobą skontaktować, zostaw proszę telefon lub email.\n'
+                'Przykład: +48 500 600 700 lub rodzic@email.com\n'
                 'Wysyłając kontakt, zgadzasz się na przetwarzanie danych w celu doboru obozu.'
             )
         return (
             'Щоб менеджер міг звʼязатися з вами, залиште, будь ласка, телефон або email.\n'
+            'Приклад: +380 67 123 45 67 або parent@email.com\n'
             'Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
+        )
+
+    def _omni_livechat_contact_invalid_text(self, is_pl=False):
+        if is_pl:
+            return (
+                'Поки не бачу коректного контакту. Щоб продовжити, надішліть телефон або email у форматі прикладу:\n'
+                '• +48 500 600 700\n'
+                '• rodzic@email.com'
+            )
+        return (
+            'Поки не бачу коректного контакту. Щоб продовжити, надішліть телефон або email у форматі прикладу:\n'
+            '• +380 67 123 45 67\n'
+            '• parent@email.com'
         )
 
     def _omni_livechat_prefers_polish(self, text):
@@ -205,6 +221,7 @@ class MailChannel(models.Model):
                     author_id=odoobot.id,
                 )
                 vals['omni_livechat_entry_state'] = 'awaiting_contact'
+                vals['omni_livechat_contact_attempts'] = 0
                 self.sudo().write(vals)
                 return True
             if topic == 'unknown':
@@ -218,6 +235,7 @@ class MailChannel(models.Model):
                     vals['omni_livechat_entry_state'] = 'ready'
                 else:
                     vals['omni_livechat_entry_state'] = 'awaiting_contact'
+                    vals['omni_livechat_contact_attempts'] = 0
                 self.sudo().write(vals)
                 return True
             if topic == 'contact' and not has_contact:
@@ -228,9 +246,11 @@ class MailChannel(models.Model):
                     author_id=odoobot.id,
                 )
                 vals['omni_livechat_entry_state'] = 'awaiting_contact'
+                vals['omni_livechat_contact_attempts'] = 0
                 self.sudo().write(vals)
                 return True
             vals['omni_livechat_entry_state'] = 'ready'
+            vals['omni_livechat_contact_attempts'] = 0
             self.sudo().write(vals)
             return False
         if state == 'awaiting_contact':
@@ -242,11 +262,20 @@ class MailChannel(models.Model):
                     upd['phone'] = phone
                 if upd:
                     author.write(upd)
-                self.sudo().write({'omni_livechat_entry_state': 'ready'})
+                self.sudo().write({
+                    'omni_livechat_entry_state': 'ready',
+                    'omni_livechat_contact_attempts': 0,
+                })
                 self.env['omni.bridge'].sudo()._omni_maybe_create_crm_lead(author, 'site_livechat')
                 return False
+            attempts = int(self.omni_livechat_contact_attempts or 0) + 1
+            self.sudo().write({'omni_livechat_contact_attempts': attempts})
+            prompt = self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl)
+            text_has_contact_intent = any(k in (body or '').lower() for k in ('mail', '@', 'пошта', 'email', 'телефон', 'phone'))
+            if attempts >= 2 or text_has_contact_intent:
+                prompt = self._omni_livechat_contact_invalid_text(is_pl=is_pl)
             self.with_context(omni_skip_livechat_inbound=True).message_post(
-                body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
+                body=prompt,
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
                 author_id=odoobot.id,
@@ -405,6 +434,12 @@ class MailChannel(models.Model):
             # Keep AI dialog working; partner enrichment will be skipped.
             author = self.env.ref('base.public_partner')
         author_adm = author.sudo() if author else author
+        if not sudo_channel.omni_last_customer_inbound_at:
+            self.env['omni.notify'].sudo().notify_new_thread(
+                channel=sudo_channel,
+                partner=author_adm,
+                provider='site_livechat',
+            )
         if self._omni_handle_livechat_entry_flow(author_adm, body, odoobot):
             return
         # Auto-resume after manager takeover when client writes again.

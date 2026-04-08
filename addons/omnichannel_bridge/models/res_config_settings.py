@@ -362,6 +362,10 @@ class ResConfigSettings(models.TransientModel):
         string='Notify on problematic flag',
         config_parameter='omnichannel_bridge.internal_notify_problem',
     )
+    omnichannel_internal_notify_priority_keywords = fields.Char(
+        string='Priority keyword override (comma-separated)',
+        config_parameter='omnichannel_bridge.internal_notify_priority_keywords',
+    )
     omnichannel_default_manager_user_id = fields.Many2one(
         'res.users',
         string='Default manager user (handoff owner)',

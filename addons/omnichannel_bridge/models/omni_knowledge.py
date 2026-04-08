@@ -72,7 +72,7 @@ class OmniKnowledge(models.AbstractModel):
             limit = min(limit, 12)
         Product = self.env['product.template'].sudo()
         domain = [('sale_ok', '=', True)]
-        if 'is_published' in Product._fields:
+        if 'website_sale' in self.env and 'is_published' in Product._fields:
             domain.append(('is_published', '=', True))
         order = 'website_sequence, name' if 'website_sequence' in Product._fields else 'name'
         products = Product.search(domain, order=order, limit=max(limit * 3, 40))
@@ -132,7 +132,7 @@ class OmniKnowledge(models.AbstractModel):
         """
         Product = self.env['product.template'].sudo()
         domain = [('sale_ok', '=', True)]
-        if 'is_published' in Product._fields:
+        if 'website_sale' in self.env and 'is_published' in Product._fields:
             domain.append(('is_published', '=', True))
         products = Product.search(domain, limit=80)
         if not products:

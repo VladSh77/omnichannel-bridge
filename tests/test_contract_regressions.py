@@ -54,6 +54,8 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_livechat_entry_menu_text', content)
         self.assertIn('_omni_livechat_prefers_polish', content)
         self.assertIn('manager_hours_now', content)
+        self.assertIn('omni_livechat_contact_attempts', content)
+        self.assertIn('_omni_livechat_contact_invalid_text', content)
 
     def test_fsm_and_race_markers_present(self):
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
@@ -115,7 +117,23 @@ class ContractRegressionTests(unittest.TestCase):
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
         self.assertIn('_omni_detect_and_store_channel_language', ai)
         self.assertIn('_omni_ru_language_policy_reply', ai)
+        self.assertIn('uk_markers', ai)
         self.assertIn('omni_detected_lang', channel)
+
+    def test_scope_confusion_and_priority_markers_present(self):
+        ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
+        intel = (ROOT / 'addons/omnichannel_bridge/models/omni_sales_intel.py').read_text()
+        notify = (ROOT / 'addons/omnichannel_bridge/models/omni_notify.py').read_text()
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('_omni_is_confusion_message', ai)
+        self.assertIn('_omni_send_confusion_safe_reply', ai)
+        self.assertIn('omni_objection_next_step_block', intel)
+        self.assertIn('internal_notify_priority_keywords', settings)
+        self.assertIn('internal_notify_priority_keywords', notify)
+        self.assertIn("'website_sale' in self.env", knowledge)
+        self.assertIn('time.sleep(2)', ai)
+        self.assertIn('_pick_online_manager_user', notify)
 
     def test_anti_repeat_prefill_markers_present(self):
         ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()

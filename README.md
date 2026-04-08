@@ -83,6 +83,10 @@ Fajna/
 | [docs/STAGING_BLUEPRINT.md](docs/STAGING_BLUEPRINT.md) | Blueprint staging-середовища з parity вимогами |
 | [docs/ENGINEERING_DESIGN_V1.md](docs/ENGINEERING_DESIGN_V1.md) | Технічний дизайн v1: idempotency + async queue + race guard |
 | [docs/PROD_CAMP_MAPPING_AUDIT_2026-04-08.md](docs/PROD_CAMP_MAPPING_AUDIT_2026-04-08.md) | Read-only аудит прод-мепінгу місць (кастомні модулі + DB) |
+| [docs/LIVECHAT_ENTRY_UX_TREE.md](docs/LIVECHAT_ENTRY_UX_TREE.md) | Узгоджене дерево livechat entry (UA/PL) + правила contact-first/free-text |
+| [docs/STAGING_META_TEST_PAGE.md](docs/STAGING_META_TEST_PAGE.md) | Чекліст staging-прогону Meta test page перед прод-релізом |
+| [docs/BACKUP_RESTORE_DRILL.md](docs/BACKUP_RESTORE_DRILL.md) | Процедура drill для backup/restore (DB + filestore + chat integrity) |
+| [docs/SECRET_ENCRYPTION_POLICY.md](docs/SECRET_ENCRYPTION_POLICY.md) | Базова політика шифрування/ротації секретів інтеграцій |
 | [docs/IMPLEMENTATION_LOG.md](docs/IMPLEMENTATION_LOG.md) | Журнал реалізації (ведеться під час розробки) |
 | `addons/omnichannel_bridge/__manifest__.py` | Залежності та дані модуля |
 
