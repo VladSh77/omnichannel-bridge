@@ -5,6 +5,7 @@ from . import omni_integration
 from . import omni_stage_event
 from . import omni_prompt_audit
 from . import omni_objection_policy
+from . import omni_moderation_rule
 from . import omni_outbound_log
 from . import omni_promo
 from . import omni_manager_reply_template

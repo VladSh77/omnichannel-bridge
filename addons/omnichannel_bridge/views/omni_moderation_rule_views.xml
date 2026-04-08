@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_moderation_rule_tree" model="ir.ui.view">
+        <field name="name">omni.moderation.rule.tree</field>
+        <field name="model">omni.moderation.rule</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="active"/>
+                <field name="priority"/>
+                <field name="name"/>
+                <field name="keyword"/>
+                <field name="action"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_moderation_rule_form" model="ir.ui.view">
+        <field name="name">omni.moderation.rule.form</field>
+        <field name="model">omni.moderation.rule</field>
+        <field name="arch" type="xml">
+            <form string="Moderation Rule">
+                <sheet>
+                    <group>
+                        <field name="active"/>
+                        <field name="priority"/>
+                    </group>
+                    <group>
+                        <field name="name"/>
+                        <field name="keyword"/>
+                        <field name="action"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_moderation_rule" model="ir.actions.act_window">
+        <field name="name">Moderation Rules</field>
+        <field name="res_model">omni.moderation.rule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

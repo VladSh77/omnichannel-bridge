@@ -695,21 +695,28 @@ class OmniAi(models.AbstractModel):
     def _omni_moderation_policy_hit(self, user_text):
         txt = (user_text or '').lower().strip()
         if not txt:
-            return ''
+            return {}
+        rules = self.env['omni.moderation.rule'].sudo().search([('active', '=', True)], order='priority asc, id asc')
+        for rule in rules:
+            key = (rule.keyword or '').strip().lower()
+            if key and key in txt:
+                return {'keyword': key, 'action': (rule.action or 'escalate').strip(), 'source': 'rule'}
         icp = self.env['ir.config_parameter'].sudo()
         raw = (icp.get_param('omnichannel_bridge.moderation_keywords', '') or '').strip()
         if not raw:
-            return ''
+            return {}
         keys = [k.strip().lower() for k in raw.split(',') if k and k.strip()]
         for key in keys:
             if key and key in txt:
-                return key
-        return ''
+                action = (icp.get_param('omnichannel_bridge.moderation_action', 'escalate') or 'escalate').strip()
+                return {'keyword': key, 'action': action, 'source': 'settings'}
+        return {}
 
-    def _omni_apply_moderation_action(self, channel, partner, user_text, hit_keyword):
-        icp = self.env['ir.config_parameter'].sudo()
-        action = (icp.get_param('omnichannel_bridge.moderation_action', 'escalate') or 'escalate').strip()
-        note = 'moderation_policy_hit:%s' % (hit_keyword or 'unknown')
+    def _omni_apply_moderation_action(self, channel, partner, user_text, policy_hit):
+        action = (policy_hit.get('action') or 'escalate').strip()
+        hit_keyword = (policy_hit.get('keyword') or 'unknown').strip()
+        source = (policy_hit.get('source') or 'unknown').strip()
+        note = 'moderation_policy_hit:%s:%s' % (source, hit_keyword)
         channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
             body='[auto] %s' % note,
             message_type='comment',

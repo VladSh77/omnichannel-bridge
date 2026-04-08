@@ -1753,3 +1753,33 @@
 - `addons/omnichannel_bridge/__manifest__.py`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 7/6 continuation (moderation policy engine + vocative expansion)
+
+### Scope
+
+- Added moderation policy engine model/UI:
+  - `omni.moderation.rule`,
+  - priority-based matching,
+  - per-rule action (`escalate`, `escalate_pause`, `note_only`).
+- Integrated moderation lookup precedence:
+  1. active `omni.moderation.rule`,
+  2. fallback to Settings keyword/action parameters.
+- Expanded vocative dictionary baseline and added runtime override map via Settings:
+  - new config `vocative_map_extra` (`name:vocative` pairs),
+  - merged with built-in map in `omni.memory`.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_moderation_rule.py` (new)
+- `addons/omnichannel_bridge/views/omni_moderation_rule_views.xml` (new)
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/omni_memory.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

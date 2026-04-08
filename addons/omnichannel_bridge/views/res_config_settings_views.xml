@@ -231,6 +231,9 @@
                         <setting string="Moderation action">
                             <field name="omnichannel_moderation_action"/>
                         </setting>
+                        <setting string="Vocative map extra">
+                            <field name="omnichannel_vocative_map_extra" placeholder="олена:Олено, віра:Віро, павел:Pawle"/>
+                        </setting>
                     </block>
                     <block title="Legal Pack (approved snippets)" name="omnichannel_block_legal_pack">
                         <setting string="Terms URL">

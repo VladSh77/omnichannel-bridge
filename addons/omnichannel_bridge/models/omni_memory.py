@@ -17,6 +17,21 @@ _UA_VOCATIVE_MAP = {
     'андрій': 'Андрію',
     'олександр': 'Олександре',
     'михайло': 'Михайле',
+    'анна': 'Анно',
+    'інна': 'Інно',
+    'вікторія': 'Вікторіє',
+    'тетяна': 'Тетяно',
+    'людмила': 'Людмило',
+    'оксана': 'Оксано',
+    'аліна': 'Аліно',
+    'яна': 'Яно',
+    'роман': 'Романе',
+    'віталій': 'Віталію',
+    'євген': 'Євгене',
+    'сергій': 'Сергію',
+    'максим': 'Максиме',
+    'павло': 'Павле',
+    'владислав': 'Владиславе',
 }
 
 
@@ -56,6 +71,25 @@ class OmniMemory(models.AbstractModel):
             self._omni_append_chat_memory(partner, '; '.join(changed))
         self._omni_capture_sales_clues(partner, text)
 
+    def _omni_vocative_map(self):
+        mapping = dict(_UA_VOCATIVE_MAP)
+        raw = (
+            self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.vocative_map_extra', '') or ''
+        ).strip()
+        if not raw:
+            return mapping
+        # Format: "ім'я:Звертання, ім'я2:Звертання2"
+        for pair in raw.split(','):
+            pair = pair.strip()
+            if ':' not in pair:
+                continue
+            k, v = pair.split(':', 1)
+            key = (k or '').strip().lower()
+            val = (v or '').strip()
+            if key and val:
+                mapping[key] = val
+        return mapping
+
     @api.model
     def _omni_normalize_vocative(self, phrase):
         phrase = (phrase or '').strip()
@@ -63,8 +97,9 @@ class OmniMemory(models.AbstractModel):
             return ''
         first = phrase.split()[0]
         key = first.lower()
-        if key in _UA_VOCATIVE_MAP:
-            return _UA_VOCATIVE_MAP[key]
+        mapping = self._omni_vocative_map()
+        if key in mapping:
+            return mapping[key]
         if phrase[0].isupper() and len(phrase) <= 40:
             return phrase
         return phrase[:1].upper() + phrase[1:] if phrase else ''
@@ -87,7 +122,7 @@ class OmniMemory(models.AbstractModel):
         if not display_name:
             return ''
         first = display_name.strip().split()[0].lower()
-        return _UA_VOCATIVE_MAP.get(first, '')
+        return self._omni_vocative_map().get(first, '')
 
     @api.model
     def _omni_capture_sales_clues(self, partner, text):

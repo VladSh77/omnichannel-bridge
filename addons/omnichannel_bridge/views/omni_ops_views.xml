@@ -156,6 +156,13 @@
         sequence="27"
     />
     <menuitem
+        id="menu_omni_moderation_rules"
+        name="Moderation Rules"
+        parent="menu_omni_ops_root"
+        action="action_omni_moderation_rule"
+        sequence="27"
+    />
+    <menuitem
         id="menu_omni_manager_reply_assist"
         name="Manager Reply Assist"
         parent="menu_omni_ops_root"

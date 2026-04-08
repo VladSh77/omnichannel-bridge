@@ -481,6 +481,11 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.moderation_keywords',
         help='Additional risk keywords to trigger policy action.',
     )
+    omnichannel_vocative_map_extra = fields.Text(
+        string='Vocative map extra (name:vocative, comma-separated)',
+        config_parameter='omnichannel_bridge.vocative_map_extra',
+        help='Example: олена:Олено, віра:Віро',
+    )
     omnichannel_moderation_action = fields.Selection(
         selection=[
             ('escalate', 'Escalate to manager'),
