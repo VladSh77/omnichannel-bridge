@@ -339,8 +339,8 @@
 
 ## 11. Експлуатація та якість інженерії
 
-- [ ] CI (lint, oca-maintainer-quality-tools за потреби)
-- [ ] Автотести критичних парсерів webhook
+- [~] CI: додано GitHub Actions pipeline (compile + unit tests for webhook parsers + contract regression checks); lint/tooling expansion за потреби.
+- [x] Автотести критичних парсерів webhook (pure parser unit tests: Telegram update_id, Meta mid).
 - [ ] Staging з тестовою сторінкою Meta
 - [~] Runbook: падіння **Ollama**, нестача RAM/GPU, rate limit Graph API, прострочений токен, (опційно) OpenAI (базовий operations runbook додано, потрібне розширення під прод)
 
@@ -419,7 +419,7 @@
 ### 14.6 Якість і відповідальність перед клієнтом
 
 - [x] **Fallback**, коли Ollama/LLM недоступний: короткий шаблон «зараз з’єднаємо з менеджером» / години, а не мовчання.
-- [ ] **Регресія після змін** у кастомних модулях: мінімальний набір **контрактних** перевірок (місця, купон) перед релізом.
+- [~] **Регресія після змін** у кастомних модулях: додано baseline contract tests (payload limit, reserve flow markers, purchase hooks); розширення покриття місць/купонів далі.
 
 ---
 

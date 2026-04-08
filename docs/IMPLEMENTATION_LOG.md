@@ -855,3 +855,23 @@
   - send escalation notify to manager,
   - set sales stage to `handoff`,
   - include reserve text to client response.
+
+## 2026-04-08 — CI bootstrap + webhook parser and contract tests
+
+### Scope
+
+- Added repository CI workflow for Python checks on push/PR.
+- Added unit tests for critical webhook parser helpers (Telegram update_id, Meta mid).
+- Added baseline contract-regression tests for critical runtime invariants.
+
+### Artifacts
+
+- `.github/workflows/ci.yml`
+- `addons/omnichannel_bridge/utils/webhook_parsers.py`
+- `addons/omnichannel_bridge/models/omni_bridge.py` (uses pure parser helpers)
+- `tests/test_webhook_parsers.py`
+- `tests/test_contract_regressions.py`
+
+### Notes
+
+- Tests are Odoo-runtime independent (run in plain Python), enabling fast CI signal before full Odoo integration tests.

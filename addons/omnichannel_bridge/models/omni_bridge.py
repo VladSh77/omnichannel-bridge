@@ -11,6 +11,8 @@ from psycopg2 import IntegrityError
 from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 
+from ..utils.webhook_parsers import extract_meta_mid, extract_telegram_update_id
+
 _logger = logging.getLogger(__name__)
 
 META_GRAPH_VERSION = 'v21.0'
@@ -36,15 +38,9 @@ class OmniBridge(models.AbstractModel):
 
     def _omni_extract_external_event_id(self, provider, data):
         if provider == 'telegram':
-            update_id = data.get('update_id')
-            return str(update_id) if update_id is not None else ''
+            return extract_telegram_update_id(data)
         if provider == 'meta':
-            for entry in data.get('entry', []):
-                for event in entry.get('messaging', []):
-                    msg = event.get('message') or {}
-                    mid = msg.get('mid')
-                    if mid:
-                        return str(mid)
+            return extract_meta_mid(data)
         return ''
 
     def _omni_register_webhook_event(self, provider, data):
