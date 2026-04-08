@@ -622,3 +622,18 @@
 ### Notes
 
 - Behavior remains backward-compatible: if no custom text is set, default playbooks are used.
+
+## 2026-04-07 — UA/PL default objection playbooks
+
+### Scope
+
+- Updated default objection playbook templates to bilingual UA/PL micro-guidance.
+- Keeps factual constraints (ORM/legal links only) and low-pressure premium tone.
+
+### Artifact
+
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+
+### Notes
+
+- Custom Settings overrides still have priority over these defaults.

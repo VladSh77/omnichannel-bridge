@@ -94,28 +94,46 @@ class OmniSalesIntel(models.AbstractModel):
     def _omni_objection_playbook_templates(self):
         defaults = {
             'price': (
-                'OBJECTION_PLAYBOOK: type=price. Empathize first, then use only ORM facts '
-                '(price components, installment availability if present), then ask one budget-calibration question.'
+                'OBJECTION_PLAYBOOK: type=price. '
+                'UA: Спочатку емпатія ("Розумію, бюджет важливий"), далі лише факти з ORM '
+                '(що входить у вартість, розстрочка якщо є), потім 1 уточнення про комфортний бюджет. '
+                'PL: Najpierw empatia, potem tylko fakty z ORM (co zawiera cena, raty jeśli dostępne), '
+                'na końcu 1 pytanie o komfortowy budżet.'
             ),
             'timing': (
-                'OBJECTION_PLAYBOOK: type=timing. Respect timing, propose one low-friction next step '
-                '(follow-up time or manager callback), no pressure.'
+                'OBJECTION_PLAYBOOK: type=timing. '
+                'UA: Повага до таймінгу, без тиску; запропонувати 1 легкий next step '
+                '(коли зручно повернутись / зворотний звʼязок менеджера). '
+                'PL: Uszanuj timing klienta, bez presji; zaproponuj 1 lekki kolejny krok '
+                '(kiedy wrócić / kontakt managera).'
             ),
             'trust': (
-                'OBJECTION_PLAYBOOK: type=trust. Use only verifiable links/facts, avoid claims not in facts. '
-                'Offer manager handoff.'
+                'OBJECTION_PLAYBOOK: type=trust. '
+                'UA: Тільки перевірні факти й посилання (ліцензія, оферта, політики), без непідтверджених обіцянок; '
+                'запропонувати підключення менеджера. '
+                'PL: Tylko weryfikowalne fakty i linki (licencja, umowa/oferta, polityki), bez obietnic; '
+                'zaproponuj przekazanie do managera.'
             ),
             'need_to_think': (
-                'OBJECTION_PLAYBOOK: type=need_to_think. Clarify what exactly blocks the decision, '
-                'answer one concrete concern with facts, suggest manager if needed.'
+                'OBJECTION_PLAYBOOK: type=need_to_think. '
+                'UA: Уточнити, що саме заважає рішенню; закрити 1 конкретний сумнів фактами з ORM; '
+                'за потреби передати менеджеру. '
+                'PL: Doprecyzuj, co dokładnie blokuje decyzję; odpowiedz na 1 konkretną wątpliwość faktami z ORM; '
+                'w razie potrzeby przekaż do managera.'
             ),
             'competitor': (
-                'OBJECTION_PLAYBOOK: type=competitor. Do not attack competitors. Compare only your offer components '
-                'from ORM/legal links, then ask one qualifying question.'
+                'OBJECTION_PLAYBOOK: type=competitor. '
+                'UA: Не знецінювати конкурентів; порівнювати лише складники власної пропозиції з ORM/легальних лінків; '
+                'поставити 1 кваліфікаційне запитання. '
+                'PL: Nie krytykuj konkurencji; porównuj tylko elementy własnej oferty z ORM/linków prawnych; '
+                'zadaj 1 pytanie kwalifikujące.'
             ),
             'not_decision_maker': (
-                'OBJECTION_PLAYBOOK: type=not_decision_maker. Ask who the decision maker is and propose convenient '
-                'handoff/call slot.'
+                'OBJECTION_PLAYBOOK: type=not_decision_maker. '
+                'UA: Уточнити, хто приймає рішення, і запропонувати зручний формат підключення '
+                '(дзвінок/чат/повідомлення менеджера). '
+                'PL: Ustal, kto podejmuje decyzję, i zaproponuj wygodny format kontaktu '
+                '(telefon/czat/wiadomość od managera).'
             ),
         }
         ICP = self.env['ir.config_parameter'].sudo()
