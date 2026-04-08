@@ -40,6 +40,14 @@ class ResConfigSettings(models.TransientModel):
         string='WhatsApp app secret (signature)',
         config_parameter='omnichannel_bridge.whatsapp_app_secret',
     )
+    omnichannel_viber_bot_token = fields.Char(
+        string='Viber bot token (fallback)',
+        config_parameter='omnichannel_bridge.viber_bot_token',
+    )
+    omnichannel_viber_webhook_secret = fields.Char(
+        string='Viber webhook secret (X-Viber-Content-Signature)',
+        config_parameter='omnichannel_bridge.viber_webhook_secret',
+    )
     omnichannel_bot_reply_mode = fields.Selection(
         selection=[
             ('always', 'Always (instant replies whenever LLM is on)'),

@@ -11,6 +11,7 @@ SPEC.loader.exec_module(MOD)
 extract_meta_mid = MOD.extract_meta_mid
 extract_telegram_update_id = MOD.extract_telegram_update_id
 extract_whatsapp_message_id = MOD.extract_whatsapp_message_id
+extract_viber_message_token = MOD.extract_viber_message_token
 
 
 class WebhookParserTests(unittest.TestCase):
@@ -47,6 +48,13 @@ class WebhookParserTests(unittest.TestCase):
     def test_extract_whatsapp_message_id_missing(self):
         payload = {'entry': [{'changes': [{'value': {}}]}]}
         self.assertEqual(extract_whatsapp_message_id(payload), '')
+
+    def test_extract_viber_message_token_ok(self):
+        payload = {'event': 'message', 'message_token': 123456789}
+        self.assertEqual(extract_viber_message_token(payload), '123456789')
+
+    def test_extract_viber_message_token_missing(self):
+        self.assertEqual(extract_viber_message_token({'event': 'seen'}), '')
 
 
 if __name__ == '__main__':

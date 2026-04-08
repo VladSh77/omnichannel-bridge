@@ -26,6 +26,12 @@
                         <setting string="WhatsApp app secret" help="Used to validate X-Hub-Signature-256 for WhatsApp webhooks. Falls back to Meta app secret if empty.">
                             <field name="omnichannel_whatsapp_app_secret" password="True"/>
                         </setting>
+                        <setting string="Viber bot token (fallback)" help="Prefer Omnichannel → Integrations (Viber). Used for outbound send_message.">
+                            <field name="omnichannel_viber_bot_token" password="True"/>
+                        </setting>
+                        <setting string="Viber webhook secret" help="Optional HMAC SHA256 validation of X-Viber-Content-Signature.">
+                            <field name="omnichannel_viber_webhook_secret" password="True"/>
+                        </setting>
                     </block>
                     <block title="Bot schedule" name="omnichannel_block_schedule">
                         <setting help="Use company timezone (on the main company contact).">

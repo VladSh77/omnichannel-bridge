@@ -26,3 +26,8 @@ def extract_whatsapp_message_id(data):
                 if msg_id:
                     return str(msg_id)
     return ''
+
+
+def extract_viber_message_token(data):
+    token = (data or {}).get('message_token')
+    return str(token) if token is not None else ''

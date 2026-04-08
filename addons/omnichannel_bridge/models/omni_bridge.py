@@ -15,6 +15,7 @@ from odoo.tools import html2plaintext
 from ..utils.webhook_parsers import (
     extract_meta_mid,
     extract_telegram_update_id,
+    extract_viber_message_token,
     extract_whatsapp_message_id,
 )
 
@@ -50,6 +51,8 @@ class OmniBridge(models.AbstractModel):
             return extract_meta_mid(data)
         if provider in ('whatsapp', 'twilio_whatsapp'):
             return extract_whatsapp_message_id(data)
+        if provider == 'viber':
+            return extract_viber_message_token(data)
         return ''
 
     def _omni_register_webhook_event(self, provider, data):
@@ -120,6 +123,27 @@ class OmniBridge(models.AbstractModel):
         phone_number_id = (ICP.get_param('omnichannel_bridge.whatsapp_phone_number_id', '') or '').strip()
         return token, app_secret, phone_number_id
 
+    def _omni_viber_credentials(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        row = self.env['omni.integration'].sudo().search(
+            [
+                ('active', '=', True),
+                ('provider', '=', 'viber'),
+                ('company_id', '=', self.env.company.id),
+            ],
+            limit=1,
+        )
+        token = ''
+        webhook_secret = ''
+        if row:
+            token = (row.api_token or '').strip()
+            webhook_secret = (row.webhook_secret or '').strip()
+        if not token:
+            token = ICP.get_param('omnichannel_bridge.viber_bot_token', '').strip()
+        if not webhook_secret:
+            webhook_secret = ICP.get_param('omnichannel_bridge.viber_webhook_secret', '').strip()
+        return token, webhook_secret
+
     def _omni_verify_meta_signature(self, raw_body, headers):
         _, app_secret = self._omni_meta_credentials()
         if not app_secret:
@@ -147,6 +171,18 @@ class OmniBridge(models.AbstractModel):
             hashlib.sha256,
         ).hexdigest()
         return hmac.compare_digest(sig, expected)
+
+    def _omni_verify_viber_signature(self, raw_body, headers):
+        _, webhook_secret = self._omni_viber_credentials()
+        if not webhook_secret:
+            return True
+        got = headers.get('X-Viber-Content-Signature') or headers.get('x-viber-content-signature') or ''
+        expected = hmac.new(
+            webhook_secret.encode('utf-8'),
+            raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+        return hmac.compare_digest(got, expected)
 
     @api.model
     def _omni_deliver_inbound(
@@ -428,8 +464,41 @@ class OmniBridge(models.AbstractModel):
         return {'ok': True, 'command': cmd}
 
     def _omni_process_viber_stub(self, payload, headers):
-        _logger.info('Viber webhook stub (implement Viber parser).')
-        return {'ok': True, 'stub': 'viber'}
+        raw_body = payload if isinstance(payload, (bytes, bytearray)) else json.dumps(payload).encode('utf-8')
+        if not self._omni_verify_viber_signature(raw_body, headers):
+            return {'ok': False, 'error': 'bad_signature'}
+        data = json.loads(raw_body.decode('utf-8'))
+        webhook_event = self._omni_register_webhook_event('viber', data)
+        if not webhook_event:
+            return {'ok': True, 'deduplicated': True}
+        event_type = (data.get('event') or '').strip().lower()
+        if event_type != 'message':
+            webhook_event.sudo().write({
+                'state': 'processed',
+                'processed_at': fields.Datetime.now(),
+            })
+            return {'ok': True, 'skipped': True}
+        message = data.get('message') or {}
+        text = (message.get('text') or '').strip()
+        sender = data.get('sender') or {}
+        user_id = str(sender.get('id') or '')
+        if text and user_id:
+            display_name = sender.get('name') or _('Viber user %s') % user_id
+            self._omni_deliver_inbound(
+                'viber',
+                thread_id=user_id,
+                external_user_id=user_id,
+                display_name=display_name,
+                text=text,
+                phone='',
+                email='',
+                metadata_obj=data,
+            )
+        webhook_event.sudo().write({
+            'state': 'processed',
+            'processed_at': fields.Datetime.now(),
+        })
+        return {'ok': True}
 
     def _omni_process_whatsapp_stub(self, payload, headers):
         raw_body = payload if isinstance(payload, (bytes, bytearray)) else json.dumps(payload).encode('utf-8')
@@ -497,6 +566,8 @@ class OmniBridge(models.AbstractModel):
             self._omni_meta_send_psid(str(external_thread_id), text)
         elif provider in ('whatsapp', 'twilio_whatsapp'):
             self._omni_whatsapp_send_to_wa_id(str(external_thread_id), text)
+        elif provider == 'viber':
+            self._omni_viber_send_to_user(str(external_thread_id), text)
         else:
             _logger.info(
                 'Outbound not implemented for provider=%s thread=%s',
@@ -504,13 +575,22 @@ class OmniBridge(models.AbstractModel):
                 external_thread_id,
             )
 
-    def _omni_http_post_with_retries(self, url, *, json=None, params=None, max_attempts=4, timeout=30):
+    def _omni_http_post_with_retries(
+        self,
+        url,
+        *,
+        json=None,
+        params=None,
+        headers=None,
+        max_attempts=4,
+        timeout=30,
+    ):
         """Graph / Telegram: retry transient failures (TZ §14.1)."""
         delay = 1.0
         last_resp = None
         for attempt in range(1, max_attempts + 1):
             try:
-                resp = requests.post(url, json=json, params=params, timeout=timeout)
+                resp = requests.post(url, json=json, params=params, headers=headers, timeout=timeout)
             except requests.RequestException as exc:
                 last_resp = None
                 _logger.warning(
@@ -623,6 +703,32 @@ class OmniBridge(models.AbstractModel):
         if not resp.ok:
             _logger.error(
                 'WhatsApp send message failed: %s %s',
+                resp.status_code,
+                self._omni_mask_pii_for_logs(resp.text),
+            )
+
+    def _omni_viber_send_to_user(self, viber_id, text):
+        token, _ = self._omni_viber_credentials()
+        if not token:
+            _logger.warning('Viber bot token is not configured.')
+            return
+        url = 'https://chatapi.viber.com/pa/send_message'
+        try:
+            resp = self._omni_http_post_with_retries(
+                url,
+                headers={'X-Viber-Auth-Token': token},
+                json={
+                    'receiver': viber_id,
+                    'type': 'text',
+                    'text': text[:1000],
+                },
+            )
+        except requests.RequestException:
+            _logger.exception('Viber send message failed after retries')
+            return
+        if not resp.ok:
+            _logger.error(
+                'Viber send message failed: %s %s',
                 resp.status_code,
                 self._omni_mask_pii_for_logs(resp.text),
             )

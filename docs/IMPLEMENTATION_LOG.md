@@ -29,6 +29,31 @@
   - recovery applied with safe SQL `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` + `CREATE TABLE IF NOT EXISTS omni_stage_event`.
   - module upgrade then completed successfully; runtime checks passed.
 
+## 2026-04-08 — Viber runtime (inbound/outbound)
+
+### Scope
+
+- Replaced Viber stub with runtime inbound handler for `event=message`.
+- Added optional webhook signature verification via `X-Viber-Content-Signature`.
+- Added outbound Viber send (`pa/send_message`) in the common outbound router.
+- Added settings fields for Viber token/secret fallback in `res.config.settings`.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_bridge.py`
+  - `_omni_viber_credentials`
+  - `_omni_verify_viber_signature`
+  - `_omni_process_viber_stub` (runtime logic now)
+  - `_omni_viber_send_to_user`
+  - `_omni_http_post_with_retries(..., headers=...)`
+- `addons/omnichannel_bridge/utils/webhook_parsers.py`
+  - `extract_viber_message_token`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `tests/test_webhook_parsers.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

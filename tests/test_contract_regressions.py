@@ -35,6 +35,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_whatsapp_send_to_wa_id', content)
         self.assertIn('extract_whatsapp_message_id', parsers)
 
+    def test_viber_runtime_markers_present(self):
+        content = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
+        parsers = (ROOT / 'addons/omnichannel_bridge/utils/webhook_parsers.py').read_text()
+        self.assertIn('_omni_process_viber_stub', content)
+        self.assertIn('_omni_viber_send_to_user', content)
+        self.assertIn('extract_viber_message_token', parsers)
+
     def test_livechat_entry_flow_markers_present(self):
         content = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
         self.assertIn('_omni_handle_livechat_entry_flow', content)
