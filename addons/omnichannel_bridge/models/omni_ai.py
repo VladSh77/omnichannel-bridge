@@ -167,6 +167,9 @@ class OmniAi(models.AbstractModel):
         if not self._omni_llm_enabled():
             return
         normalized = (text or '').strip()
+        if provider == 'meta' and self._omni_is_coupon_question(normalized):
+            self._omni_post_bot_message(channel, self._omni_coupon_meta_offer_text())
+            return
         if self._omni_is_sensitive_message(normalized):
             self._omni_send_sensitive_escalation_reply(channel, normalized)
             self._omni_set_sales_stage(partner, 'handoff', channel, 'sensitive_topic')
@@ -233,6 +236,41 @@ class OmniAi(models.AbstractModel):
         self._omni_post_bot_message(channel, reply)
         self._omni_update_sales_stage_after_reply(partner, channel=channel)
         self._omni_route_manager_mention_if_needed(channel, partner, text, reply)
+
+    def _omni_is_coupon_question(self, text):
+        txt = (text or '').lower()
+        if not txt:
+            return False
+        keys = (
+            'купон', 'знижк', '-5', '5%', 'промокод', 'promo',
+            'kod rabatowy', 'zniżk', 'rabat',
+            'discount', 'coupon', 'promo code',
+        )
+        return any(k in txt for k in keys)
+
+    def _omni_coupon_meta_offer_text(self):
+        icp = self.env['ir.config_parameter'].sudo()
+        channel_url = (
+            icp.get_param('omnichannel_bridge.coupon_public_channel_url', 'https://t.me/campscouting')
+            or 'https://t.me/campscouting'
+        ).strip()
+        code = (icp.get_param('omnichannel_bridge.coupon_public_code', '') or '').strip()
+        try:
+            discount = float(icp.get_param('omnichannel_bridge.coupon_discount_percent', '5') or 5.0)
+        except ValueError:
+            discount = 5.0
+        discount_str = ('%s' % discount).rstrip('0').rstrip('.')
+        code_line = (
+            ('Поточний код: %s. ' % code) if code
+            else 'Актуальний код дивіться в закріпленому/останньому пості каналу. '
+        )
+        return (
+            'Маємо прозору оферту для Meta/IG: -%s%% діє лише на табори CampScout. '
+            '%s'
+            'Як отримати: відкрийте Telegram-канал %s і скопіюйте код. '
+            'Як застосувати: введіть купон під час реєстрації/оформлення замовлення. '
+            'Якщо потрібна допомога з підбором програми — одразу підключу менеджера.'
+        ) % (discount_str, code_line, channel_url)
 
     def _omni_apply_reserve_flow(self, channel, partner, user_text, facts, reply):
         """When catalog facts say no places, enforce manager reserve handoff."""

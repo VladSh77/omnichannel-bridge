@@ -87,6 +87,12 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('Skip bot outbound due manager recent reply', channel)
         self.assertIn('omnichannel_bridge.outbound_conflict_guard_seconds', settings)
 
+    def test_coupon_meta_offer_markers_present(self):
+        ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
+        self.assertIn('_omni_is_coupon_question', ai)
+        self.assertIn('_omni_coupon_meta_offer_text', ai)
+        self.assertIn('coupon_public_channel_url', ai)
+
 
 if __name__ == '__main__':
     unittest.main()

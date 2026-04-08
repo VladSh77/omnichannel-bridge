@@ -122,6 +122,26 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+## 2026-04-08 — Coupon transparency for Meta/IG (TZ §13)
+
+### Scope
+
+- Added deterministic runtime reply for coupon questions in Meta/IG chats.
+- Reply includes:
+  - discount scope (camp products only),
+  - where to get public code (`@campscouting` channel URL from settings),
+  - where to apply coupon (registration/order flow).
+- This bypasses free-form LLM wording for this specific compliance-sensitive offer.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `_omni_is_coupon_question`
+  - `_omni_coupon_meta_offer_text`
+  - early branch in `omni_maybe_autoreply(...)` for provider=`meta`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope
