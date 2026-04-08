@@ -35,6 +35,12 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_whatsapp_send_to_wa_id', content)
         self.assertIn('extract_whatsapp_message_id', parsers)
 
+    def test_livechat_entry_flow_markers_present(self):
+        content = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        self.assertIn('_omni_handle_livechat_entry_flow', content)
+        self.assertIn('omni_livechat_entry_state', content)
+        self.assertIn('_omni_livechat_entry_menu_text', content)
+
     def test_fsm_and_race_markers_present(self):
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()

@@ -1,5 +1,39 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
+
+### Scope
+
+- Added livechat entry flow to keep dialog structured while preserving free-text composer usage.
+- Added first-step routing menu + contact capture prompt + partner/lead mapping from chat text.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - new fields:
+    - `omni_livechat_entry_state`
+    - `omni_livechat_entry_topic`
+  - new helpers:
+    - `_omni_handle_livechat_entry_flow`
+    - `_omni_detect_livechat_topic`
+    - `_omni_livechat_entry_menu_text`
+    - `_omni_livechat_contact_prompt_text`
+  - flow behavior:
+    - unknown first message -> menu prompt,
+    - contact-required branch -> explicit contact prompt,
+    - email/phone parsing from free text -> partner update + CRM lead trigger.
+- `addons/omnichannel_bridge/views/mail_channel_views.xml`
+  - show entry flow fields for operations visibility.
+- `tests/test_contract_regressions.py`
+  - livechat entry flow markers.
+- `docs/TZ_CHECKLIST.md`
+  - updated §2.2 data-capture item to partial completion.
+
+### Notes
+
+- Composer is not blocked; users can always send free text.
+- Full visual website button/form renderer remains a separate backlog step.
+
 ## 2026-04-08 — TZ Item 2: WhatsApp runtime parser/outbound
 
 ### Scope

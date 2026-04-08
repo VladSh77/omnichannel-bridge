@@ -24,6 +24,8 @@
                     <field name="omni_last_customer_inbound_at" readonly="1"/>
                     <field name="omni_window_reminder_sent_at" readonly="1"/>
                     <field name="omni_window_reminder_count" readonly="1"/>
+                    <field name="omni_livechat_entry_state" readonly="1"/>
+                    <field name="omni_livechat_entry_topic" readonly="1"/>
                 </group>
             </xpath>
         </field>

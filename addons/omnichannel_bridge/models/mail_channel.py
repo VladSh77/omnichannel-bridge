@@ -29,6 +29,25 @@ class MailChannel(models.Model):
     omni_last_customer_inbound_at = fields.Datetime()
     omni_window_reminder_sent_at = fields.Datetime()
     omni_window_reminder_count = fields.Integer(default=0)
+    omni_livechat_entry_state = fields.Selection(
+        selection=[
+            ('new', 'New'),
+            ('awaiting_contact', 'Awaiting contact'),
+            ('ready', 'Ready'),
+        ],
+        default='new',
+        index=True,
+    )
+    omni_livechat_entry_topic = fields.Selection(
+        selection=[
+            ('company', 'About company'),
+            ('camps', 'Camp programs'),
+            ('other_services', 'Other services'),
+            ('prices', 'Prices and terms'),
+            ('contact', 'Leave contact'),
+            ('unknown', 'Unknown'),
+        ],
+    )
 
     _sql_constraints = [
         (
@@ -84,6 +103,102 @@ class MailChannel(models.Model):
             'operator',
         )
         return any(k in lowered for k in keys)
+
+    def _omni_detect_livechat_topic(self, text):
+        txt = (text or '').lower()
+        if not txt:
+            return 'unknown'
+        mapping = {
+            'company': ('про компан', 'про campscout', 'хто ви', 'about company', 'o firmie'),
+            'camps': ('табір', 'табор', 'зміна', 'програма', 'camp', 'obóz', 'turnus'),
+            'other_services': ('інші послуги', 'інша послуга', 'other service', 'inne usługi'),
+            'prices': ('ціна', 'ціни', 'вартіст', 'price', 'cena', 'koszt'),
+            'contact': ('звʼяж', 'звяж', 'контакт', 'передзвон', 'email', 'телефон', 'kontakt'),
+        }
+        for topic, keys in mapping.items():
+            if any(k in txt for k in keys):
+                return topic
+        return 'unknown'
+
+    def _omni_livechat_entry_menu_text(self):
+        return (
+            'Щоб швидше допомогти, оберіть напрямок:\n'
+            '1) Про компанію CampScout\n'
+            '2) Табори/програми\n'
+            '3) Інші послуги\n'
+            '4) Ціни та умови\n'
+            '5) Залишити контакт для менеджера\n\n'
+            'Можна просто написати власне питання нижче.'
+        )
+
+    def _omni_livechat_contact_prompt_text(self):
+        return (
+            'Щоб менеджер міг звʼязатися з вами, залиште, будь ласка, телефон або email.\n'
+            'Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
+        )
+
+    def _omni_extract_contact_from_text(self, text):
+        Partner = self.env['res.partner'].sudo()
+        email = Partner.omni_parse_email(text or '')
+        phone = Partner.omni_parse_phone(text or '')
+        return email, phone
+
+    def _omni_handle_livechat_entry_flow(self, author, body, odoobot):
+        """Returns True when entry flow consumed message and AI should be skipped."""
+        self.ensure_one()
+        author = author.sudo()
+        state = self.omni_livechat_entry_state or 'new'
+        topic = self._omni_detect_livechat_topic(body)
+        email, phone = self._omni_extract_contact_from_text(body)
+        has_contact = bool(author.email or author.phone or author.mobile or email or phone)
+        if state == 'new':
+            vals = {'omni_livechat_entry_topic': topic}
+            if topic == 'unknown':
+                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                    body=self._omni_livechat_entry_menu_text(),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                    author_id=odoobot.id,
+                )
+                if has_contact:
+                    vals['omni_livechat_entry_state'] = 'ready'
+                else:
+                    vals['omni_livechat_entry_state'] = 'awaiting_contact'
+                self.sudo().write(vals)
+                return True
+            if topic == 'contact' and not has_contact:
+                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                    body=self._omni_livechat_contact_prompt_text(),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                    author_id=odoobot.id,
+                )
+                vals['omni_livechat_entry_state'] = 'awaiting_contact'
+                self.sudo().write(vals)
+                return True
+            vals['omni_livechat_entry_state'] = 'ready'
+            self.sudo().write(vals)
+            return False
+        if state == 'awaiting_contact':
+            if email or phone or author.email or author.phone or author.mobile:
+                upd = {}
+                if email and not author.email:
+                    upd['email'] = email
+                if phone and not (author.phone or author.mobile):
+                    upd['phone'] = phone
+                if upd:
+                    author.write(upd)
+                self.sudo().write({'omni_livechat_entry_state': 'ready'})
+                self.env['omni.bridge'].sudo()._omni_maybe_create_crm_lead(author, 'site_livechat')
+                return False
+            self.with_context(omni_skip_livechat_inbound=True).message_post(
+                body=self._omni_livechat_contact_prompt_text(),
+                message_type='comment',
+                subtype_xmlid='mail.mt_comment',
+                author_id=odoobot.id,
+            )
+            return True
+        return False
 
     @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
@@ -231,6 +346,9 @@ class MailChannel(models.Model):
             # Guest visitor messages can come without author_id.
             # Keep AI dialog working; partner enrichment will be skipped.
             author = self.env.ref('base.public_partner')
+        author_adm = author.sudo() if author else author
+        if self._omni_handle_livechat_entry_flow(author_adm, body, odoobot):
+            return
         # Auto-resume after manager takeover when client writes again.
         # Keep pause if client explicitly requested a human.
         if self.omni_bot_paused and self.omni_bot_pause_reason == 'manager_joined_livechat':
@@ -240,7 +358,6 @@ class MailChannel(models.Model):
             })
         # Website visitor message -> same AI queue and sales/memory pipeline.
         sudo_channel.write({'omni_customer_partner_id': author.id})
-        author_adm = author.sudo() if author else author
         self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
             channel=sudo_channel,
             partner=author_adm,
