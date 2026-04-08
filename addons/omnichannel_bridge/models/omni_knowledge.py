@@ -489,6 +489,8 @@ class OmniKnowledge(models.AbstractModel):
             '---',
             self.omni_legal_context_block(),
             '---',
+            self.omni_coupon_policy_block(),
+            '---',
             self.omni_partner_core_facts(partner),
             '---',
             self.omni_sales_discovery_block(partner),

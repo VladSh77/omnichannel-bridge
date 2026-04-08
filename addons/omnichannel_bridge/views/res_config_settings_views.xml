@@ -59,6 +59,9 @@
                         <setting string="Webhook secret" help="Must match Telegram secret_token when registering the webhook.">
                             <field name="omnichannel_telegram_webhook_secret" password="True"/>
                         </setting>
+                        <setting string="Public coupon channel URL" help="Clients should open this public channel to copy current -5% code.">
+                            <field name="omnichannel_coupon_public_channel_url"/>
+                        </setting>
                     </block>
                     <block title="Internal notifications" name="omnichannel_block_internal_notify">
                         <setting string="Internal Telegram bot token">

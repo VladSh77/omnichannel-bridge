@@ -173,6 +173,12 @@ class ResConfigSettings(models.TransientModel):
         string='Objection playbook: not_decision_maker',
         config_parameter='omnichannel_bridge.objection_playbook_not_decision_maker',
     )
+    omnichannel_coupon_public_channel_url = fields.Char(
+        string='Public Telegram channel for coupon',
+        config_parameter='omnichannel_bridge.coupon_public_channel_url',
+        default='https://t.me/campscouting',
+        help='Clients open this public Telegram channel and take the current promo code from pinned/latest post.',
+    )
 
     # --- Bot kill switch via Telegram ---
     omnichannel_admin_tg_user_ids = fields.Char(

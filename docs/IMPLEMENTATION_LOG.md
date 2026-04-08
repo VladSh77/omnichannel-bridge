@@ -791,3 +791,24 @@
 ### Notes
 
 - Legal notice is shown once per channel to avoid spam while preserving explicit consent context.
+
+## 2026-04-08 — Coupon flow simplified to public Telegram channel
+
+### Scope
+
+- Business rule fixed: no personal coupon generation; clients open public channel and copy current code.
+- Added configurable public channel URL in Settings and injected coupon policy block into strict grounding bundle.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+  - `omnichannel_coupon_public_channel_url`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+  - setting field in Telegram block
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+  - `omni_coupon_policy_block(...)` in grounding bundle
+- `docs/TZ_CHECKLIST.md`
+
+### Notes
+
+- Default channel URL set to `https://t.me/campscouting`.
