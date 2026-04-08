@@ -52,6 +52,8 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_handle_livechat_entry_flow', content)
         self.assertIn('omni_livechat_entry_state', content)
         self.assertIn('_omni_livechat_entry_menu_text', content)
+        self.assertIn('_omni_livechat_prefers_polish', content)
+        self.assertIn('manager_hours_now', content)
 
     def test_fsm_and_race_markers_present(self):
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
@@ -65,6 +67,7 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('omni_set_sales_stage(', memory)
         self.assertIn('manager_session_active', channel)
         self.assertIn('omni_manager_session_active_now', channel)
+        self.assertIn('omni_merge_duplicates_by_rules', partner)
 
     def test_retention_and_erasure_markers_present(self):
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()

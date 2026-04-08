@@ -132,6 +132,19 @@ class MailChannel(models.Model):
         return 'unknown'
 
     def _omni_livechat_entry_menu_text(self):
+        return self._omni_livechat_entry_menu_text_lang(is_pl=False)
+
+    def _omni_livechat_entry_menu_text_lang(self, is_pl=False):
+        if is_pl:
+            return (
+                'Aby szybciej pomóc, wybierz temat:\n'
+                '1) O firmie CampScout\n'
+                '2) Obozy/programy\n'
+                '3) Inne usługi\n'
+                '4) Ceny i warunki\n'
+                '5) Zostaw kontakt do managera\n\n'
+                'Możesz też od razu napisać własne pytanie poniżej.'
+            )
         return (
             'Щоб швидше допомогти, оберіть напрямок:\n'
             '1) Про компанію CampScout\n'
@@ -143,10 +156,27 @@ class MailChannel(models.Model):
         )
 
     def _omni_livechat_contact_prompt_text(self):
+        return self._omni_livechat_contact_prompt_text_lang(is_pl=False)
+
+    def _omni_livechat_contact_prompt_text_lang(self, is_pl=False):
+        if is_pl:
+            return (
+                'Aby manager mógł się z Tobą skontaktować, zostaw proszę telefon lub email.\n'
+                'Wysyłając kontakt, zgadzasz się na przetwarzanie danych w celu doboru obozu.'
+            )
         return (
             'Щоб менеджер міг звʼязатися з вами, залиште, будь ласка, телефон або email.\n'
             'Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
         )
+
+    def _omni_livechat_prefers_polish(self, text):
+        txt = (text or '').lower()
+        if not txt:
+            return False
+        if any(ch in txt for ch in ('ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż')):
+            return True
+        keys = ('dzień dobry', 'obóz', 'turnus', 'cena', 'kontakt')
+        return any(k in txt for k in keys)
 
     def _omni_extract_contact_from_text(self, text):
         Partner = self.env['res.partner'].sudo()
@@ -159,14 +189,27 @@ class MailChannel(models.Model):
         self.ensure_one()
         author = author.sudo()
         state = self.omni_livechat_entry_state or 'new'
+        is_pl = self._omni_livechat_prefers_polish(body)
         topic = self._omni_detect_livechat_topic(body)
         email, phone = self._omni_extract_contact_from_text(body)
         has_contact = bool(author.email or author.phone or author.mobile or email or phone)
+        manager_hours_now = self.env['omni.ai'].sudo()._omni_manager_hours_active_now()
         if state == 'new':
             vals = {'omni_livechat_entry_topic': topic}
+            # Off-hours policy: before long bot dialog we require at least one contact point.
+            if not manager_hours_now and not has_contact:
+                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                    body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                    author_id=odoobot.id,
+                )
+                vals['omni_livechat_entry_state'] = 'awaiting_contact'
+                self.sudo().write(vals)
+                return True
             if topic == 'unknown':
                 self.with_context(omni_skip_livechat_inbound=True).message_post(
-                    body=self._omni_livechat_entry_menu_text(),
+                    body=self._omni_livechat_entry_menu_text_lang(is_pl=is_pl),
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
                     author_id=odoobot.id,
@@ -179,7 +222,7 @@ class MailChannel(models.Model):
                 return True
             if topic == 'contact' and not has_contact:
                 self.with_context(omni_skip_livechat_inbound=True).message_post(
-                    body=self._omni_livechat_contact_prompt_text(),
+                    body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
                     author_id=odoobot.id,
@@ -203,7 +246,7 @@ class MailChannel(models.Model):
                 self.env['omni.bridge'].sudo()._omni_maybe_create_crm_lead(author, 'site_livechat')
                 return False
             self.with_context(omni_skip_livechat_inbound=True).message_post(
-                body=self._omni_livechat_contact_prompt_text(),
+                body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
                 author_id=odoobot.id,

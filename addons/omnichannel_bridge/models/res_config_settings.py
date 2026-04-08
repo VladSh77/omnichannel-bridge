@@ -193,6 +193,16 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.llm_experiment_tag',
         help='Optional A/B label for runtime prompt experiments.',
     )
+    omnichannel_llm_assistant_profile = fields.Selection(
+        selection=[
+            ('default', 'Default'),
+            ('sales_closer', 'Sales closer'),
+            ('support_safe', 'Support safe'),
+        ],
+        string='Assistant profile',
+        default='default',
+        config_parameter='omnichannel_bridge.llm_assistant_profile',
+    )
     omnichannel_objection_playbook_price = fields.Text(
         string='Objection playbook: price',
         config_parameter='omnichannel_bridge.objection_playbook_price',
@@ -330,6 +340,15 @@ class ResConfigSettings(models.TransientModel):
         string='Priority Telegram chat/group/channel ID (optional)',
         config_parameter='omnichannel_bridge.internal_tg_priority_chat_id',
         help='If set, urgent/problematic notifications are sent to this channel; otherwise they go to the default internal chat with PRIORITY tag.',
+    )
+    omnichannel_internal_tg_api_base = fields.Char(
+        string='Internal Telegram API base URL',
+        config_parameter='omnichannel_bridge.internal_tg_api_base',
+        default='https://api.telegram.org',
+    )
+    omnichannel_internal_tg_allowed_user_ids = fields.Char(
+        string='Internal TG allowed user IDs (comma-separated)',
+        config_parameter='omnichannel_bridge.internal_tg_allowed_user_ids',
     )
     omnichannel_internal_notify_new = fields.Boolean(
         string='Notify on new thread',

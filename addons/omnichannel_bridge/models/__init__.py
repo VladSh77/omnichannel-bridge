@@ -5,6 +5,8 @@ from . import omni_integration
 from . import omni_stage_event
 from . import omni_prompt_audit
 from . import omni_promo
+from . import omni_manager_reply_template
+from . import omni_manager_reply_assist
 from . import omni_insurance_package
 from . import omni_legal_document
 from . import omni_reserve_entry

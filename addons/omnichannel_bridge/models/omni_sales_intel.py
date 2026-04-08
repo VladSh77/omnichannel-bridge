@@ -50,6 +50,13 @@ class OmniSalesIntel(models.AbstractModel):
         'rejestruję', 'jestem gotów zapłacić',
         'i want to buy', 'ready to pay', 'how do i pay', 'book now',
     )
+    _CONFLICT_KEYWORDS = (
+        'конфлікт', 'скарга', 'непорозум', 'agres', 'complaint', 'problem with manager',
+    )
+    _TECH_PROBLEM_KEYWORDS = (
+        'не працює', 'помилка', 'error', 'bug', 'site down', 'оплата не проходить',
+        'купон не працює', 'реєстрація не працює',
+    )
 
     @api.model
     def omni_apply_inbound_triggers(self, channel, partner, text, provider):
@@ -74,6 +81,20 @@ class OmniSalesIntel(models.AbstractModel):
         if self._omni_detect_purchase_intent(text):
             self._omni_log_purchase_intent(channel, partner, text)
             self._omni_mark_handoff_stage(channel, partner, 'purchase_intent')
+        if self._omni_detect_conflict_or_human_request(text):
+            self.env['omni.notify'].sudo().notify_problematic(
+                channel=channel,
+                partner=partner,
+                note='conflict_or_human_request',
+            )
+        if self._omni_detect_technical_problem(text):
+            self.env['omni.notify'].sudo().notify_problematic(
+                channel=channel,
+                partner=partner,
+                note='technical_problem',
+            )
+        if partner:
+            partner.sudo().omni_recompute_lead_score(reason='sales_intel_triggers')
 
     @api.model
     def _omni_detect_escalation(self, text):
@@ -88,6 +109,22 @@ class OmniSalesIntel(models.AbstractModel):
         if not txt:
             return False
         return any(k in txt for k in self._PURCHASE_INTENT_KEYWORDS)
+
+    @api.model
+    def _omni_detect_conflict_or_human_request(self, text):
+        txt = (text or '').lower()
+        if not txt:
+            return False
+        return any(k in txt for k in self._CONFLICT_KEYWORDS) or any(
+            k in txt for k in ('менеджер', 'оператор', 'human', 'manager')
+        )
+
+    @api.model
+    def _omni_detect_technical_problem(self, text):
+        txt = (text or '').lower()
+        if not txt:
+            return False
+        return any(k in txt for k in self._TECH_PROBLEM_KEYWORDS)
 
     @api.model
     def omni_detect_objection_type(self, text):

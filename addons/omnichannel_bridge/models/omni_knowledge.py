@@ -695,12 +695,48 @@ class OmniKnowledge(models.AbstractModel):
         icp = self.env['ir.config_parameter'].sudo()
         version = (icp.get_param('omnichannel_bridge.llm_prompt_version') or 'v1').strip()
         exp_tag = (icp.get_param('omnichannel_bridge.llm_experiment_tag') or '').strip()
+        profile = (icp.get_param('omnichannel_bridge.llm_assistant_profile') or 'default').strip()
         return (
             'PROMPT_VERSIONING:\n'
             '- prompt_version: %s\n'
             '- experiment_tag: %s\n'
+            '- assistant_profile: %s\n'
             '- Policy: keep answer behavior compliant with strict grounding regardless of experiment tag.'
-        ) % (version, exp_tag or 'none')
+        ) % (version, exp_tag or 'none', profile or 'default')
+
+    @api.model
+    def omni_dynamic_rag_context(self, user_text, max_items=4):
+        query = (user_text or '').lower().strip()
+        if not query:
+            return ''
+        terms = [t for t in re.split(r'[^a-zA-Zа-яА-ЯіІїЇєЄ0-9]+', query) if len(t) >= 3]
+        if not terms:
+            return ''
+        scored = []
+        for doc in self.env['omni.legal.document'].sudo().search([('active', '=', True), ('allow_in_bot', '=', True)], limit=50):
+            bag = ('%s %s %s' % (doc.name or '', doc.short_quote or '', doc.doc_type or '')).lower()
+            score = sum(1 for t in terms if t in bag)
+            if score > 0:
+                scored.append((score, 'doc', doc.name, doc.url, doc.short_quote or ''))
+        for pkg in self.env['omni.insurance.package'].sudo().search([('active', '=', True)], limit=50):
+            bag = ('%s %s %s' % (pkg.name or '', pkg.short_terms or '', pkg.code or '')).lower()
+            score = sum(1 for t in terms if t in bag)
+            if score > 0:
+                scored.append((score, 'insurance', pkg.name, pkg.policy_url or '', pkg.short_terms or ''))
+        if not scored:
+            return ''
+        scored.sort(key=lambda x: x[0], reverse=True)
+        top = scored[:max(1, min(max_items, 8))]
+        lines = ['RAG_CONTEXT:']
+        for score, kind, name, url, quote in top:
+            lines.append('- %s | %s | url:%s | quote:%s | score:%s' % (
+                kind,
+                name or '—',
+                url or '—',
+                (quote or '').strip()[:180] or '—',
+                score,
+            ))
+        return '\n'.join(lines)
 
     @api.model
     def omni_release_fingerprint_block(self):
@@ -769,6 +805,9 @@ class OmniKnowledge(models.AbstractModel):
         faq_context = self.omni_interview_faq_context(user_text=user_text, max_items=3)
         if faq_context:
             parts.append('---\n%s' % faq_context)
+        rag_context = self.omni_dynamic_rag_context(user_text=user_text, max_items=4)
+        if rag_context:
+            parts.append('---\n%s' % rag_context)
         return '\n'.join(parts)
 
     @api.model

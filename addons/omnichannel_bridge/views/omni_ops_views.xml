@@ -135,6 +135,20 @@
         sequence="25"
     />
     <menuitem
+        id="menu_omni_manager_reply_templates"
+        name="Manager Reply Templates"
+        parent="menu_omni_ops_root"
+        action="action_omni_manager_reply_template"
+        sequence="27"
+    />
+    <menuitem
+        id="menu_omni_manager_reply_assist"
+        name="Manager Reply Assist"
+        parent="menu_omni_ops_root"
+        action="action_omni_manager_reply_assist"
+        sequence="28"
+    />
+    <menuitem
         id="menu_omni_crm_analytics"
         name="CRM Analytics"
         parent="menu_omni_ops_root"

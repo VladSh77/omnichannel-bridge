@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_manager_reply_template_tree" model="ir.ui.view">
+        <field name="name">omni.manager.reply.template.tree</field>
+        <field name="model">omni.manager.reply.template</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="active"/>
+                <field name="name"/>
+                <field name="channel_scope"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_manager_reply_template_form" model="ir.ui.view">
+        <field name="name">omni.manager.reply.template.form</field>
+        <field name="model">omni.manager.reply.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="active"/>
+                        <field name="name"/>
+                        <field name="channel_scope"/>
+                    </group>
+                    <group>
+                        <field name="body_template"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_manager_reply_template" model="ir.actions.act_window">
+        <field name="name">Manager Reply Templates</field>
+        <field name="res_model">omni.manager.reply.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_omni_manager_reply_assist_form" model="ir.ui.view">
+        <field name="name">omni.manager.reply.assist.form</field>
+        <field name="model">omni.manager.reply.assist</field>
+        <field name="arch" type="xml">
+            <form string="Manager Reply Assist">
+                <header>
+                    <button name="action_suggest" type="object" string="Suggest rewrite" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="source_text"/>
+                        <field name="improved_text" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_manager_reply_assist" model="ir.actions.act_window">
+        <field name="name">Manager Reply Assist</field>
+        <field name="res_model">omni.manager.reply.assist</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

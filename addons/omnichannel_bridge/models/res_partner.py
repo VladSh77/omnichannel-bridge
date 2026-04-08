@@ -77,6 +77,8 @@ class ResPartner(models.Model):
     omni_erased_at = fields.Datetime(string='Omni data erased at')
     omni_last_stage_change_at = fields.Datetime(string='Last stage change at')
     omni_last_stage_change_reason = fields.Char(string='Last stage change reason')
+    omni_lead_score = fields.Integer(string='Omni lead score', default=0)
+    omni_lead_score_reason = fields.Char(string='Omni lead score reason')
 
     def omni_set_sales_stage(self, new_stage, channel=None, reason='', source=''):
         self.ensure_one()
@@ -240,4 +242,82 @@ class ResPartner(models.Model):
                 vals['phone'] = phone
             if vals:
                 partner.sudo().write(vals)
+        # Best-effort duplicate merge by strict email/phone rules.
+        if partner:
+            partner = partner.sudo().omni_merge_duplicates_by_rules()
         return partner
+
+    def omni_merge_duplicates_by_rules(self):
+        self.ensure_one()
+        partner = self.sudo()
+        email = (partner.email or '').strip().lower()
+        phone = _normalize_phone(partner.phone or partner.mobile or '')
+        if not email and not phone:
+            return partner
+        domain = [('id', '!=', partner.id)]
+        candidates = self.sudo().search(domain, limit=200)
+        duplicate = self.browse()
+        for cand in candidates:
+            cand_email = (cand.email or '').strip().lower()
+            cand_phone = _normalize_phone(cand.phone or cand.mobile or '')
+            email_match = bool(email and cand_email and email == cand_email)
+            phone_match = bool(phone and cand_phone and cand_phone.endswith(phone[-9:]))
+            if email_match or phone_match:
+                duplicate = cand
+                break
+        if not duplicate:
+            return partner
+        # Keep the richer card; move identities to the winner.
+        winner = partner
+        loser = duplicate.sudo()
+        if len((loser.omni_chat_memory or '')) > len((winner.omni_chat_memory or '')):
+            winner, loser = loser, winner
+        loser.omni_identity_ids.sudo().write({'partner_id': winner.id})
+        vals = {}
+        for field_name in ('email', 'phone', 'mobile', 'omni_preferred_period', 'omni_departure_city'):
+            if not getattr(winner, field_name) and getattr(loser, field_name):
+                vals[field_name] = getattr(loser, field_name)
+        if not winner.omni_child_age and loser.omni_child_age:
+            vals['omni_child_age'] = loser.omni_child_age
+        if not winner.omni_budget_amount and loser.omni_budget_amount:
+            vals['omni_budget_amount'] = loser.omni_budget_amount
+            if not winner.omni_budget_currency and loser.omni_budget_currency:
+                vals['omni_budget_currency'] = loser.omni_budget_currency
+        if vals:
+            winner.write(vals)
+        # Soft anonymize loser to avoid duplicate active profile.
+        loser.write({
+            'name': _('[Merged duplicate] %s') % (loser.name or loser.id),
+            'email': False,
+            'phone': False,
+            'mobile': False,
+            'active': False,
+        })
+        return winner
+
+    def omni_recompute_lead_score(self, reason=''):
+        for partner in self.sudo():
+            score = 0
+            if partner.omni_child_age:
+                score += 10
+            if partner.omni_preferred_period:
+                score += 10
+            if partner.omni_departure_city:
+                score += 8
+            if partner.omni_budget_amount:
+                score += 10
+            if partner.phone or partner.mobile or partner.email:
+                score += 12
+            if partner.omni_sales_stage == 'proposal':
+                score += 15
+            if partner.omni_sales_stage == 'handoff':
+                score += 12
+            mem = (partner.omni_chat_memory or '').lower()
+            if 'purchase_intent' in mem:
+                score += 18
+            if 'objection:' in mem:
+                score -= 6
+            partner.write({
+                'omni_lead_score': max(0, min(100, score)),
+                'omni_lead_score_reason': (reason or 'auto')[:120],
+            })

@@ -124,6 +124,12 @@
                         <setting string="Priority chat ID (optional)" help="If filled, urgent/problematic notifications are duplicated to this channel for faster attention.">
                             <field name="omnichannel_internal_tg_priority_chat_id"/>
                         </setting>
+                        <setting string="Internal Telegram API base">
+                            <field name="omnichannel_internal_tg_api_base"/>
+                        </setting>
+                        <setting string="Allowed internal Telegram user IDs">
+                            <field name="omnichannel_internal_tg_allowed_user_ids"/>
+                        </setting>
                         <setting string="Notify on new thread">
                             <field name="omnichannel_internal_notify_new"/>
                         </setting>
@@ -185,6 +191,9 @@
                         </setting>
                         <setting string="Prompt experiment tag (A/B)">
                             <field name="omnichannel_llm_experiment_tag"/>
+                        </setting>
+                        <setting string="Assistant profile">
+                            <field name="omnichannel_llm_assistant_profile"/>
                         </setting>
                     </block>
                     <block title="Legal Pack (approved snippets)" name="omnichannel_block_legal_pack">

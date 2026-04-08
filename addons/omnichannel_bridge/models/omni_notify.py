@@ -25,7 +25,6 @@ from odoo.fields import Datetime
 
 _logger = logging.getLogger(__name__)
 
-TELEGRAM_API = 'https://api.telegram.org/bot{token}/sendMessage'
 _NOTIFY_TIMEOUT = 10  # секунд — короткий, щоб не блокувати worker
 
 
@@ -215,13 +214,17 @@ class OmniNotify(models.AbstractModel):
     # ------------------------------------------------------------------
 
     def _send(self, text, parse_mode='Markdown', priority=False):
-        token, chat_id, priority_chat_id = self._credentials()
+        token, chat_id, priority_chat_id, api_base, allowed_user_ids = self._credentials()
         if not token or not chat_id:
             _logger.debug(
                 'omni_notify: internal_tg_bot_token or internal_tg_chat_id not set — skip.'
             )
             return
-        url = TELEGRAM_API.format(token=token)
+        base = (api_base or 'https://api.telegram.org').rstrip('/')
+        url = '%s/bot%s/sendMessage' % (base, token)
+        if allowed_user_ids and not self._allowed_users_membership_ok(base, token, chat_id, allowed_user_ids):
+            _logger.warning('omni_notify: approved user policy check failed; skip internal send')
+            return
         target_chats = [chat_id]
         if priority and priority_chat_id and priority_chat_id != chat_id:
             target_chats.append(priority_chat_id)
@@ -252,7 +255,27 @@ class OmniNotify(models.AbstractModel):
         token = ICP.get_param('omnichannel_bridge.internal_tg_bot_token', '').strip()
         chat_id = ICP.get_param('omnichannel_bridge.internal_tg_chat_id', '').strip()
         priority_chat_id = ICP.get_param('omnichannel_bridge.internal_tg_priority_chat_id', '').strip()
-        return token, chat_id, priority_chat_id
+        api_base = ICP.get_param('omnichannel_bridge.internal_tg_api_base', 'https://api.telegram.org').strip()
+        allowed_raw = ICP.get_param('omnichannel_bridge.internal_tg_allowed_user_ids', '').strip()
+        allowed_user_ids = [x.strip() for x in allowed_raw.split(',') if x.strip()]
+        return token, chat_id, priority_chat_id, api_base, allowed_user_ids
+
+    def _allowed_users_membership_ok(self, base, token, chat_id, allowed_user_ids):
+        try:
+            for uid in allowed_user_ids:
+                if not uid.lstrip('-').isdigit():
+                    continue
+                url = '%s/bot%s/getChatMember' % (base, token)
+                resp = requests.get(url, params={'chat_id': chat_id, 'user_id': int(uid)}, timeout=_NOTIFY_TIMEOUT)
+                if not resp.ok:
+                    return False
+                data = resp.json() or {}
+                status = (((data.get('result') or {}).get('status')) or '').lower()
+                if status not in ('creator', 'administrator', 'member', 'restricted'):
+                    return False
+            return True
+        except Exception:
+            return False
 
     def _is_priority_reason(self, reason):
         txt = (reason or '').lower()
@@ -278,10 +301,11 @@ class OmniNotify(models.AbstractModel):
         if provider_label:
             title = '%s — %s' % (title, self._escape(provider_label))
         prefix = '🚨 *PRIORITY*\\n' if priority else ''
-        name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
+        name = self._partner_min_name(partner)
+        pid = partner.id if partner else 0
         body = [
             '%s%s' % (prefix, title),
-            '👤 %s' % self._escape(name),
+            '👤 %s (id:%s)' % (self._escape(name), pid),
         ]
         body.extend(lines)
         body.append('🔗 %s' % self._channel_url(channel))
@@ -383,6 +407,17 @@ class OmniNotify(models.AbstractModel):
     def _escape(text):
         """Мінімальне екранування для Markdown v1."""
         return str(text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
+
+    def _partner_min_name(self, partner):
+        if not partner:
+            return _('Unknown')
+        name = (partner.display_name or '').strip()
+        if not name:
+            return _('Unknown')
+        parts = [p for p in name.split(' ') if p]
+        if len(parts) == 1:
+            return parts[0][:1] + '.'
+        return '%s %s.' % (parts[0][:1], parts[-1][:1])
 
     @api.model
     def _handoff_packet(self, partner):

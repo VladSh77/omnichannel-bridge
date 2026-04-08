@@ -1531,3 +1531,53 @@
 - `docs/OPERATIONS_RUNBOOK.md`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Livechat UX closure + duplicate merge rules
+
+### Scope
+
+- Finalized livechat entry UX tree documentation (UA/PL) with explicit options and free-text availability.
+- Added off-hours contact-first gate in livechat entry flow before long AI dialog.
+- Localized livechat entry prompts/menu for Polish detection.
+- Added partner duplicate merge rule method and integrated it into clue-based resolution flow.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/models/res_partner.py`
+- `docs/LIVECHAT_ENTRY_UX_TREE.md` (new)
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Final backlog sweep for remaining checklist items
+
+### Scope
+
+- Added dynamic RAG context from legal/insurance registries.
+- Added assistant profile baseline and manager-quality tooling:
+  - manager reply assist wizard,
+  - manager reply template registry.
+- Added lead scoring on partner with recompute triggers from sales flow.
+- Added conflict/technical-problem detectors to problematic notifications.
+- Hardened internal Telegram ops:
+  - separate API base config,
+  - approved user IDs membership policy check,
+  - minimized PII in internal summaries (initials + partner id).
+- Added operational docs for staging Meta test page, backup/restore drill, and secret encryption policy baseline.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/models/omni_manager_reply_assist.py` (new)
+- `addons/omnichannel_bridge/models/omni_manager_reply_template.py` (new)
+- `addons/omnichannel_bridge/models/res_partner.py`
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/omni_manager_reply_views.xml` (new)
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `docs/STAGING_META_TEST_PAGE.md` (new)
+- `docs/BACKUP_RESTORE_DRILL.md` (new)
+- `docs/SECRET_ENCRYPTION_POLICY.md` (new)
+- `docs/TZ_CHECKLIST.md`
