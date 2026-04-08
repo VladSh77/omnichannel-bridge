@@ -1,5 +1,23 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-08 — TZ Item 1: Baseline Freeze + DoD Matrix
+
+### Scope
+
+- Started execution queue from item 1 (baseline and acceptance criteria).
+- Fixed baseline reference for implementation waves.
+- Added explicit DoD matrix by major TZ block.
+
+### Artifacts
+
+- `docs/TZ_EXECUTION_QUEUE.md`
+- `README.md` (docs index updated)
+
+### Baseline
+
+- Baseline commit: `e695d03`
+- Branch: `main`
+
 ## 2026-04-08 — Prod mapping audit + coupon E2E + FSM/race + retention
 
 ### Scope
