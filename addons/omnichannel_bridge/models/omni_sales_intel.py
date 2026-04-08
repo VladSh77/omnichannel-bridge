@@ -42,6 +42,14 @@ class OmniSalesIntel(models.AbstractModel):
             'decyduje mąż', 'decyduje żona', 'nie ja decyduję', 'not my decision',
         ),
     }
+    _PURCHASE_INTENT_KEYWORDS = (
+        'хочу купити', 'хочу оплатити', 'готовий оплатити', 'готова оплатити',
+        'як оплатити', 'куди платити', 'хочу бронювати', 'хочу забронювати',
+        'оформляю', 'оформити', 'реєструюсь', 'готові до оплати',
+        'chcę kupić', 'chcę zapłacić', 'jak zapłacić', 'chcę zarezerwować',
+        'rejestruję', 'jestem gotów zapłacić',
+        'i want to buy', 'ready to pay', 'how do i pay', 'book now',
+    )
 
     @api.model
     def omni_apply_inbound_triggers(self, channel, partner, text, provider):
@@ -63,6 +71,9 @@ class OmniSalesIntel(models.AbstractModel):
         objection = self.omni_detect_objection_type(text)
         if objection:
             self._omni_log_objection(channel, partner, objection)
+        if self._omni_detect_purchase_intent(text):
+            self._omni_log_purchase_intent(channel, partner, text)
+            self._omni_mark_handoff_stage(channel, partner, 'purchase_intent')
 
     @api.model
     def _omni_detect_escalation(self, text):
@@ -70,6 +81,13 @@ class OmniSalesIntel(models.AbstractModel):
             return False
         text_lower = text.lower()
         return any(kw in text_lower for kw in self._ESCALATION_KEYWORDS)
+
+    @api.model
+    def _omni_detect_purchase_intent(self, text):
+        txt = (text or '').lower()
+        if not txt:
+            return False
+        return any(k in txt for k in self._PURCHASE_INTENT_KEYWORDS)
 
     @api.model
     def omni_detect_objection_type(self, text):
@@ -164,6 +182,39 @@ class OmniSalesIntel(models.AbstractModel):
                 body='[auto] objection_detected: %s' % objection_type,
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
+            )
+
+    @api.model
+    def _omni_log_purchase_intent(self, channel, partner, text):
+        if channel:
+            channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
+                body='[auto] purchase_intent_detected',
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+        if partner:
+            self.env['omni.notify'].sudo().notify_purchase_intent(
+                channel=channel,
+                partner=partner,
+                user_text=text or '',
+            )
+
+    @api.model
+    def _omni_mark_handoff_stage(self, channel, partner, reason=''):
+        if not partner:
+            return
+        partner = partner.sudo()
+        old_stage = partner.omni_sales_stage
+        if old_stage == 'handoff':
+            return
+        partner.write({'omni_sales_stage': 'handoff'})
+        if channel:
+            self.env['omni.notify'].sudo().notify_stage_change(
+                channel=channel,
+                partner=partner,
+                old_stage=old_stage,
+                new_stage='handoff',
+                reason=reason or 'purchase_intent',
             )
 
     @api.model

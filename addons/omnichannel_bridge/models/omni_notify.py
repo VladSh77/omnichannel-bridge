@@ -117,6 +117,27 @@ class OmniNotify(models.AbstractModel):
         )
         self._send(text, parse_mode='Markdown')
 
+    @api.model
+    def notify_purchase_intent(self, channel, partner, user_text=''):
+        if not channel or not partner:
+            return
+        channel = channel.sudo()
+        partner = partner.sudo()
+        snippet = (user_text or '').strip()
+        if len(snippet) > 180:
+            snippet = snippet[:180] + '...'
+        text = self._event_summary_text(
+            event='purchase_intent',
+            channel=channel,
+            partner=partner,
+            lines=[
+                '🛒 Готовність до оплати / бронювання',
+                '💬 %s' % self._escape(snippet or '—'),
+            ],
+            priority=True,
+        )
+        self._send(text, parse_mode='Markdown', priority=True)
+
     # ------------------------------------------------------------------
     # Внутрішнє
     # ------------------------------------------------------------------
@@ -178,6 +199,7 @@ class OmniNotify(models.AbstractModel):
             'escalation': '🔺 *Ескалація*',
             'problematic': '⚠️ *Проблемний тред*',
             'stage_change': '🧭 *Зміна етапу*',
+            'purchase_intent': '🛒 *Purchase intent*',
         }
         title = title_map.get(event, 'ℹ️ *Подія*')
         if provider_label:

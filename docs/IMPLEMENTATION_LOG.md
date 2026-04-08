@@ -681,3 +681,25 @@
 ### Notes
 
 - Priority routing behavior from previous step is preserved.
+
+## 2026-04-07 — Purchase intent event in internal summary
+
+### Scope
+
+- Added baseline purchase-intent detection in inbound sales triggers (UA/PL/EN keywords).
+- On detection: internal PRIORITY notification + Discuss auto note + stage transition to `handoff` with stage-change notify.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+  - `_PURCHASE_INTENT_KEYWORDS`
+  - `_omni_detect_purchase_intent(...)`
+  - `_omni_log_purchase_intent(...)`
+  - `_omni_mark_handoff_stage(...)`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+  - `notify_purchase_intent(...)`
+  - `purchase_intent` event type in unified formatter
+
+### Notes
+
+- This is intent-level signaling; confirmed payment/order events remain a separate integration step.
