@@ -164,6 +164,12 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+### Deployment Notes
+
+- Initial production upgrade failed due missing `res_partner` columns for new consent fields.
+- Applied safe SQL recovery: `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
+- Re-ran module upgrade successfully and validated runtime field/method availability.
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope
