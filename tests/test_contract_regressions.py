@@ -160,6 +160,17 @@ class ContractRegressionTests(unittest.TestCase):
         ci = (ROOT / '.github/workflows/ci.yml').read_text()
         self.assertIn('ruff check', ci)
 
+    def test_objection_policy_editor_markers_present(self):
+        intel = (ROOT / 'addons/omnichannel_bridge/models/omni_sales_intel.py').read_text()
+        model = (ROOT / 'addons/omnichannel_bridge/models/omni_objection_policy.py').read_text()
+        views = (ROOT / 'addons/omnichannel_bridge/views/omni_objection_policy_views.xml').read_text()
+        ops = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
+        self.assertIn('omni.objection.policy', model)
+        self.assertIn('menu_omni_objection_policy', ops)
+        self.assertIn('action_omni_objection_policy', views)
+        self.assertIn("self.env['omni.objection.policy']", intel)
+        self.assertIn('tokens = [t for t in re.split', intel)
+
     def test_outbound_log_and_message_tags_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         log_model = (ROOT / 'addons/omnichannel_bridge/models/omni_outbound_log.py').read_text()

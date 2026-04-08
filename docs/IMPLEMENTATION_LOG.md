@@ -1727,3 +1727,29 @@
 - `.github/workflows/ci.yml`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 6/6 partial closure (objection classifier + policy editor)
+
+### Scope
+
+- Upgraded objection detection from strict keyword-only to lightweight classifier scoring:
+  - phrase-hit score,
+  - token overlap score,
+  - best-score objection selection.
+- Added dedicated objection policy editor model/UI:
+  - `omni.objection.policy` records,
+  - list/form views in Operations,
+  - runtime merge into `OBJECTION_PLAYBOOK` templates.
+- Kept Settings overrides backward-compatible while allowing model-driven policy control.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+- `addons/omnichannel_bridge/models/omni_objection_policy.py` (new)
+- `addons/omnichannel_bridge/views/omni_objection_policy_views.xml` (new)
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

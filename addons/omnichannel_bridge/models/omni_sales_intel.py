@@ -131,9 +131,17 @@ class OmniSalesIntel(models.AbstractModel):
         txt = (text or '').lower()
         if not txt:
             return ''
+        scored = []
+        tokens = [t for t in re.split(r'[^a-zA-Zа-яА-ЯіІїЇєЄ0-9]+', txt) if len(t) >= 3]
         for objection_type, keys in self._OBJECTION_KEYWORDS.items():
-            if any(k in txt for k in keys):
-                return objection_type
+            phrase_hits = sum(2 for k in keys if k in txt)
+            token_hits = sum(1 for t in tokens if any(t in k or k in t for k in keys))
+            score = phrase_hits + token_hits
+            if score > 0:
+                scored.append((score, objection_type))
+        if scored:
+            scored.sort(reverse=True)
+            return scored[0][1]
         return ''
 
     @api.model
@@ -270,7 +278,12 @@ class OmniSalesIntel(models.AbstractModel):
                 ICP.get_param('omnichannel_bridge.objection_playbook_not_decision_maker') or ''
             ).strip(),
         }
-        return {k: (overrides.get(k) or v) for k, v in defaults.items()}
+        templates = {k: (overrides.get(k) or v) for k, v in defaults.items()}
+        policies = self.env['omni.objection.policy'].sudo().search([('active', '=', True)], order='id desc')
+        for p in policies:
+            if p.objection_type and p.body:
+                templates[p.objection_type] = p.body.strip()
+        return templates
 
     @api.model
     def _omni_log_objection(self, channel, partner, objection_type):

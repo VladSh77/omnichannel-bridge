@@ -7,6 +7,7 @@ access_omni_webhook_event_manager,omni.webhook.event.manager,model_omni_webhook_
 access_omni_outbound_log_manager,omni.outbound.log.manager,model_omni_outbound_log,sales_team.group_sale_manager,1,0,0,0
 access_omni_ai_job_manager,omni.ai.job.manager,model_omni_ai_job,sales_team.group_sale_manager,1,1,1,1
 access_omni_prompt_audit_manager,omni.prompt.audit.manager,model_omni_prompt_audit,sales_team.group_sale_manager,1,0,0,0
+access_omni_objection_policy_manager,omni.objection.policy.manager,model_omni_objection_policy,sales_team.group_sale_manager,1,1,1,1
 access_omni_manager_reply_template_manager,omni.manager.reply.template.manager,model_omni_manager_reply_template,sales_team.group_sale_manager,1,1,1,1
 access_omni_manager_reply_assist_manager,omni.manager.reply.assist.manager,model_omni_manager_reply_assist,sales_team.group_sale_manager,1,1,1,0
 access_omni_coupon_redemption_manager,omni.coupon.redemption.manager,model_omni_coupon_redemption,sales_team.group_sale_manager,1,1,1,1

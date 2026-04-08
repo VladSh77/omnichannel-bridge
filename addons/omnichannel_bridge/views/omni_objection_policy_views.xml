@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_objection_policy_tree" model="ir.ui.view">
+        <field name="name">omni.objection.policy.tree</field>
+        <field name="model">omni.objection.policy</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="active"/>
+                <field name="objection_type"/>
+                <field name="channel_scope"/>
+                <field name="body"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_objection_policy_form" model="ir.ui.view">
+        <field name="name">omni.objection.policy.form</field>
+        <field name="model">omni.objection.policy</field>
+        <field name="arch" type="xml">
+            <form string="Objection Policy">
+                <sheet>
+                    <group>
+                        <field name="active"/>
+                        <field name="objection_type"/>
+                        <field name="channel_scope"/>
+                    </group>
+                    <group>
+                        <field name="body"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_objection_policy" model="ir.actions.act_window">
+        <field name="name">Objection Policies</field>
+        <field name="res_model">omni.objection.policy</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

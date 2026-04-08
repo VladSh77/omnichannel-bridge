@@ -146,6 +146,13 @@
         name="Manager Reply Templates"
         parent="menu_omni_ops_root"
         action="action_omni_manager_reply_template"
+        sequence="28"
+    />
+    <menuitem
+        id="menu_omni_objection_policy"
+        name="Objection Policies"
+        parent="menu_omni_ops_root"
+        action="action_omni_objection_policy"
         sequence="27"
     />
     <menuitem
@@ -153,14 +160,14 @@
         name="Manager Reply Assist"
         parent="menu_omni_ops_root"
         action="action_omni_manager_reply_assist"
-        sequence="28"
+        sequence="29"
     />
     <menuitem
         id="menu_omni_outbound_log"
         name="Outbound Delivery Log"
         parent="menu_omni_ops_root"
         action="action_omni_outbound_log"
-        sequence="29"
+        sequence="30"
     />
     <menuitem
         id="menu_omni_crm_analytics"
