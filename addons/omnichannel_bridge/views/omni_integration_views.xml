@@ -56,4 +56,11 @@
         action="action_omni_integration"
         sequence="10"
     />
+    <menuitem
+        id="menu_omni_promo"
+        name="Promotions"
+        parent="menu_omni_root"
+        action="action_omni_promo"
+        sequence="20"
+    />
 </odoo>

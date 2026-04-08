@@ -216,6 +216,26 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+## 2026-04-08 — Promo entities with UI and grounding context
+
+### Scope
+
+- Added dedicated promo entity model (`omni.promo`) with dates, code, scope and product limits.
+- Added UI list/form for promo management.
+- Added `PROMOTIONS` context block to `omni_strict_grounding_bundle` so LLM receives structured active promo facts from ORM.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_promo.py` (new)
+- `addons/omnichannel_bridge/views/omni_promo_views.xml` (new)
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/views/omni_integration_views.xml` (menu item)
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

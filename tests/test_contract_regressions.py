@@ -109,6 +109,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('only_opted_in', broadcast)
         self.assertIn('menu_omni_tg_broadcast', ops)
 
+    def test_promo_entities_markers_present(self):
+        promo = (ROOT / 'addons/omnichannel_bridge/models/omni_promo.py').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('omni.promo', promo)
+        self.assertIn('omni_promo_context_block', knowledge)
+        self.assertIn('PROMOTIONS:', knowledge)
+
 
 if __name__ == '__main__':
     unittest.main()

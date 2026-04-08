@@ -541,6 +541,32 @@ class OmniKnowledge(models.AbstractModel):
         )
 
     @api.model
+    def omni_promo_context_block(self):
+        today = fields.Date.context_today(self)
+        promos = self.env['omni.promo'].sudo().search([('active', '=', True)], order='id desc', limit=8)
+        lines = ['PROMOTIONS:']
+        for p in promos:
+            if p.date_start and p.date_start > today:
+                continue
+            if p.date_end and p.date_end < today:
+                continue
+            prod_names = ', '.join(p.product_tmpl_ids.mapped('name')[:5]) if p.product_tmpl_ids else 'all camp products'
+            lines.append(
+                '- %s | code:%s | discount:%s%% | channel:%s | products:%s | terms:%s'
+                % (
+                    p.name,
+                    p.code or '—',
+                    p.discount_percent or 0.0,
+                    p.channel_scope or 'all',
+                    prod_names,
+                    (p.terms or '').strip()[:180] or '—',
+                )
+            )
+        if len(lines) == 1:
+            lines.append('- no active promotions')
+        return '\n'.join(lines)
+
+    @api.model
     def omni_strict_grounding_bundle(self, channel, partner, user_text=''):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
         if channel:
@@ -554,6 +580,8 @@ class OmniKnowledge(models.AbstractModel):
             self.omni_legal_context_block(),
             '---',
             self.omni_coupon_policy_block(),
+            '---',
+            self.omni_promo_context_block(),
             '---',
             self.omni_reserve_policy_block(),
             '---',
