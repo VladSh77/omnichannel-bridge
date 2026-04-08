@@ -10,6 +10,7 @@ MOD = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MOD)
 extract_meta_mid = MOD.extract_meta_mid
 extract_telegram_update_id = MOD.extract_telegram_update_id
+extract_whatsapp_message_id = MOD.extract_whatsapp_message_id
 
 
 class WebhookParserTests(unittest.TestCase):
@@ -30,6 +31,22 @@ class WebhookParserTests(unittest.TestCase):
     def test_extract_meta_mid_missing(self):
         payload = {'entry': [{'messaging': [{'message': {}}, {}]}]}
         self.assertEqual(extract_meta_mid(payload), '')
+
+    def test_extract_whatsapp_message_id_ok(self):
+        payload = {
+            'entry': [{
+                'changes': [{
+                    'value': {
+                        'messages': [{'id': 'wamid.HBgMTEST'}],
+                    }
+                }]
+            }]
+        }
+        self.assertEqual(extract_whatsapp_message_id(payload), 'wamid.HBgMTEST')
+
+    def test_extract_whatsapp_message_id_missing(self):
+        payload = {'entry': [{'changes': [{'value': {}}]}]}
+        self.assertEqual(extract_whatsapp_message_id(payload), '')
 
 
 if __name__ == '__main__':

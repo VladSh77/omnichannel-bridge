@@ -1,5 +1,38 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-08 — TZ Item 2: WhatsApp runtime parser/outbound
+
+### Scope
+
+- Implemented WhatsApp Cloud API webhook processing (inbound parser + dedup key extraction).
+- Implemented WhatsApp outbound replies via Graph API phone_number_id endpoint.
+- Added WhatsApp verification/settings fields and parser tests.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_bridge.py`
+  - `extract_whatsapp_message_id` integration in idempotency extraction.
+  - `/_omni_process_whatsapp_stub` now parses Cloud API payloads into `_omni_deliver_inbound`.
+  - `_omni_whatsapp_send_to_wa_id` for outbound text replies.
+  - verify signature path for WhatsApp webhooks.
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+  - `omnichannel_whatsapp_verify_token`
+  - `omnichannel_whatsapp_phone_number_id`
+  - `omnichannel_whatsapp_app_secret`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+  - WhatsApp fields in Settings UI.
+- `addons/omnichannel_bridge/utils/webhook_parsers.py`
+  - `extract_whatsapp_message_id`.
+- `tests/test_webhook_parsers.py`
+  - WhatsApp parser unit tests.
+- `tests/test_contract_regressions.py`
+  - WhatsApp runtime markers check.
+
+### Notes
+
+- Current implementation targets Meta WhatsApp Cloud webhook shape.
+- Twilio-specific inbound parser remains separate backlog item.
+
 ## 2026-04-08 — TZ Item 1: Baseline Freeze + DoD Matrix
 
 ### Scope

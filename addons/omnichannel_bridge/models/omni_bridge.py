@@ -12,7 +12,11 @@ from psycopg2 import IntegrityError
 from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 
-from ..utils.webhook_parsers import extract_meta_mid, extract_telegram_update_id
+from ..utils.webhook_parsers import (
+    extract_meta_mid,
+    extract_telegram_update_id,
+    extract_whatsapp_message_id,
+)
 
 _logger = logging.getLogger(__name__)
 _EMAIL_LOG_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
@@ -44,6 +48,8 @@ class OmniBridge(models.AbstractModel):
             return extract_telegram_update_id(data)
         if provider == 'meta':
             return extract_meta_mid(data)
+        if provider in ('whatsapp', 'twilio_whatsapp'):
+            return extract_whatsapp_message_id(data)
         return ''
 
     def _omni_register_webhook_event(self, provider, data):
@@ -89,8 +95,47 @@ class OmniBridge(models.AbstractModel):
             app_secret = ICP.get_param('omnichannel_bridge.meta_app_secret', '').strip()
         return page_token, app_secret
 
+    def _omni_whatsapp_credentials(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        row = self.env['omni.integration'].sudo().search(
+            [
+                ('active', '=', True),
+                ('provider', '=', 'whatsapp'),
+                ('company_id', '=', self.env.company.id),
+            ],
+            limit=1,
+        )
+        token = ''
+        app_secret = ''
+        if row:
+            token = (row.api_token or '').strip()
+            app_secret = (row.webhook_secret or '').strip()
+        if not token:
+            token = ICP.get_param('omnichannel_bridge.meta_page_access_token', '').strip()
+        if not app_secret:
+            app_secret = (
+                ICP.get_param('omnichannel_bridge.whatsapp_app_secret', '').strip() or
+                ICP.get_param('omnichannel_bridge.meta_app_secret', '').strip()
+            )
+        phone_number_id = (ICP.get_param('omnichannel_bridge.whatsapp_phone_number_id', '') or '').strip()
+        return token, app_secret, phone_number_id
+
     def _omni_verify_meta_signature(self, raw_body, headers):
         _, app_secret = self._omni_meta_credentials()
+        if not app_secret:
+            return True
+        sig = headers.get('X-Hub-Signature-256') or headers.get('x-hub-signature-256') or ''
+        if not sig.startswith('sha256='):
+            return False
+        expected = 'sha256=' + hmac.new(
+            app_secret.encode('utf-8'),
+            raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+        return hmac.compare_digest(sig, expected)
+
+    def _omni_verify_whatsapp_signature(self, raw_body, headers):
+        _, app_secret, _ = self._omni_whatsapp_credentials()
         if not app_secret:
             return True
         sig = headers.get('X-Hub-Signature-256') or headers.get('x-hub-signature-256') or ''
@@ -387,8 +432,59 @@ class OmniBridge(models.AbstractModel):
         return {'ok': True, 'stub': 'viber'}
 
     def _omni_process_whatsapp_stub(self, payload, headers):
-        _logger.info('WhatsApp webhook stub (Meta/Twilio parser).')
-        return {'ok': True, 'stub': 'whatsapp'}
+        raw_body = payload if isinstance(payload, (bytes, bytearray)) else json.dumps(payload).encode('utf-8')
+        if not self._omni_verify_whatsapp_signature(raw_body, headers):
+            return {'ok': False, 'error': 'bad_signature'}
+        data = json.loads(raw_body.decode('utf-8'))
+        webhook_event = self._omni_register_webhook_event('whatsapp', data)
+        if not webhook_event:
+            return {'ok': True, 'deduplicated': True}
+        if data.get('object') not in ('whatsapp_business_account',):
+            webhook_event.sudo().write({
+                'state': 'processed',
+                'processed_at': fields.Datetime.now(),
+            })
+            return {'ok': True, 'skipped': True}
+        for entry in data.get('entry', []):
+            for change in entry.get('changes', []):
+                value = change.get('value') or {}
+                contacts = value.get('contacts') or []
+                messages = value.get('messages') or []
+                for msg in messages:
+                    msg_type = msg.get('type')
+                    text = ''
+                    if msg_type == 'text':
+                        text = ((msg.get('text') or {}).get('body') or '').strip()
+                    elif msg_type == 'button':
+                        text = ((msg.get('button') or {}).get('text') or '').strip()
+                    elif msg_type == 'interactive':
+                        interactive = msg.get('interactive') or {}
+                        button_reply = (interactive.get('button_reply') or {}).get('title')
+                        list_reply = (interactive.get('list_reply') or {}).get('title')
+                        text = (button_reply or list_reply or '').strip()
+                    if not text:
+                        continue
+                    sender = str(msg.get('from') or '')
+                    if not sender:
+                        continue
+                    contact = next((c for c in contacts if str(c.get('wa_id') or '') == sender), {}) or {}
+                    profile = contact.get('profile') or {}
+                    display_name = profile.get('name') or _('WhatsApp user %s') % sender
+                    self._omni_deliver_inbound(
+                        'whatsapp',
+                        thread_id=sender,
+                        external_user_id=sender,
+                        display_name=display_name,
+                        text=text,
+                        phone=sender,
+                        email='',
+                        metadata_obj=msg,
+                    )
+        webhook_event.sudo().write({
+            'state': 'processed',
+            'processed_at': fields.Datetime.now(),
+        })
+        return {'ok': True}
 
     @api.model
     def omni_send_outbound(self, provider, external_thread_id, customer_partner, body_html):
@@ -399,6 +495,8 @@ class OmniBridge(models.AbstractModel):
             self._omni_telegram_send_message(str(external_thread_id), text)
         elif provider == 'meta':
             self._omni_meta_send_psid(str(external_thread_id), text)
+        elif provider in ('whatsapp', 'twilio_whatsapp'):
+            self._omni_whatsapp_send_to_wa_id(str(external_thread_id), text)
         else:
             _logger.info(
                 'Outbound not implemented for provider=%s thread=%s',
@@ -497,6 +595,34 @@ class OmniBridge(models.AbstractModel):
         if not resp.ok:
             _logger.error(
                 'Meta send message failed: %s %s',
+                resp.status_code,
+                self._omni_mask_pii_for_logs(resp.text),
+            )
+
+    def _omni_whatsapp_send_to_wa_id(self, wa_id, text):
+        token, _, phone_number_id = self._omni_whatsapp_credentials()
+        if not token or not phone_number_id:
+            _logger.warning('WhatsApp token or phone_number_id is not configured.')
+            return
+        url = 'https://graph.facebook.com/%s/%s/messages' % (META_GRAPH_VERSION, phone_number_id)
+        try:
+            resp = self._omni_http_post_with_retries(
+                url,
+                params={'access_token': token},
+                json={
+                    'messaging_product': 'whatsapp',
+                    'recipient_type': 'individual',
+                    'to': wa_id,
+                    'type': 'text',
+                    'text': {'preview_url': False, 'body': text[:2000]},
+                },
+            )
+        except requests.RequestException:
+            _logger.exception('WhatsApp send message failed after retries')
+            return
+        if not resp.ok:
+            _logger.error(
+                'WhatsApp send message failed: %s %s',
                 resp.status_code,
                 self._omni_mask_pii_for_logs(resp.text),
             )

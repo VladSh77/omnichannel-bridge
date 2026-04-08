@@ -52,16 +52,19 @@ class OmnichannelWebhookController(http.Controller):
             return request.make_json_response({'ok': False, 'error': 'server_error'}, status=500)
 
     def _omni_webhook_get(self, provider):
-        if provider != 'meta':
+        if provider not in ('meta', 'whatsapp'):
             return request.make_response('Method Not Allowed', status=405)
         mode = request.params.get('hub.mode')
         token = request.params.get('hub.verify_token')
         challenge = request.params.get('hub.challenge')
-        expected = (
-            request.env['ir.config_parameter']
-            .sudo()
-            .get_param('omnichannel_bridge.meta_verify_token', '')
-        )
+        icp = request.env['ir.config_parameter'].sudo()
+        if provider == 'whatsapp':
+            expected = (
+                icp.get_param('omnichannel_bridge.whatsapp_verify_token', '').strip() or
+                icp.get_param('omnichannel_bridge.meta_verify_token', '').strip()
+            )
+        else:
+            expected = icp.get_param('omnichannel_bridge.meta_verify_token', '').strip()
         if mode == 'subscribe' and token and challenge and expected and token == expected:
             return request.make_response(challenge, headers=[('Content-Type', 'text/plain')])
         return request.make_response('Forbidden', status=403)

@@ -106,7 +106,7 @@
 
 - [x] **Meta (Facebook + Instagram)** — прийом повідомлень (webhook POST), верифікація GET, підпис App Secret, відправка відповіді (Graph API)
 - [x] **Telegram** — прийом і відправка (Bot API)
-- [~] **WhatsApp** (WABA / Twilio тощо) — заглушка в коді, немає продакшен-парсера
+- [~] **WhatsApp** (WABA / Twilio тощо) — додано runtime parser/outbound для WhatsApp Cloud API; Twilio-специфічний parser лишається backlog.
 - [~] **Viber** — заглушка
 - [~] **Чат на сайті** — нативна інтеграція з Odoo Live Chat у спільний контур (базовий міст у чергу ШІ реалізовано; потрібен повний прод-прогін)
 - [x] Пріоритет обробки **Meta перед** іншими у маршрутизаторі webhook

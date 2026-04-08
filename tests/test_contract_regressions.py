@@ -28,6 +28,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_register_coupon_redemption', content)
         self.assertTrue((ROOT / 'addons/omnichannel_bridge/models/omni_coupon_redemption.py').exists())
 
+    def test_whatsapp_runtime_markers_present(self):
+        content = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
+        parsers = (ROOT / 'addons/omnichannel_bridge/utils/webhook_parsers.py').read_text()
+        self.assertIn('_omni_process_whatsapp_stub', content)
+        self.assertIn('_omni_whatsapp_send_to_wa_id', content)
+        self.assertIn('extract_whatsapp_message_id', parsers)
+
     def test_fsm_and_race_markers_present(self):
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()

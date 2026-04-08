@@ -17,6 +17,15 @@
                         <setting string="App secret" help="Used to validate X-Hub-Signature-256 on POST webhooks.">
                             <field name="omnichannel_meta_app_secret" password="True"/>
                         </setting>
+                        <setting string="WhatsApp verify token" help="Token for /omni/webhook/whatsapp GET verification. Falls back to Meta token if empty.">
+                            <field name="omnichannel_whatsapp_verify_token" password="True"/>
+                        </setting>
+                        <setting string="WhatsApp phone number ID" help="Cloud API sender phone_number_id used for outbound replies.">
+                            <field name="omnichannel_whatsapp_phone_number_id"/>
+                        </setting>
+                        <setting string="WhatsApp app secret" help="Used to validate X-Hub-Signature-256 for WhatsApp webhooks. Falls back to Meta app secret if empty.">
+                            <field name="omnichannel_whatsapp_app_secret" password="True"/>
+                        </setting>
                     </block>
                     <block title="Bot schedule" name="omnichannel_block_schedule">
                         <setting help="Use company timezone (on the main company contact).">

@@ -28,6 +28,18 @@ class ResConfigSettings(models.TransientModel):
         string='Meta webhook verify token',
         config_parameter='omnichannel_bridge.meta_verify_token',
     )
+    omnichannel_whatsapp_verify_token = fields.Char(
+        string='WhatsApp webhook verify token',
+        config_parameter='omnichannel_bridge.whatsapp_verify_token',
+    )
+    omnichannel_whatsapp_phone_number_id = fields.Char(
+        string='WhatsApp Cloud phone number ID',
+        config_parameter='omnichannel_bridge.whatsapp_phone_number_id',
+    )
+    omnichannel_whatsapp_app_secret = fields.Char(
+        string='WhatsApp app secret (signature)',
+        config_parameter='omnichannel_bridge.whatsapp_app_secret',
+    )
     omnichannel_bot_reply_mode = fields.Selection(
         selection=[
             ('always', 'Always (instant replies whenever LLM is on)'),

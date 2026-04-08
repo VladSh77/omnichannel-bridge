@@ -15,3 +15,14 @@ def extract_meta_mid(data):
             if mid:
                 return str(mid)
     return ''
+
+
+def extract_whatsapp_message_id(data):
+    for entry in (data or {}).get('entry', []):
+        for change in entry.get('changes', []):
+            value = change.get('value') or {}
+            for msg in value.get('messages', []):
+                msg_id = msg.get('id')
+                if msg_id:
+                    return str(msg_id)
+    return ''
