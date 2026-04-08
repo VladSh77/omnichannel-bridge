@@ -35,8 +35,13 @@ class MailChannel(models.Model):
     omni_reserve_requested_at = fields.Datetime()
     omni_last_customer_inbound_at = fields.Datetime()
     omni_window_reminder_sent_at = fields.Datetime()
+    omni_window_last_call_sent_at = fields.Datetime()
     omni_window_reminder_count = fields.Integer(default=0)
     omni_last_fomo_notify_at = fields.Datetime()
+    omni_last_marketing_touch_at = fields.Datetime()
+    omni_last_marketing_touch_type = fields.Selection(
+        selection=[('reminder', 'Reminder'), ('fomo', 'FOMO'), ('last_call', 'Last call')],
+    )
     omni_livechat_entry_state = fields.Selection(
         selection=[
             ('new', 'New'),
@@ -591,6 +596,15 @@ class MailChannel(models.Model):
             'Підкажіть, будь ласка, чи встигли обрати програму табору? '
             'Якщо зручно, допоможу коротко звузити до 1-2 варіантів.'
         ).strip()
+        last_call_text = (
+            ICP.get_param('omnichannel_bridge.window_last_call_text') or
+            'Нагадуємо: вікно повідомлень скоро закриється. Якщо зручно, напишіть короткий апдейт — '
+            'і я підключу менеджера без втрати контексту.'
+        ).strip()
+        try:
+            last_call_before_h = float(ICP.get_param('omnichannel_bridge.window_last_call_hours_before_close', '2'))
+        except ValueError:
+            last_call_before_h = 2.0
         now = Datetime.now()
         domain = [
             ('omni_provider', 'in', ('meta', 'whatsapp', 'twilio_whatsapp')),
@@ -609,24 +623,77 @@ class MailChannel(models.Model):
             if now > inbound_at + timedelta(hours=max(0.5, max_h)):
                 continue
             if ch.omni_window_reminder_sent_at and ch.omni_window_reminder_sent_at >= inbound_at:
-                continue
+                pass
             # Do not remind when handoff is already in progress.
             customer = ch.omni_customer_partner_id.sudo()
             if customer and customer.omni_sales_stage == 'handoff':
                 continue
+            window_close_at = inbound_at + timedelta(hours=max(0.5, max_h))
+            last_call_at = window_close_at - timedelta(hours=max(0.1, last_call_before_h))
+            can_remind = (
+                now >= inbound_at + timedelta(hours=max(0.1, trigger_h))
+                and (not ch.omni_window_reminder_sent_at or ch.omni_window_reminder_sent_at < inbound_at)
+                and self._omni_marketing_touch_allowed(ch, 'reminder', now, ICP)
+            )
+            can_last_call = (
+                now >= last_call_at
+                and now <= window_close_at
+                and (not ch.omni_window_last_call_sent_at or ch.omni_window_last_call_sent_at < inbound_at)
+                and self._omni_marketing_touch_allowed(ch, 'last_call', now, ICP)
+            )
+            if not can_remind and not can_last_call:
+                continue
             try:
+                sent_touch = ''
                 self.env['omni.bridge'].sudo().omni_send_outbound(
                     ch.omni_provider,
                     ch.omni_external_thread_id,
                     customer,
-                    reminder_text,
+                    reminder_text if can_remind else last_call_text,
                 )
-                ch.write({
-                    'omni_window_reminder_sent_at': now,
-                    'omni_window_reminder_count': (ch.omni_window_reminder_count or 0) + 1,
-                })
+                vals = {
+                    'omni_last_marketing_touch_at': now,
+                    'omni_last_marketing_touch_type': 'reminder' if can_remind else 'last_call',
+                }
+                if can_remind:
+                    vals['omni_window_reminder_sent_at'] = now
+                    vals['omni_window_reminder_count'] = (ch.omni_window_reminder_count or 0) + 1
+                    sent_touch = 'reminder'
+                else:
+                    vals['omni_window_last_call_sent_at'] = now
+                    sent_touch = 'last_call'
+                ch.write(vals)
+                _logger.info('Window marketing touch sent channel=%s type=%s', ch.id, sent_touch)
             except Exception:
                 _logger.exception('Window reminder send failed for channel %s', ch.id)
+
+    def _omni_marketing_touch_allowed(self, channel, touch_type, now_dt, icp):
+        channel = channel.sudo()
+        def _mins(key, default):
+            try:
+                return max(0, int(icp.get_param(key, str(default))))
+            except ValueError:
+                return default
+        global_cd = _mins('omnichannel_bridge.cooldown_global_minutes', 60)
+        type_map = {
+            'reminder': _mins('omnichannel_bridge.cooldown_reminder_minutes', 180),
+            'fomo': _mins('omnichannel_bridge.cooldown_fomo_minutes', 180),
+            'last_call': _mins('omnichannel_bridge.cooldown_last_call_minutes', 180),
+        }
+        type_cd = type_map.get(touch_type, 0)
+        if channel.omni_last_marketing_touch_at:
+            if now_dt < channel.omni_last_marketing_touch_at + timedelta(minutes=global_cd):
+                return False
+        if touch_type == 'fomo' and channel.omni_last_fomo_notify_at:
+            if now_dt < channel.omni_last_fomo_notify_at + timedelta(minutes=type_cd):
+                return False
+        if touch_type == 'reminder' and channel.omni_window_reminder_sent_at:
+            if now_dt < channel.omni_window_reminder_sent_at + timedelta(minutes=type_cd):
+                return False
+        if touch_type == 'last_call' and channel.omni_window_last_call_sent_at:
+            if now_dt < channel.omni_window_last_call_sent_at + timedelta(minutes=type_cd):
+                return False
+        return True
 
     @api.model
     def omni_cron_purge_old_messages(self, limit=500):

@@ -175,6 +175,10 @@ class OmniAi(models.AbstractModel):
         if self._omni_is_ru_or_be_message(normalized):
             self._omni_post_bot_message(channel, self._omni_ru_language_policy_reply(detected_lang))
             return
+        policy_hit = self._omni_moderation_policy_hit(normalized)
+        if policy_hit:
+            self._omni_apply_moderation_action(channel, partner, normalized, policy_hit)
+            return
         if provider == 'meta' and self._omni_is_coupon_question(normalized):
             self._omni_post_bot_message(channel, self._omni_coupon_meta_offer_text())
             return
@@ -687,6 +691,46 @@ class OmniAi(models.AbstractModel):
             'Jeśli wygodnie, od razu podłączę managera.'
         )
         self._omni_post_bot_message(channel, body)
+
+    def _omni_moderation_policy_hit(self, user_text):
+        txt = (user_text or '').lower().strip()
+        if not txt:
+            return ''
+        icp = self.env['ir.config_parameter'].sudo()
+        raw = (icp.get_param('omnichannel_bridge.moderation_keywords', '') or '').strip()
+        if not raw:
+            return ''
+        keys = [k.strip().lower() for k in raw.split(',') if k and k.strip()]
+        for key in keys:
+            if key and key in txt:
+                return key
+        return ''
+
+    def _omni_apply_moderation_action(self, channel, partner, user_text, hit_keyword):
+        icp = self.env['ir.config_parameter'].sudo()
+        action = (icp.get_param('omnichannel_bridge.moderation_action', 'escalate') or 'escalate').strip()
+        note = 'moderation_policy_hit:%s' % (hit_keyword or 'unknown')
+        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
+            body='[auto] %s' % note,
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )
+        if action in ('escalate', 'escalate_pause'):
+            self._omni_post_bot_message(
+                channel,
+                'Дякую за повідомлення. Для коректної відповіді передаю діалог менеджеру.',
+            )
+            self.env['omni.notify'].sudo().notify_problematic(
+                channel=channel,
+                partner=partner,
+                note=note,
+            )
+            self._omni_set_sales_stage(partner, 'handoff', channel, note)
+        if action == 'escalate_pause' and channel:
+            channel.sudo().write({
+                'omni_bot_paused': True,
+                'omni_bot_pause_reason': 'moderation_policy',
+            })
 
     def _llm_complete(self, backend, icp, system_prompt, user_text):
         if backend == 'openai':

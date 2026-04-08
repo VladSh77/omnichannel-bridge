@@ -135,6 +135,13 @@
         sequence="25"
     />
     <menuitem
+        id="menu_omni_stage_events"
+        name="Stage Events"
+        parent="menu_omni_ops_root"
+        action="action_omni_stage_event"
+        sequence="26"
+    />
+    <menuitem
         id="menu_omni_manager_reply_templates"
         name="Manager Reply Templates"
         parent="menu_omni_ops_root"

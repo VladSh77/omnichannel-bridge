@@ -1676,3 +1676,32 @@
 - `addons/omnichannel_bridge/views/res_config_settings_views.xml`
 - `addons/omnichannel_bridge/utils/webhook_parsers.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 4/6 partial closure (anti-spam matrix + moderation controls)
+
+### Scope
+
+- Added anti-spam cooldown matrix controls for marketing touches:
+  - reminder cooldown,
+  - FOMO cooldown,
+  - last-call cooldown,
+  - global cooldown across touch types.
+- Extended 24h-window automation with optional last-call touch near window close.
+- Added configurable moderation controls in Settings:
+  - custom keyword list,
+  - action mode (`escalate`, `escalate_pause`, `note_only`).
+- Added baseline runtime moderation policy hook in AI flow before LLM generation.
+- Added Operations UI for FSM transition audit (`omni.stage.event` list/form + menu).
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/views/omni_stage_event_views.xml` (new)
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

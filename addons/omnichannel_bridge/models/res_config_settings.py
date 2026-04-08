@@ -422,9 +422,38 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.window_message_window_hours',
         default=24.0,
     )
+    omnichannel_window_last_call_hours_before_close = fields.Float(
+        string='Last-call trigger hours before window close',
+        config_parameter='omnichannel_bridge.window_last_call_hours_before_close',
+        default=2.0,
+    )
+    omnichannel_window_last_call_text = fields.Text(
+        string='Last-call reminder text',
+        config_parameter='omnichannel_bridge.window_last_call_text',
+    )
     omnichannel_window_reminder_text = fields.Text(
         string='24h reminder text',
         config_parameter='omnichannel_bridge.window_reminder_text',
+    )
+    omnichannel_cooldown_reminder_minutes = fields.Integer(
+        string='Cooldown: reminder (minutes)',
+        config_parameter='omnichannel_bridge.cooldown_reminder_minutes',
+        default=180,
+    )
+    omnichannel_cooldown_fomo_minutes = fields.Integer(
+        string='Cooldown: FOMO hint (minutes)',
+        config_parameter='omnichannel_bridge.cooldown_fomo_minutes',
+        default=180,
+    )
+    omnichannel_cooldown_last_call_minutes = fields.Integer(
+        string='Cooldown: last-call (minutes)',
+        config_parameter='omnichannel_bridge.cooldown_last_call_minutes',
+        default=180,
+    )
+    omnichannel_cooldown_global_minutes = fields.Integer(
+        string='Cooldown: global marketing touch (minutes)',
+        config_parameter='omnichannel_bridge.cooldown_global_minutes',
+        default=60,
     )
     omnichannel_retention_message_days = fields.Integer(
         string='Retention: omni chat messages (days)',
@@ -440,6 +469,21 @@ class ResConfigSettings(models.TransientModel):
         string='Mask emails/phones in bridge logs',
         config_parameter='omnichannel_bridge.log_pii_masking',
         default=True,
+    )
+    omnichannel_moderation_keywords = fields.Text(
+        string='Moderation keywords (comma-separated)',
+        config_parameter='omnichannel_bridge.moderation_keywords',
+        help='Additional risk keywords to trigger policy action.',
+    )
+    omnichannel_moderation_action = fields.Selection(
+        selection=[
+            ('escalate', 'Escalate to manager'),
+            ('escalate_pause', 'Escalate and pause bot'),
+            ('note_only', 'Internal note only'),
+        ],
+        string='Moderation action',
+        config_parameter='omnichannel_bridge.moderation_action',
+        default='escalate',
     )
 
     def get_values(self):

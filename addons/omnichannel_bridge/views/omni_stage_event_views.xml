@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_stage_event_tree" model="ir.ui.view">
+        <field name="name">omni.stage.event.tree</field>
+        <field name="model">omni.stage.event</field>
+        <field name="arch" type="xml">
+            <tree string="Stage Events" create="false">
+                <field name="changed_at"/>
+                <field name="partner_id"/>
+                <field name="channel_id"/>
+                <field name="old_stage"/>
+                <field name="new_stage"/>
+                <field name="source"/>
+                <field name="reason"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_stage_event_form" model="ir.ui.view">
+        <field name="name">omni.stage.event.form</field>
+        <field name="model">omni.stage.event</field>
+        <field name="arch" type="xml">
+            <form string="Stage Event">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="changed_at" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="channel_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="old_stage" readonly="1"/>
+                            <field name="new_stage" readonly="1"/>
+                            <field name="source" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="reason" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_stage_event" model="ir.actions.act_window">
+        <field name="name">Stage Events</field>
+        <field name="res_model">omni.stage.event</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

@@ -196,9 +196,15 @@ class OmniSalesIntel(models.AbstractModel):
         if not enabled:
             return
         now = fields.Datetime.now()
-        if channel.omni_last_fomo_notify_at and (now - channel.omni_last_fomo_notify_at).total_seconds() < 600:
+        if hasattr(channel, '_omni_marketing_touch_allowed') and not channel._omni_marketing_touch_allowed(
+            channel, 'fomo', now, icp,
+        ):
             return
-        channel.sudo().write({'omni_last_fomo_notify_at': now})
+        channel.sudo().write({
+            'omni_last_fomo_notify_at': now,
+            'omni_last_marketing_touch_at': now,
+            'omni_last_marketing_touch_type': 'fomo',
+        })
         self.env['omni.notify'].sudo().notify_problematic(
             channel=channel,
             partner=partner,

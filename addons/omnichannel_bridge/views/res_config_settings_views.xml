@@ -79,8 +79,26 @@
                         <setting string="Window max (hours)" invisible="not omnichannel_window_reminder_enabled">
                             <field name="omnichannel_window_message_window_hours"/>
                         </setting>
+                        <setting string="Last-call before close (hours)" invisible="not omnichannel_window_reminder_enabled">
+                            <field name="omnichannel_window_last_call_hours_before_close"/>
+                        </setting>
                         <setting string="Reminder text" invisible="not omnichannel_window_reminder_enabled">
                             <field name="omnichannel_window_reminder_text" placeholder="Підкажіть, будь ласка, чи встигли обрати програму табору?..."/>
+                        </setting>
+                        <setting string="Last-call text" invisible="not omnichannel_window_reminder_enabled">
+                            <field name="omnichannel_window_last_call_text" placeholder="Вікно повідомлень скоро закриється — якщо зручно, залиште короткий апдейт і я підключу менеджера."/>
+                        </setting>
+                        <setting string="Cooldown reminder (minutes)">
+                            <field name="omnichannel_cooldown_reminder_minutes"/>
+                        </setting>
+                        <setting string="Cooldown FOMO (minutes)">
+                            <field name="omnichannel_cooldown_fomo_minutes"/>
+                        </setting>
+                        <setting string="Cooldown last-call (minutes)">
+                            <field name="omnichannel_cooldown_last_call_minutes"/>
+                        </setting>
+                        <setting string="Global cooldown (minutes)">
+                            <field name="omnichannel_cooldown_global_minutes"/>
                         </setting>
                         <setting string="Retention: omni chat messages (days)">
                             <field name="omnichannel_retention_message_days"/>
@@ -203,6 +221,12 @@
                         </setting>
                         <setting string="Assistant profile">
                             <field name="omnichannel_llm_assistant_profile"/>
+                        </setting>
+                        <setting string="Moderation keywords">
+                            <field name="omnichannel_moderation_keywords"/>
+                        </setting>
+                        <setting string="Moderation action">
+                            <field name="omnichannel_moderation_action"/>
                         </setting>
                     </block>
                     <block title="Legal Pack (approved snippets)" name="omnichannel_block_legal_pack">

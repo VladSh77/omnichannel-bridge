@@ -23,6 +23,7 @@
         'views/omni_insurance_package_views.xml',
         'views/omni_legal_document_views.xml',
         'views/omni_prompt_audit_views.xml',
+        'views/omni_stage_event_views.xml',
         'views/omni_outbound_log_views.xml',
         'views/omni_manager_reply_views.xml',
         'views/res_config_settings_views.xml',
