@@ -27,6 +27,10 @@
                         <field name="omni_budget_currency"/>
                         <field name="omni_sales_stage"/>
                     </group>
+                    <group string="Telegram marketing consent">
+                        <field name="omni_tg_marketing_opt_in"/>
+                        <field name="omni_tg_marketing_opt_in_at" readonly="1"/>
+                    </group>
                     <field name="omni_identity_ids" nolabel="1">
                         <tree editable="bottom">
                             <field name="provider"/>

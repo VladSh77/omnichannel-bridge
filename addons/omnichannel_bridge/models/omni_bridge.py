@@ -334,6 +334,14 @@ class OmniBridge(models.AbstractModel):
         got = headers.get('X-Telegram-Bot-Api-Secret-Token')
         return got == secret
 
+    def _omni_is_tg_marketing_subscribe(self, text):
+        txt = (text or '').strip().lower()
+        return txt in ('/subscribe', '/subscribe@campscoutbot', 'підписка', 'згода на розсилку')
+
+    def _omni_is_tg_marketing_unsubscribe(self, text):
+        txt = (text or '').strip().lower()
+        return txt in ('/unsubscribe', '/unsubscribe@campscoutbot', 'відписка', 'стоп розсилка')
+
     def _omni_telegram_token(self):
         row = self.env['omni.integration'].sudo().search(
             [
@@ -402,6 +410,34 @@ class OmniBridge(models.AbstractModel):
             email='',
             metadata_obj={'telegram': from_user, 'chat': chat},
         )
+        partner = self.env['res.partner'].sudo().omni_find_or_create_customer({
+            'provider': 'telegram',
+            'external_id': external_user_id,
+            'name': display_name,
+            'display_name': display_name,
+            'phone': from_user.get('phone_number') or False,
+            'email': False,
+            'metadata_json': json.dumps({'telegram': from_user, 'chat': chat}),
+        })
+        if self._omni_is_tg_marketing_subscribe(text):
+            partner.sudo().write({
+                'omni_tg_marketing_opt_in': True,
+                'omni_tg_marketing_opt_in_at': fields.Datetime.now(),
+            })
+            self._omni_telegram_send_message(
+                thread_id,
+                '✅ Дякуємо! Ви підписані на Telegram-розсилки CampScout. '
+                'Відписка: /unsubscribe',
+            )
+        elif self._omni_is_tg_marketing_unsubscribe(text):
+            partner.sudo().write({
+                'omni_tg_marketing_opt_in': False,
+            })
+            self._omni_telegram_send_message(
+                thread_id,
+                '🛑 Ви відписались від Telegram-розсилок CampScout. '
+                'Повернути підписку: /subscribe',
+            )
         webhook_event.sudo().write({
             'state': 'processed',
             'processed_at': fields.Datetime.now(),

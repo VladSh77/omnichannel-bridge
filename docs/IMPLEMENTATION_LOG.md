@@ -142,6 +142,28 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+## 2026-04-08 — Telegram marketing consent step (TZ §13)
+
+### Scope
+
+- Added explicit Telegram marketing consent commands:
+  - subscribe: `/subscribe`
+  - unsubscribe: `/unsubscribe`
+- Added consent persistence on partner card and confirmation replies in chat.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_bridge.py`
+  - `_omni_is_tg_marketing_subscribe`
+  - `_omni_is_tg_marketing_unsubscribe`
+  - consent handling in `_omni_process_telegram`
+- `addons/omnichannel_bridge/models/res_partner.py`
+  - `omni_tg_marketing_opt_in`
+  - `omni_tg_marketing_opt_in_at`
+- `addons/omnichannel_bridge/views/res_partner_views.xml`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

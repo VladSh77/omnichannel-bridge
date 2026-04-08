@@ -93,6 +93,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_coupon_meta_offer_text', ai)
         self.assertIn('coupon_public_channel_url', ai)
 
+    def test_tg_marketing_consent_markers_present(self):
+        bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
+        partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
+        self.assertIn('_omni_is_tg_marketing_subscribe', bridge)
+        self.assertIn('_omni_is_tg_marketing_unsubscribe', bridge)
+        self.assertIn('omni_tg_marketing_opt_in', partner)
+
 
 if __name__ == '__main__':
     unittest.main()
