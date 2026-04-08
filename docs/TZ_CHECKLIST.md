@@ -379,7 +379,7 @@
 - [x] Повідомлення в Meta/IG: **прозора оферта** runtime-правилом у `omni.ai` (лише табір, як отримати код у `@campscouting`, як застосувати при реєстрації).
 - [x] **Згода на розсилки** в Telegram: runtime opt-in/opt-out команди (`/subscribe`, `/unsubscribe`) з фіксацією в `res.partner`.
 - [x] Сегментація для розсилок: wizard `Telegram Broadcast` з `only_opted_in` + виключення recent recipients (frequency cap by days).
-- [ ] Аналітика: скільки перейшли, скільки скористались купоном, ROMI.
+- [x] Аналітика: у `CRM Analytics` додано метрики переходів в Telegram (`tg_new_contacts`), використання купона (`coupon_redemptions_count`) і ROMI (revenue vs ad spend).
 
 ---
 

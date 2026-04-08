@@ -198,6 +198,24 @@
 - Applied safe SQL recovery: `ALTER TABLE res_partner ADD COLUMN IF NOT EXISTS omni_tg_last_broadcast_at timestamp`.
 - Re-ran module upgrade successfully; verified wizard model/action and partner field availability.
 
+## 2026-04-08 — Campaign analytics (Telegram transitions, coupon usage, ROMI)
+
+### Scope
+
+- Extended `CRM Analytics` with campaign KPIs:
+  - Telegram new contacts in selected period,
+  - coupon redemptions count and discount total,
+  - coupon-attributed order revenue,
+  - ROMI percentage from entered ad spend.
+- Added campaign metrics rows in analytics breakdown.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_crm_analytics.py`
+- `addons/omnichannel_bridge/views/omni_crm_analytics_views.xml`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

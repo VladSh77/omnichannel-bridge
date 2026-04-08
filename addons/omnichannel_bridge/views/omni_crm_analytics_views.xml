@@ -32,11 +32,23 @@
                             <field name="total_threads" readonly="1"/>
                             <field name="total_leads" readonly="1"/>
                             <field name="handoff_threads" readonly="1"/>
+                            <field name="tg_new_contacts" readonly="1"/>
                         </group>
                         <group>
                             <field name="avg_response_seconds" readonly="1"/>
                             <field name="objection_events" readonly="1"/>
                             <field name="purchase_intent_events" readonly="1"/>
+                            <field name="coupon_redemptions_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Campaign / ROMI">
+                        <group>
+                            <field name="coupon_discount_total" readonly="1"/>
+                            <field name="coupon_orders_revenue" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="ad_spend_amount"/>
+                            <field name="romi_percent" readonly="1"/>
                         </group>
                     </group>
                     <group string="Breakdown">

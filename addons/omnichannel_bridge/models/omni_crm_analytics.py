@@ -27,6 +27,12 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
     avg_response_seconds = fields.Float(readonly=True, digits=(16, 2))
     objection_events = fields.Integer(readonly=True)
     purchase_intent_events = fields.Integer(readonly=True)
+    tg_new_contacts = fields.Integer(readonly=True)
+    coupon_redemptions_count = fields.Integer(readonly=True)
+    coupon_discount_total = fields.Float(readonly=True, digits=(16, 2))
+    coupon_orders_revenue = fields.Float(readonly=True, digits=(16, 2))
+    ad_spend_amount = fields.Float(digits=(16, 2))
+    romi_percent = fields.Float(readonly=True, digits=(16, 2))
     line_ids = fields.One2many(
         'omni.crm.analytics.wizard.line',
         'wizard_id',
@@ -109,6 +115,26 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
         self.objection_events = sum(objection_counter.values())
         self.purchase_intent_events = purchase_intent
 
+        tg_identities = self.env['omni.partner.identity'].sudo().search([
+            ('provider', '=', 'telegram'),
+            ('create_date', '>=', date_start),
+            ('create_date', '<=', date_end),
+        ])
+        self.tg_new_contacts = len(tg_identities)
+
+        redemptions = self.env['omni.coupon.redemption'].sudo().search([
+            ('redeemed_at', '>=', date_start),
+            ('redeemed_at', '<=', date_end),
+        ])
+        self.coupon_redemptions_count = len(redemptions)
+        self.coupon_discount_total = sum(redemptions.mapped('discount_amount'))
+        self.coupon_orders_revenue = sum(redemptions.mapped('order_id.amount_total'))
+        spend = float(self.ad_spend_amount or 0.0)
+        if spend > 0:
+            self.romi_percent = ((self.coupon_orders_revenue - spend) / spend) * 100.0
+        else:
+            self.romi_percent = 0.0
+
         line_vals = []
         for provider, count in sorted(provider_counts.items()):
             line_vals.append((0, 0, {
@@ -131,6 +157,18 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
                 'label': reason,
                 'count': count,
             }))
+        line_vals.append((0, 0, {
+            'section': 'campaign',
+            'key': 'telegram_new_contacts',
+            'label': 'Telegram new contacts',
+            'count': self.tg_new_contacts,
+        }))
+        line_vals.append((0, 0, {
+            'section': 'campaign',
+            'key': 'coupon_redemptions',
+            'label': 'Coupon redemptions',
+            'count': self.coupon_redemptions_count,
+        }))
         self.line_ids.unlink()
         if line_vals:
             self.write({'line_ids': line_vals})
@@ -152,6 +190,7 @@ class OmniCrmAnalyticsWizardLine(models.TransientModel):
             ('provider', 'By Provider'),
             ('stage', 'By Sales Stage'),
             ('objection', 'By Objection Type'),
+            ('campaign', 'Campaign Metrics'),
         ],
         required=True,
     )
