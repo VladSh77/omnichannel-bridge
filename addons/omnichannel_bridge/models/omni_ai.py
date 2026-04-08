@@ -27,6 +27,8 @@ _CAMP_DOMAIN_POLICY_UK = """
 - Відповідай українською або польською за мовою клієнта.
 - Не відповідай російською; якщо звернення російською, ввічливо запропонуй продовжити українською або польською.
 - Не давай медичних або юридичних висновків від себе; у чутливих темах одразу ескалюй до менеджера.
+- У legal/RODO темах посилайся на затверджені URL, не переказуй "від себе" умови договору.
+- Мінімізуй дані про дітей: запитуй лише необхідне для підбору/бронювання.
 """
 
 
@@ -227,12 +229,7 @@ class OmniAi(models.AbstractModel):
             self._omni_send_fallback(channel, partner, ICP)
             return
         reply = self._omni_append_next_question(reply, partner, normalized)
-        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
-            body=reply,
-            message_type='comment',
-            subtype_xmlid='mail.mt_comment',
-            author_id=self.env.ref('base.partner_root').id,
-        )
+        self._omni_post_bot_message(channel, reply)
         self._omni_update_sales_stage_after_reply(partner, channel=channel)
         self._omni_route_manager_mention_if_needed(channel, partner, text, reply)
 
@@ -250,12 +247,7 @@ class OmniAi(models.AbstractModel):
                     'Наш менеджер відповість вранці о %(start)s. '
                     'Якщо питання термінове — залиште номер телефону і ми зателефонуємо.'
                 ) % {'start': start}
-        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
-            body=msg,
-            message_type='comment',
-            subtype_xmlid='mail.mt_comment',
-            author_id=self.env.ref('base.partner_root').id,
-        )
+        self._omni_post_bot_message(channel, msg)
         # Сповіщаємо менеджера
         self.env['omni.notify'].sudo().notify_escalation(
             channel=channel,
@@ -265,15 +257,13 @@ class OmniAi(models.AbstractModel):
         self._omni_set_sales_stage(partner, 'handoff', channel, 'llm_fallback')
 
     def _omni_send_out_of_scope_reply(self, channel):
-        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
-            body=(
+        self._omni_post_bot_message(
+            channel,
+            (
                 'Я допомагаю лише з питаннями щодо таборів CampScout '
                 '(програми, умови, безпека, доїзд, оплата, реєстрація). '
                 'Передаю ваш запит менеджеру.'
             ),
-            message_type='comment',
-            subtype_xmlid='mail.mt_comment',
-            author_id=self.env.ref('base.partner_root').id,
         )
 
     def _omni_send_sensitive_escalation_reply(self, channel, user_text):
@@ -285,12 +275,36 @@ class OmniAi(models.AbstractModel):
             'Dziękuję za zaufanie. To wrażliwy temat, dlatego przekazuję rozmowę '
             'do managera, aby udzielić poprawnej i bezpiecznej odpowiedzi.'
         )
-        channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
-            body=body,
+        self._omni_post_bot_message(channel, body)
+
+    def _omni_legal_notice_block(self, channel):
+        channel = channel.sudo()
+        if channel.omni_legal_notice_sent_at:
+            return ''
+        company = self.env.company.sudo()
+        legal_name = (company.name or '').strip() or 'CampScout'
+        return (
+            'ℹ️ Коротко про дані: натискаючи "надіслати", ви погоджуєтесь на обробку контактних даних '
+            'для підбору табору та звʼязку з менеджером.\n'
+            'Відповідає юридична особа: %(legal_name)s.\n'
+            'Політики: https://campscout.eu/privacy-policy | https://campscout.eu/terms | '
+            'https://campscout.eu/cookie-policy | https://campscout.eu/child-protection'
+        ) % {'legal_name': legal_name}
+
+    def _omni_post_bot_message(self, channel, body):
+        channel = channel.sudo()
+        legal = self._omni_legal_notice_block(channel)
+        final_body = (body or '').strip()
+        if legal:
+            final_body = '%s\n\n%s' % (final_body, legal)
+        channel.with_context(omni_skip_livechat_inbound=True).message_post(
+            body=final_body,
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
             author_id=self.env.ref('base.partner_root').id,
         )
+        if legal and not channel.omni_legal_notice_sent_at:
+            channel.write({'omni_legal_notice_sent_at': Datetime.now()})
 
     def _omni_is_sensitive_message(self, user_text):
         txt = (user_text or '').lower()

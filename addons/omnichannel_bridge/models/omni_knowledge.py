@@ -461,6 +461,22 @@ class OmniKnowledge(models.AbstractModel):
         )
 
     @api.model
+    def omni_legal_context_block(self):
+        company = self.env.company.sudo()
+        legal_name = (company.name or '').strip() or 'CampScout'
+        return (
+            'LEGAL_CONTEXT:\n'
+            '- Data controller / responsible legal entity: %s.\n'
+            '- Use only these legal links (no invented legal text):\n'
+            '  • https://campscout.eu/terms\n'
+            '  • https://campscout.eu/privacy-policy\n'
+            '  • https://campscout.eu/cookie-policy\n'
+            '  • https://campscout.eu/child-protection\n'
+            '- For legal, insurance, child-safety disputes: mandatory human handoff.\n'
+            '- Child data minimization: ask only what is needed for camp selection/booking.'
+        ) % legal_name
+
+    @api.model
     def omni_strict_grounding_bundle(self, channel, partner, user_text=''):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
         if channel:
@@ -470,6 +486,8 @@ class OmniKnowledge(models.AbstractModel):
         parts = [
             '=== FACTS_FROM_DATABASE (єдине джерело правди про ціни, місця, оплати, ПІБ) ===',
             self.omni_camp_scope_block(),
+            '---',
+            self.omni_legal_context_block(),
             '---',
             self.omni_partner_core_facts(partner),
             '---',

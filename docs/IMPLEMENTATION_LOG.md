@@ -765,3 +765,29 @@
 ### Notes
 
 - Dedup keying is intentionally conservative to reduce spam bursts while preserving important alerts.
+
+## 2026-04-07 — Runtime legal/RODO closure (consent + legal entity + child-data minimization)
+
+### Scope
+
+- Added mandatory short consent block in chat runtime (first bot message per channel):
+  - controller/legal entity,
+  - processing purpose,
+  - canonical legal links (privacy/terms/cookies/child-protection).
+- Added legal context block into strict grounding bundle for LLM (approved URLs only, no invented legal wording).
+- Strengthened system policy on child-data minimization and legal answer boundaries.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - `omni_legal_notice_sent_at` (per-channel one-time legal notice marker)
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `_omni_post_bot_message(...)` with one-time legal consent append
+  - `_omni_legal_notice_block(...)`
+  - system policy updates for legal/child-data boundaries
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+  - `omni_legal_context_block(...)` in strict grounding bundle
+
+### Notes
+
+- Legal notice is shown once per channel to avoid spam while preserving explicit consent context.

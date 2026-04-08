@@ -20,6 +20,7 @@ class MailChannel(models.Model):
     omni_bot_pause_reason = fields.Char()
     omni_last_human_reply_at = fields.Datetime()
     omni_last_bot_reply_at = fields.Datetime()
+    omni_legal_notice_sent_at = fields.Datetime()
 
     _sql_constraints = [
         (
