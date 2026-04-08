@@ -186,6 +186,16 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_vocative_map', memory)
         self.assertIn('vocative_map_extra', settings)
 
+    def test_knowledge_article_editor_markers_present(self):
+        model = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge_article.py').read_text()
+        views = (ROOT / 'addons/omnichannel_bridge/views/omni_knowledge_article_views.xml').read_text()
+        ops = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('omni.knowledge.article', model)
+        self.assertIn('action_omni_knowledge_article', views)
+        self.assertIn('menu_omni_knowledge_articles', ops)
+        self.assertIn("self.env['omni.knowledge.article']", knowledge)
+
     def test_outbound_log_and_message_tags_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         log_model = (ROOT / 'addons/omnichannel_bridge/models/omni_outbound_log.py').read_text()

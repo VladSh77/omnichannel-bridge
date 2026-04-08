@@ -1808,3 +1808,27 @@
 - `docs/OPERATIONS_RUNBOOK.md`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 9/6 continuation (knowledge article UI + RAG wiring)
+
+### Scope
+
+- Added dedicated knowledge article entity for business-editable FAQ/policies:
+  - model `omni.knowledge.article`,
+  - manager access rights,
+  - tree/form/action views,
+  - Operations menu entry.
+- Extended `omni_dynamic_rag_context` to include active knowledge articles with priority-aware ranking.
+- Updated contract regression markers and TZ checklist status.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_knowledge_article.py` (new)
+- `addons/omnichannel_bridge/views/omni_knowledge_article_views.xml` (new)
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

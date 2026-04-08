@@ -163,6 +163,13 @@
         sequence="27"
     />
     <menuitem
+        id="menu_omni_knowledge_articles"
+        name="Knowledge Articles"
+        parent="menu_omni_ops_root"
+        action="action_omni_knowledge_article"
+        sequence="28"
+    />
+    <menuitem
         id="menu_omni_manager_reply_assist"
         name="Manager Reply Assist"
         parent="menu_omni_ops_root"

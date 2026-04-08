@@ -723,6 +723,13 @@ class OmniKnowledge(models.AbstractModel):
             score = sum(1 for t in terms if t in bag)
             if score > 0:
                 scored.append((score, 'insurance', pkg.name, pkg.policy_url or '', pkg.short_terms or ''))
+        for art in self.env['omni.knowledge.article'].sudo().search([('active', '=', True)], order='priority asc, id desc', limit=80):
+            bag = ('%s %s %s' % (art.name or '', art.body or '', art.category or '')).lower()
+            score = sum(1 for t in terms if t in bag)
+            if score > 0:
+                # Slightly boost higher-priority articles to surface curated answers first.
+                prio_boost = 1 if (art.priority or 100) <= 30 else 0
+                scored.append((score + prio_boost, 'knowledge', art.name, art.source_url or '', art.body or ''))
         if not scored:
             return ''
         scored.sort(key=lambda x: x[0], reverse=True)
