@@ -127,4 +127,11 @@
         action="action_omni_webhook_event"
         sequence="20"
     />
+    <menuitem
+        id="menu_omni_crm_analytics"
+        name="CRM Analytics"
+        parent="menu_omni_ops_root"
+        action="action_omni_crm_analytics_wizard"
+        sequence="30"
+    />
 </odoo>

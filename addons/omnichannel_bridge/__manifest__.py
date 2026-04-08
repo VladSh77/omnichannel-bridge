@@ -24,6 +24,7 @@
         'views/res_partner_views.xml',
         'views/product_template_views.xml',
         'views/sale_order_views.xml',
+        'views/omni_crm_analytics_views.xml',
         'views/omni_ops_views.xml',
     ],
     'external_dependencies': {

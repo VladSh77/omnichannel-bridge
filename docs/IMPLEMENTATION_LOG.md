@@ -54,6 +54,31 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+## 2026-04-08 — CRM analytics block (§9)
+
+### Scope
+
+- Added an operations-level CRM analytics screen with date range and refresh action.
+- Implemented metrics:
+  - total omnichannel threads,
+  - omnichannel-linked CRM leads,
+  - handoff threads,
+  - average manager response time (seconds),
+  - purchase-intent events,
+  - objection events.
+- Added breakdown lines by provider, sales stage, and objection type.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_crm_analytics.py` (new)
+- `addons/omnichannel_bridge/views/omni_crm_analytics_views.xml` (new)
+- `addons/omnichannel_bridge/views/omni_ops_views.xml` (new menu item)
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

@@ -66,6 +66,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('omni_cron_purge_old_events', webhook)
         self.assertIn('action_omni_right_to_erasure', partner)
 
+    def test_crm_analytics_markers_present(self):
+        analytics = (ROOT / 'addons/omnichannel_bridge/models/omni_crm_analytics.py').read_text()
+        ops_views = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
+        self.assertIn('omni.crm.analytics.wizard', analytics)
+        self.assertIn('avg_response_seconds', analytics)
+        self.assertIn('menu_omni_crm_analytics', ops_views)
+
 
 if __name__ == '__main__':
     unittest.main()
