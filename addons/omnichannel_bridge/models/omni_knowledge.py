@@ -105,6 +105,8 @@ class OmniKnowledge(models.AbstractModel):
             )
             if places is not None:
                 line += ' | places_left: %s' % places
+                if places <= 0:
+                    line += ' | reserve: manager_waitlist_required'
             if program:
                 prog_len = 140 if self._omni_compact_mode() else 260
                 line += ' | program: %s' % program[:prog_len]
@@ -180,6 +182,8 @@ class OmniKnowledge(models.AbstractModel):
             line = '- %s | price: %s %s' % (tmpl.name, price, (tmpl.currency_id or currency).name or '')
             if places is not None:
                 line += ' | places: %s' % places
+                if places <= 0:
+                    line += ' | reserve: manager_waitlist_required'
             program, program_src = self._omni_extract_program_with_source(tmpl)
             if program:
                 line += ' | program: %s' % program[:140].replace('\n', ' ')
@@ -218,6 +222,43 @@ class OmniKnowledge(models.AbstractModel):
 
     @api.model
     def _omni_extract_places_with_source(self, tmpl):
+        # Priority 0: CampScout custom helper method from campscout-management.
+        if hasattr(tmpl, 'get_camp_availability'):
+            try:
+                val = tmpl.get_camp_availability()
+                if val is not None:
+                    return int(val), 'product_template.get_camp_availability'
+            except Exception:
+                pass
+        # Priority 0.1: Bonsens custom event link on template.
+        if 'bs_event_id' in tmpl._fields and tmpl.bs_event_id:
+            event = tmpl.bs_event_id.sudo()
+            if 'seats_available' in event._fields:
+                try:
+                    return int(event.seats_available), 'bs_event_id.seats_available'
+                except (TypeError, ValueError):
+                    pass
+        # Priority 0.2: Bonsens custom event link on variant.
+        variant = tmpl.product_variant_id
+        if variant and 'bs_event_id' in variant._fields and variant.bs_event_id:
+            event = variant.bs_event_id.sudo()
+            if 'seats_available' in event._fields:
+                try:
+                    return int(event.seats_available), 'product_variant.bs_event_id.seats_available'
+                except (TypeError, ValueError):
+                    pass
+        # Priority 0.3: event tickets -> future events seats_available sum.
+        if tmpl.product_variant_ids:
+            Ticket = self.env['event.event.ticket'].sudo()
+            tickets = Ticket.search([('product_id', 'in', tmpl.product_variant_ids.ids)], limit=300)
+            if tickets:
+                now_dt = fields.Datetime.now()
+                events = tickets.mapped('event_id').filtered(lambda e: not e.date_begin or e.date_begin >= now_dt)
+                if events and 'seats_available' in events._fields:
+                    try:
+                        return int(sum(events.mapped('seats_available'))), 'event_ticket.future_events.seats_available'
+                    except Exception:
+                        pass
         # Priority 1: dedicated camp/chat field in this module.
         if 'omni_places_remaining' in tmpl._fields and tmpl.omni_places_remaining is not False:
             try:
@@ -477,6 +518,29 @@ class OmniKnowledge(models.AbstractModel):
         ) % legal_name
 
     @api.model
+    def omni_coupon_policy_block(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        channel_url = (ICP.get_param('omnichannel_bridge.coupon_public_channel_url') or '').strip()
+        if not channel_url:
+            channel_url = 'https://t.me/campscouting'
+        return (
+            'COUPON_POLICY:\n'
+            '- -5%% coupon flow is public-channel based (no personal code generation by bot).\n'
+            '- Client opens Telegram channel and copies current code from pinned/latest post.\n'
+            '- Coupon channel URL: %s\n'
+            '- Scope remains camp products only by business rule.'
+        ) % channel_url
+
+    @api.model
+    def omni_reserve_policy_block(self):
+        return (
+            'RESERVE_POLICY:\n'
+            '- If places_left/places is 0 for requested camp/event, do NOT claim availability.\n'
+            '- Mandatory next step: offer manager contact to add client to reserve/waitlist.\n'
+            '- Ask one contact point (phone or email) and handoff to manager.'
+        )
+
+    @api.model
     def omni_strict_grounding_bundle(self, channel, partner, user_text=''):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
         if channel:
@@ -490,6 +554,8 @@ class OmniKnowledge(models.AbstractModel):
             self.omni_legal_context_block(),
             '---',
             self.omni_coupon_policy_block(),
+            '---',
+            self.omni_reserve_policy_block(),
             '---',
             self.omni_partner_core_facts(partner),
             '---',

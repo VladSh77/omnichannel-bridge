@@ -812,3 +812,21 @@
 ### Notes
 
 - Default channel URL set to `https://t.me/campscouting`.
+
+## 2026-04-08 — Event/registration-based places resolver (workspace mapping)
+
+### Scope
+
+- Implemented stronger places resolver in `omni_knowledge` using discovered custom models in workspace:
+  1) `product.template.get_camp_availability()` (campscout-management),
+  2) `bs_event_id.seats_available` (bonsens addon on template/variant),
+  3) `event.event.ticket -> event.event.seats_available` aggregation for future events.
+- Added reserve guardrails: when places are `<= 0`, facts lines include `reserve: manager_waitlist_required`, and strict bundle includes `RESERVE_POLICY` requiring manager handoff for waitlist.
+
+### Artifact
+
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+
+### Notes
+
+- This is mapped from repository custom modules; final production mapping must still be verified against the exact server code/DB snapshot.
