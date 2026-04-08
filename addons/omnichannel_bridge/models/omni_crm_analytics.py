@@ -27,6 +27,9 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
     avg_response_seconds = fields.Float(readonly=True, digits=(16, 2))
     objection_events = fields.Integer(readonly=True)
     purchase_intent_events = fields.Integer(readonly=True)
+    bot_reply_threads = fields.Integer(readonly=True)
+    human_reply_threads = fields.Integer(readonly=True)
+    mixed_reply_threads = fields.Integer(readonly=True)
     tg_new_contacts = fields.Integer(readonly=True)
     coupon_redemptions_count = fields.Integer(readonly=True)
     coupon_discount_total = fields.Float(readonly=True, digits=(16, 2))
@@ -95,6 +98,21 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
                 delta = channel.omni_last_human_reply_at - channel.omni_last_customer_inbound_at
                 deltas.append(delta.total_seconds())
         self.avg_response_seconds = (sum(deltas) / len(deltas)) if deltas else 0.0
+        bot_threads = 0
+        human_threads = 0
+        mixed_threads = 0
+        for channel in channels:
+            has_bot = bool(channel.omni_last_bot_reply_at)
+            has_human = bool(channel.omni_last_human_reply_at)
+            if has_bot and has_human:
+                mixed_threads += 1
+            elif has_bot:
+                bot_threads += 1
+            elif has_human:
+                human_threads += 1
+        self.bot_reply_threads = bot_threads
+        self.human_reply_threads = human_threads
+        self.mixed_reply_threads = mixed_threads
 
         message_domain = [
             ('model', '=', 'discuss.channel'),
@@ -169,6 +187,24 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
             'label': 'Coupon redemptions',
             'count': self.coupon_redemptions_count,
         }))
+        line_vals.append((0, 0, {
+            'section': 'reply_owner',
+            'key': 'bot_only_threads',
+            'label': 'Bot-only replied threads',
+            'count': self.bot_reply_threads,
+        }))
+        line_vals.append((0, 0, {
+            'section': 'reply_owner',
+            'key': 'human_only_threads',
+            'label': 'Manager-only replied threads',
+            'count': self.human_reply_threads,
+        }))
+        line_vals.append((0, 0, {
+            'section': 'reply_owner',
+            'key': 'mixed_threads',
+            'label': 'Mixed bot+manager replied threads',
+            'count': self.mixed_reply_threads,
+        }))
         self.line_ids.unlink()
         if line_vals:
             self.write({'line_ids': line_vals})
@@ -191,6 +227,7 @@ class OmniCrmAnalyticsWizardLine(models.TransientModel):
             ('stage', 'By Sales Stage'),
             ('objection', 'By Objection Type'),
             ('campaign', 'Campaign Metrics'),
+            ('reply_owner', 'By Reply Owner'),
         ],
         required=True,
     )

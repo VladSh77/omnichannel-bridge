@@ -79,6 +79,8 @@ class ContractRegressionTests(unittest.TestCase):
         ops_views = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
         self.assertIn('omni.crm.analytics.wizard', analytics)
         self.assertIn('avg_response_seconds', analytics)
+        self.assertIn('bot_reply_threads', analytics)
+        self.assertIn('mixed_reply_threads', analytics)
         self.assertIn('romi_percent', analytics)
         self.assertIn('coupon_redemptions_count', analytics)
         self.assertIn('menu_omni_crm_analytics', ops_views)

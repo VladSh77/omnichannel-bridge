@@ -41,6 +41,13 @@
                             <field name="coupon_redemptions_count" readonly="1"/>
                         </group>
                     </group>
+                    <group string="Reply Ownership">
+                        <group>
+                            <field name="bot_reply_threads" readonly="1"/>
+                            <field name="human_reply_threads" readonly="1"/>
+                            <field name="mixed_reply_threads" readonly="1"/>
+                        </group>
+                    </group>
                     <group string="Campaign / ROMI">
                         <group>
                             <field name="coupon_discount_total" readonly="1"/>

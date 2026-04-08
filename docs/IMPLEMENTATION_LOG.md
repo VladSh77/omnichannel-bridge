@@ -1418,3 +1418,21 @@
   - included in `omni_strict_grounding_bundle(...)`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Reply ownership analytics (TZ §6.1)
+
+### Scope
+
+- Closed quality logging gap for "who replied" by adding CRM analytics metrics from thread timestamps.
+- Added thread ownership counters:
+  - `bot_reply_threads` (only bot replied),
+  - `human_reply_threads` (only manager replied),
+  - `mixed_reply_threads` (both bot and manager replied).
+- Exposed values in the analytics wizard UI and breakdown table (`reply_owner` section).
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_crm_analytics.py`
+- `addons/omnichannel_bridge/views/omni_crm_analytics_views.xml`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
