@@ -45,4 +45,12 @@
         <field name="res_model">omni.promo</field>
         <field name="view_mode">list,form</field>
     </record>
+
+    <menuitem
+        id="menu_omni_promo"
+        name="Promotions"
+        parent="menu_omni_root"
+        action="action_omni_promo"
+        sequence="20"
+    />
 </odoo>
