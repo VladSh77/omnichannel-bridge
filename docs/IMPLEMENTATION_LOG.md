@@ -50,6 +50,16 @@
 
 - Production audit was read-only (no restart, no module upgrade, no write operations).
 
+### Deployment (after local commit + push)
+
+- Source commit deployed: `55bfae1`.
+- Server path corrected to git-backed repository:
+  - `/opt/campscout/custom-addons/omnichannel_bridge_repo` (git)
+  - `/opt/campscout/custom-addons/omnichannel_bridge` (symlink to module dir inside repo)
+- Odoo module upgraded via shell (`button_immediate_upgrade`) and validated:
+  - module state: `installed`
+  - new models/fields available at runtime (`omni.coupon.redemption`, coupon/fsm/compliance fields).
+
 ## 2026-04-08 — 24h Window Reminder Automation (Meta/WhatsApp)
 
 ### Scope
