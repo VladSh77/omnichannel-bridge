@@ -583,3 +583,25 @@
 ### Notes
 
 - This is a baseline keyword policy; full moderation policy engine remains in backlog (severity levels, configurable dictionaries, analytics).
+
+## 2026-04-07 — Objection baseline (TZ §7.1)
+
+### Scope
+
+- Added lightweight objection classifier (rule-based keywords UA/PL/EN).
+- Logged objection type to partner memory and Discuss note for anti-repeat context.
+- Injected short `OBJECTION_PLAYBOOK` guidance into LLM system context for detected objection.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_sales_intel.py`
+  - `_OBJECTION_KEYWORDS`
+  - `omni_detect_objection_type(...)`
+  - `omni_objection_guidance_block(...)`
+  - `_omni_log_objection(...)` integrated in `omni_apply_inbound_triggers(...)`
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `OBJECTION_PLAYBOOK` append to system prompt when objection detected
+
+### Notes
+
+- This is baseline logic, not a full FSM/policy editor; configurable templates/analytics remain backlog.

@@ -213,10 +213,13 @@ class OmniAi(models.AbstractModel):
             'true',
             'yes',
         )
+        objection_guidance = self.env['omni.sales.intel'].sudo().omni_objection_guidance_block(normalized)
         system_parts = [base_system]
         if strict:
             system_parts.append(_STRICT_POLICY_UK)
             system_parts.append(_CAMP_DOMAIN_POLICY_UK)
+        if objection_guidance:
+            system_parts.append(objection_guidance)
         system_parts.append(self._omni_reply_language_instruction(normalized))
         system_parts.append(facts)
         system = '\n\n'.join(system_parts)
