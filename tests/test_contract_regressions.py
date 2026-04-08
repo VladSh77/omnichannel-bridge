@@ -81,6 +81,8 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('avg_response_seconds', analytics)
         self.assertIn('bot_reply_threads', analytics)
         self.assertIn('mixed_reply_threads', analytics)
+        self.assertIn('objection_to_intent_percent', analytics)
+        self.assertIn('meta_goal_leads', analytics)
         self.assertIn('romi_percent', analytics)
         self.assertIn('coupon_redemptions_count', analytics)
         self.assertIn('menu_omni_crm_analytics', ops_views)
@@ -189,6 +191,14 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('consent_site_text', settings)
         self.assertIn('CHANNEL_CONSENT_POLICY:', knowledge)
         self.assertIn('consent_site_text', ai)
+
+    def test_prompt_audit_markers_present(self):
+        audit = (ROOT / 'addons/omnichannel_bridge/models/omni_prompt_audit.py').read_text()
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        ops = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
+        self.assertIn('omni.prompt.audit', audit)
+        self.assertIn('tracked_keys', settings)
+        self.assertIn('menu_omni_prompt_audit', ops)
 
     def test_reserve_waitlist_model_markers_present(self):
         reserve = (ROOT / 'addons/omnichannel_bridge/models/omni_reserve_entry.py').read_text()

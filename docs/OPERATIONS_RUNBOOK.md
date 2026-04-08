@@ -58,6 +58,8 @@
 - Staging smoke test required before production rollout.
 - Fallback message always enabled for AI outage scenarios.
 - Admin kill switch path documented and tested.
+- Baseline load criteria documented in `docs/LOAD_CRITERIA.md`.
+- Pre-go-live manual scenarios on production DB copy documented in `docs/PROD_COPY_MANUAL_SCENARIOS.md`.
 
 ## Platform Window Policy
 

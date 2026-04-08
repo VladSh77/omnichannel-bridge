@@ -1504,3 +1504,30 @@
 - `docs/OPERATIONS_RUNBOOK.md`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Six-block batch: analytics goals + audit + operations criteria
+
+### Scope
+
+- Added prompt/rules change audit log model and automatic audit writes from settings updates.
+- Extended CRM Analytics with objection conversion metric and Meta campaign goals/fact/achievement metrics.
+- Added manual production-copy scenario checklist for integration verification.
+- Added baseline load criteria document for peak windows.
+- Updated checklist status for one-manager operation compensation based on implemented runtime schedule/quiet/session/fallback controls.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_prompt_audit.py` (new)
+- `addons/omnichannel_bridge/views/omni_prompt_audit_views.xml` (new)
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/models/omni_crm_analytics.py`
+- `addons/omnichannel_bridge/views/omni_crm_analytics_views.xml`
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `docs/PROD_COPY_MANUAL_SCENARIOS.md` (new)
+- `docs/LOAD_CRITERIA.md` (new)
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

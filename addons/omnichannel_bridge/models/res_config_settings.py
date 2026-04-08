@@ -402,8 +402,33 @@ class ResConfigSettings(models.TransientModel):
         return res
 
     def set_values(self):
-        super().set_values()
+        tracked_keys = [
+            'omnichannel_bridge.openai_system_prompt',
+            'omnichannel_bridge.llm_prompt_version',
+            'omnichannel_bridge.llm_experiment_tag',
+            'omnichannel_bridge.legal_short_offer_text',
+            'omnichannel_bridge.legal_short_rodo_text',
+            'omnichannel_bridge.legal_short_child_text',
+            'omnichannel_bridge.consent_meta_text',
+            'omnichannel_bridge.consent_telegram_text',
+            'omnichannel_bridge.consent_whatsapp_text',
+            'omnichannel_bridge.consent_site_text',
+        ]
         icp = self.env['ir.config_parameter'].sudo()
+        before = {k: (icp.get_param(k, '') or '') for k in tracked_keys}
+        super().set_values()
         for settings in self:
             ids_payload = json.dumps(settings.omnichannel_coupon_allowed_categ_ids.ids or [])
             icp.set_param('omnichannel_bridge.coupon_allowed_categ_ids', ids_payload)
+        after = {k: (icp.get_param(k, '') or '') for k in tracked_keys}
+        Audit = self.env['omni.prompt.audit'].sudo()
+        for key in tracked_keys:
+            if before.get(key) == after.get(key):
+                continue
+            Audit.create({
+                'changed_by': self.env.user.id,
+                'key_name': key,
+                'old_value': before.get(key, ''),
+                'new_value': after.get(key, ''),
+                'note': 'Updated via res.config.settings',
+            })

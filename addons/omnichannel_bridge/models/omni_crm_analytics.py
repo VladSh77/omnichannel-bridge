@@ -30,12 +30,19 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
     bot_reply_threads = fields.Integer(readonly=True)
     human_reply_threads = fields.Integer(readonly=True)
     mixed_reply_threads = fields.Integer(readonly=True)
+    objection_to_intent_percent = fields.Float(readonly=True, digits=(16, 2))
     tg_new_contacts = fields.Integer(readonly=True)
     coupon_redemptions_count = fields.Integer(readonly=True)
     coupon_discount_total = fields.Float(readonly=True, digits=(16, 2))
     coupon_orders_revenue = fields.Float(readonly=True, digits=(16, 2))
     ad_spend_amount = fields.Float(digits=(16, 2))
     romi_percent = fields.Float(readonly=True, digits=(16, 2))
+    meta_goal_leads = fields.Integer()
+    meta_goal_purchases = fields.Integer()
+    meta_leads_fact = fields.Integer(readonly=True)
+    meta_purchases_fact = fields.Integer(readonly=True)
+    meta_goal_leads_achievement_percent = fields.Float(readonly=True, digits=(16, 2))
+    meta_goal_purchases_achievement_percent = fields.Float(readonly=True, digits=(16, 2))
     line_ids = fields.One2many(
         'omni.crm.analytics.wizard.line',
         'wizard_id',
@@ -132,6 +139,10 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
                 purchase_intent += 1
         self.objection_events = sum(objection_counter.values())
         self.purchase_intent_events = purchase_intent
+        self.objection_to_intent_percent = (
+            (float(purchase_intent) / float(self.objection_events)) * 100.0
+            if self.objection_events else 0.0
+        )
 
         tg_identities = self.env['omni.partner.identity'].sudo().search([
             ('provider', '=', 'telegram'),
@@ -152,6 +163,26 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
             self.romi_percent = ((self.coupon_orders_revenue - spend) / spend) * 100.0
         else:
             self.romi_percent = 0.0
+        meta_channels = [ch for ch in channels if ch.omni_provider == 'meta']
+        meta_partners = {ch.omni_customer_partner_id.id for ch in meta_channels if ch.omni_customer_partner_id}
+        self.meta_leads_fact = self.env['crm.lead'].sudo().search_count([
+            ('create_date', '>=', date_start),
+            ('create_date', '<=', date_end),
+            ('partner_id', 'in', list(meta_partners or [0])),
+        ])
+        self.meta_purchases_fact = self.env['omni.coupon.redemption'].sudo().search_count([
+            ('redeemed_at', '>=', date_start),
+            ('redeemed_at', '<=', date_end),
+            ('partner_id', 'in', list(meta_partners or [0])),
+        ])
+        self.meta_goal_leads_achievement_percent = (
+            (float(self.meta_leads_fact) / float(self.meta_goal_leads)) * 100.0
+            if self.meta_goal_leads else 0.0
+        )
+        self.meta_goal_purchases_achievement_percent = (
+            (float(self.meta_purchases_fact) / float(self.meta_goal_purchases)) * 100.0
+            if self.meta_goal_purchases else 0.0
+        )
 
         line_vals = []
         for provider, count in sorted(provider_counts.items()):
@@ -186,6 +217,24 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
             'key': 'coupon_redemptions',
             'label': 'Coupon redemptions',
             'count': self.coupon_redemptions_count,
+        }))
+        line_vals.append((0, 0, {
+            'section': 'objection',
+            'key': 'objection_to_intent_percent',
+            'label': 'Objection to intent conversion %',
+            'count': int(self.objection_to_intent_percent),
+        }))
+        line_vals.append((0, 0, {
+            'section': 'campaign',
+            'key': 'meta_leads_fact',
+            'label': 'Meta leads fact',
+            'count': self.meta_leads_fact,
+        }))
+        line_vals.append((0, 0, {
+            'section': 'campaign',
+            'key': 'meta_purchases_fact',
+            'label': 'Meta purchases fact',
+            'count': self.meta_purchases_fact,
         }))
         line_vals.append((0, 0, {
             'section': 'reply_owner',
