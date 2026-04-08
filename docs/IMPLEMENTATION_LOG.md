@@ -637,3 +637,24 @@
 ### Notes
 
 - Custom Settings overrides still have priority over these defaults.
+
+## 2026-04-07 — Internal Telegram PRIORITY path (TZ §8.1)
+
+### Scope
+
+- Added explicit `PRIORITY` formatting for urgent escalations and problematic threads in internal Telegram notifications.
+- Added optional second destination chat for priority events (`internal_tg_priority_chat_id`).
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_notify.py`
+  - priority title + routing (`_send(..., priority=True)`)
+  - `_is_priority_reason(...)` keyword matcher for escalation reasons
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+  - `omnichannel_internal_tg_priority_chat_id`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+  - Internal notifications settings block
+
+### Notes
+
+- If priority chat is empty, priority events stay in main internal chat but are clearly prefixed with `PRIORITY`.

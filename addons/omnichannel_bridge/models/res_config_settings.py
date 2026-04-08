@@ -189,6 +189,11 @@ class ResConfigSettings(models.TransientModel):
         string='Internal Telegram chat/group/channel ID',
         config_parameter='omnichannel_bridge.internal_tg_chat_id',
     )
+    omnichannel_internal_tg_priority_chat_id = fields.Char(
+        string='Priority Telegram chat/group/channel ID (optional)',
+        config_parameter='omnichannel_bridge.internal_tg_priority_chat_id',
+        help='If set, urgent/problematic notifications are sent to this channel; otherwise they go to the default internal chat with PRIORITY tag.',
+    )
     omnichannel_internal_notify_new = fields.Boolean(
         string='Notify on new thread',
         config_parameter='omnichannel_bridge.internal_notify_new',

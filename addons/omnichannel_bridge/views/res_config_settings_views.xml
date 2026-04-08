@@ -60,6 +60,26 @@
                             <field name="omnichannel_telegram_webhook_secret" password="True"/>
                         </setting>
                     </block>
+                    <block title="Internal notifications" name="omnichannel_block_internal_notify">
+                        <setting string="Internal Telegram bot token">
+                            <field name="omnichannel_internal_tg_bot_token" password="True"/>
+                        </setting>
+                        <setting string="Internal Telegram chat ID">
+                            <field name="omnichannel_internal_tg_chat_id"/>
+                        </setting>
+                        <setting string="Priority chat ID (optional)" help="If filled, urgent/problematic notifications are duplicated to this channel for faster attention.">
+                            <field name="omnichannel_internal_tg_priority_chat_id"/>
+                        </setting>
+                        <setting string="Notify on new thread">
+                            <field name="omnichannel_internal_notify_new"/>
+                        </setting>
+                        <setting string="Notify on escalation">
+                            <field name="omnichannel_internal_notify_escalate"/>
+                        </setting>
+                        <setting string="Notify on problematic flag">
+                            <field name="omnichannel_internal_notify_problem"/>
+                        </setting>
+                    </block>
                     <block title="LLM (факти з Odoo, без вигадок)" name="omnichannel_block_llm">
                         <setting string="Увімкнути автовідповіді" help="Рекомендовано: Ollama (локально, відкриті ваги). OpenAI — опційно, пропрієтарний хмарний API.">
                             <field name="omnichannel_llm_enabled"/>

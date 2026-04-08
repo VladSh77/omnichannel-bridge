@@ -71,19 +71,22 @@ class OmniNotify(models.AbstractModel):
             partner = partner.sudo()
         name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
         packet = self._handoff_packet(partner)
+        is_priority = self._is_priority_reason(reason)
+        title = '🚨 *PRIORITY*\\n🔺 *Ескалація* — потрібен менеджер' if is_priority else '🔺 *Ескалація* — потрібен менеджер'
         text = (
-            '🔺 *Ескалація* — потрібен менеджер\n'
+            '%(title)s\n'
             '👤 %(name)s\n'
             '💬 %(reason)s\n'
             '🧾 %(packet)s\n'
             '🔗 %(url)s'
         ) % {
+            'title': title,
             'name': self._escape(name),
             'reason': self._escape(reason or _('клієнт запитав менеджера')),
             'packet': self._escape(packet),
             'url': self._channel_url(channel),
         }
-        self._send(text, parse_mode='Markdown')
+        self._send(text, parse_mode='Markdown', priority=is_priority)
 
     @api.model
     def notify_problematic(self, channel, partner, note=''):
@@ -96,6 +99,7 @@ class OmniNotify(models.AbstractModel):
             partner = partner.sudo()
         name = (partner.display_name or _('Unknown')) if partner else _('Unknown')
         text = (
+            '🚨 *PRIORITY*\n'
             '⚠️ *Проблемний тред*\n'
             '👤 %(name)s\n'
             '📝 %(note)s\n'
@@ -105,37 +109,41 @@ class OmniNotify(models.AbstractModel):
             'note': self._escape(note or '—'),
             'url': self._channel_url(channel),
         }
-        self._send(text, parse_mode='Markdown')
+        self._send(text, parse_mode='Markdown', priority=True)
 
     # ------------------------------------------------------------------
     # Внутрішнє
     # ------------------------------------------------------------------
 
-    def _send(self, text, parse_mode='Markdown'):
-        token, chat_id = self._credentials()
+    def _send(self, text, parse_mode='Markdown', priority=False):
+        token, chat_id, priority_chat_id = self._credentials()
         if not token or not chat_id:
             _logger.debug(
                 'omni_notify: internal_tg_bot_token or internal_tg_chat_id not set — skip.'
             )
             return
         url = TELEGRAM_API.format(token=token)
+        target_chats = [chat_id]
+        if priority and priority_chat_id and priority_chat_id != chat_id:
+            target_chats.append(priority_chat_id)
         try:
-            resp = requests.post(
-                url,
-                json={
-                    'chat_id': chat_id,
-                    'text': text,
-                    'parse_mode': parse_mode,
-                    'disable_web_page_preview': True,
-                },
-                timeout=_NOTIFY_TIMEOUT,
-            )
-            if not resp.ok:
-                _logger.warning(
-                    'omni_notify: Telegram sendMessage failed: %s %s',
-                    resp.status_code,
-                    resp.text[:200],
+            for target_chat in target_chats:
+                resp = requests.post(
+                    url,
+                    json={
+                        'chat_id': target_chat,
+                        'text': text,
+                        'parse_mode': parse_mode,
+                        'disable_web_page_preview': True,
+                    },
+                    timeout=_NOTIFY_TIMEOUT,
                 )
+                if not resp.ok:
+                    _logger.warning(
+                        'omni_notify: Telegram sendMessage failed: %s %s',
+                        resp.status_code,
+                        resp.text[:200],
+                    )
         except Exception as exc:
             # Ніколи не ламаємо основний flow через notify
             _logger.warning('omni_notify: exception sending notification: %s', exc)
@@ -144,7 +152,18 @@ class OmniNotify(models.AbstractModel):
         ICP = self.env['ir.config_parameter'].sudo()
         token = ICP.get_param('omnichannel_bridge.internal_tg_bot_token', '').strip()
         chat_id = ICP.get_param('omnichannel_bridge.internal_tg_chat_id', '').strip()
-        return token, chat_id
+        priority_chat_id = ICP.get_param('omnichannel_bridge.internal_tg_priority_chat_id', '').strip()
+        return token, chat_id, priority_chat_id
+
+    def _is_priority_reason(self, reason):
+        txt = (reason or '').lower()
+        if not txt:
+            return False
+        keys = (
+            'термін', 'urgent', 'asap', 'конфлікт', 'агрес', 'скарг', 'ризик',
+            'дитин', 'безпек', 'safety', 'medical', 'юрид', 'legal',
+        )
+        return any(k in txt for k in keys)
 
     def _flag_enabled(self, key):
         val = self.env['ir.config_parameter'].sudo().get_param(key, 'False')
