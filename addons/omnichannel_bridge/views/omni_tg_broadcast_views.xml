@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_tg_broadcast_wizard_form" model="ir.ui.view">
+        <field name="name">omni.tg.broadcast.wizard.form</field>
+        <field name="model">omni.tg.broadcast.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Telegram Broadcast">
+                <header>
+                    <button name="action_send" type="object" string="Send broadcast" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="message_text" placeholder="Broadcast message text"/>
+                    </group>
+                    <group>
+                        <field name="only_opted_in"/>
+                        <field name="exclude_recent_days"/>
+                    </group>
+                    <group string="Result">
+                        <field name="sent_count" readonly="1"/>
+                        <field name="skipped_count" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_tg_broadcast_wizard" model="ir.actions.act_window">
+        <field name="name">Telegram Broadcast</field>
+        <field name="res_model">omni.tg.broadcast.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

@@ -134,4 +134,11 @@
         action="action_omni_crm_analytics_wizard"
         sequence="30"
     />
+    <menuitem
+        id="menu_omni_tg_broadcast"
+        name="Telegram Broadcast"
+        parent="menu_omni_ops_root"
+        action="action_omni_tg_broadcast_wizard"
+        sequence="40"
+    />
 </odoo>

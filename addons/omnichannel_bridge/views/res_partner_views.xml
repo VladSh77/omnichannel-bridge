@@ -30,6 +30,7 @@
                     <group string="Telegram marketing consent">
                         <field name="omni_tg_marketing_opt_in"/>
                         <field name="omni_tg_marketing_opt_in_at" readonly="1"/>
+                        <field name="omni_tg_last_broadcast_at" readonly="1"/>
                     </group>
                     <field name="omni_identity_ids" nolabel="1">
                         <tree editable="bottom">

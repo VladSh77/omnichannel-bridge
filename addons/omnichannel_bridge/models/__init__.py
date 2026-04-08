@@ -16,6 +16,7 @@ from . import omni_ai
 from . import omni_ai_job
 from . import omni_notify
 from . import omni_crm_analytics
+from . import omni_tg_broadcast
 from . import res_config_settings
 from . import omni_coupon_redemption
 from . import sale_order

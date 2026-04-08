@@ -170,6 +170,28 @@
 - Applied safe SQL recovery: `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
 - Re-ran module upgrade successfully and validated runtime field/method availability.
 
+## 2026-04-08 — Telegram broadcast segmentation and frequency cap (TZ §13)
+
+### Scope
+
+- Added `Telegram Broadcast` operations wizard for controlled sends.
+- Implemented segmentation controls:
+  - send only to consented contacts (`only_opted_in`)
+  - exclude recent recipients by configurable day window (`exclude_recent_days`)
+- Added partner timestamp tracking for last Telegram broadcast.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_tg_broadcast.py` (new)
+- `addons/omnichannel_bridge/views/omni_tg_broadcast_views.xml` (new)
+- `addons/omnichannel_bridge/views/omni_ops_views.xml` (new menu)
+- `addons/omnichannel_bridge/models/res_partner.py`
+- `addons/omnichannel_bridge/views/res_partner_views.xml`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

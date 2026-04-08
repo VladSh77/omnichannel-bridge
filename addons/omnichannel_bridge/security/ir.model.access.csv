@@ -9,3 +9,4 @@ access_omni_coupon_redemption_manager,omni.coupon.redemption.manager,model_omni_
 access_omni_stage_event_manager,omni.stage.event.manager,model_omni_stage_event,sales_team.group_sale_manager,1,0,0,0
 access_omni_crm_analytics_wizard_manager,omni.crm.analytics.wizard.manager,model_omni_crm_analytics_wizard,sales_team.group_sale_manager,1,1,1,1
 access_omni_crm_analytics_wizard_line_manager,omni.crm.analytics.wizard.line.manager,model_omni_crm_analytics_wizard_line,sales_team.group_sale_manager,1,0,0,0
+access_omni_tg_broadcast_wizard_manager,omni.tg.broadcast.wizard.manager,model_omni_tg_broadcast_wizard,sales_team.group_sale_manager,1,1,1,0

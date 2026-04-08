@@ -100,6 +100,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_is_tg_marketing_unsubscribe', bridge)
         self.assertIn('omni_tg_marketing_opt_in', partner)
 
+    def test_tg_broadcast_markers_present(self):
+        broadcast = (ROOT / 'addons/omnichannel_bridge/models/omni_tg_broadcast.py').read_text()
+        ops = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
+        self.assertIn('omni.tg.broadcast.wizard', broadcast)
+        self.assertIn('only_opted_in', broadcast)
+        self.assertIn('menu_omni_tg_broadcast', ops)
+
 
 if __name__ == '__main__':
     unittest.main()

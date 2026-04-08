@@ -73,6 +73,7 @@ class ResPartner(models.Model):
     omni_last_purchase_notify_amount = fields.Char(string='Last purchase notify amount')
     omni_tg_marketing_opt_in = fields.Boolean(string='Telegram marketing consent')
     omni_tg_marketing_opt_in_at = fields.Datetime(string='Telegram marketing consent at')
+    omni_tg_last_broadcast_at = fields.Datetime(string='Telegram last broadcast at')
     omni_erased_at = fields.Datetime(string='Omni data erased at')
     omni_last_stage_change_at = fields.Datetime(string='Last stage change at')
     omni_last_stage_change_reason = fields.Char(string='Last stage change reason')
