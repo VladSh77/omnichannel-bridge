@@ -240,7 +240,7 @@
                             <field name="omnichannel_consent_site_text"/>
                         </setting>
                     </block>
-                    <block title="Release & Token Rotation" name="omnichannel_block_release_token">
+                    <block title="Release &amp; Token Rotation" name="omnichannel_block_release_token">
                         <setting string="Release Odoo version">
                             <field name="omnichannel_release_odoo_version"/>
                         </setting>
