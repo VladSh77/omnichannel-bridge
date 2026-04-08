@@ -24,6 +24,10 @@
 ### Notes
 
 - FSM transition telemetry is now persisted in `omni.stage.event`.
+- Production deployment note:
+  - first upgrade attempt failed due missing DB columns (`res_partner.omni_last_stage_change_*`) before module migration.
+  - recovery applied with safe SQL `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` + `CREATE TABLE IF NOT EXISTS omni_stage_event`.
+  - module upgrade then completed successfully; runtime checks passed.
 
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
