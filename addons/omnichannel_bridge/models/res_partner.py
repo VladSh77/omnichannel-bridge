@@ -61,6 +61,9 @@ class ResPartner(models.Model):
         string='Етап продажу (чат)',
         default='new',
     )
+    omni_last_purchase_notify_at = fields.Datetime(string='Last purchase notify at')
+    omni_last_purchase_notify_ref = fields.Char(string='Last purchase notify reference')
+    omni_last_purchase_notify_amount = fields.Char(string='Last purchase notify amount')
 
     def _omni_find_by_phone(self, phone):
         needle = _normalize_phone(phone)

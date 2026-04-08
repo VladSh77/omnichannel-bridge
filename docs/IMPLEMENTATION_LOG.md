@@ -746,3 +746,22 @@
 
 - This improves factual coverage of purchase confirmation signals in internal Telegram.
 - De-duplication/reconciliation fine-tuning across `sale.order` + payments + invoices remains an optimization step.
+
+## 2026-04-07 — De-dup for confirmed purchase internal events
+
+### Scope
+
+- Added anti-duplicate guard for `purchase_confirmed` internal notifications across multiple hooks (`sale.order`, `payment.transaction`, `account.move`).
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_partner.py`
+  - `omni_last_purchase_notify_at`
+  - `omni_last_purchase_notify_ref`
+  - `omni_last_purchase_notify_amount`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+  - `_is_purchase_notify_duplicate(...)` (20-minute window; same ref or amount)
+
+### Notes
+
+- Dedup keying is intentionally conservative to reduce spam bursts while preserving important alerts.

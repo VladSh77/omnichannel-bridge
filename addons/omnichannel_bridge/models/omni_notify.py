@@ -16,10 +16,12 @@ omni_notify — внутрішній Telegram-канал менеджера/ке
     omnichannel_bridge.internal_notify_problem  — bool: сповіщати про проблемних
 """
 import logging
+from datetime import timedelta
 
 import requests
 
 from odoo import _, api, models
+from odoo.fields import Datetime
 
 _logger = logging.getLogger(__name__)
 
@@ -160,19 +162,29 @@ class OmniNotify(models.AbstractModel):
             total = getattr(order, 'amount_total', 0.0) or 0.0
             amount = '%s %s' % (total, currency)
             ref = order.name or ref
+        amount_norm = str(amount).strip()
+        ref_norm = str(ref or '').strip()
+        cp = partner.commercial_partner_id.sudo()
+        if self._is_purchase_notify_duplicate(cp, ref_norm, amount_norm):
+            return
         text = self._event_summary_text(
             event='purchase_confirmed',
             channel=channel,
             partner=partner,
             lines=[
                 '✅ Підтверджене замовлення/оплата',
-                '🧾 %s' % self._escape(ref),
-                '💳 %s' % self._escape(str(amount).strip()),
+                '🧾 %s' % self._escape(ref_norm or '—'),
+                '💳 %s' % self._escape(amount_norm or '—'),
                 '🔎 %s' % self._escape(source),
             ],
             priority=True,
         )
         self._send(text, parse_mode='Markdown', priority=True)
+        cp.write({
+            'omni_last_purchase_notify_at': Datetime.now(),
+            'omni_last_purchase_notify_ref': ref_norm,
+            'omni_last_purchase_notify_amount': amount_norm,
+        })
 
     # ------------------------------------------------------------------
     # Внутрішнє
@@ -285,6 +297,19 @@ class OmniNotify(models.AbstractModel):
             order='write_date desc, id desc',
             limit=1,
         )
+
+    def _is_purchase_notify_duplicate(self, partner, ref_norm, amount_norm):
+        """Dedupe cross-layer events (sale/payment/invoice) in a short window."""
+        partner = partner.sudo()
+        last_at = partner.omni_last_purchase_notify_at
+        if not last_at:
+            return False
+        # A short window prevents burst duplicates from multiple model hooks.
+        if (Datetime.now() - last_at) > timedelta(minutes=20):
+            return False
+        same_ref = bool(ref_norm and ref_norm == (partner.omni_last_purchase_notify_ref or ''))
+        same_amount = bool(amount_norm and amount_norm == (partner.omni_last_purchase_notify_amount or ''))
+        return same_ref or same_amount
 
     @staticmethod
     def _escape(text):
