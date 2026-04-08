@@ -192,6 +192,12 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+### Deployment Notes
+
+- Initial production upgrade failed due missing `res_partner.omni_tg_last_broadcast_at` column.
+- Applied safe SQL recovery: `ALTER TABLE res_partner ADD COLUMN IF NOT EXISTS omni_tg_last_broadcast_at timestamp`.
+- Re-ran module upgrade successfully; verified wizard model/action and partner field availability.
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope
