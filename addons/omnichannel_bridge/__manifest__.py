@@ -20,6 +20,8 @@
         'data/omni_ai_job_cron.xml',
         'views/omni_integration_views.xml',
         'views/omni_promo_views.xml',
+        'views/omni_insurance_package_views.xml',
+        'views/omni_legal_document_views.xml',
         'views/res_config_settings_views.xml',
         'views/mail_channel_views.xml',
         'views/res_partner_views.xml',

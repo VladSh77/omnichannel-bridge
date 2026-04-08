@@ -412,13 +412,31 @@ class OmniAi(models.AbstractModel):
             return ''
         company = self.env.company.sudo()
         legal_name = (company.name or '').strip() or 'CampScout'
-        return (
+        icp = self.env['ir.config_parameter'].sudo()
+        consent_site = (icp.get_param('omnichannel_bridge.consent_site_text') or '').strip()
+        terms_url = (icp.get_param('omnichannel_bridge.legal_terms_url') or 'https://campscout.eu/terms').strip()
+        privacy_url = (icp.get_param('omnichannel_bridge.legal_privacy_url') or 'https://campscout.eu/privacy-policy').strip()
+        cookie_url = (icp.get_param('omnichannel_bridge.legal_cookie_url') or 'https://campscout.eu/cookie-policy').strip()
+        child_url = (
+            icp.get_param('omnichannel_bridge.legal_child_protection_url') or
+            'https://campscout.eu/child-protection'
+        ).strip()
+        consent_line = consent_site or (
             'ℹ️ Коротко про дані: натискаючи "надіслати", ви погоджуєтесь на обробку контактних даних '
-            'для підбору табору та звʼязку з менеджером.\n'
+            'для підбору табору та звʼязку з менеджером.'
+        )
+        return (
+            '%(consent)s\n'
             'Відповідає юридична особа: %(legal_name)s.\n'
-            'Політики: https://campscout.eu/privacy-policy | https://campscout.eu/terms | '
-            'https://campscout.eu/cookie-policy | https://campscout.eu/child-protection'
-        ) % {'legal_name': legal_name}
+            'Політики: %(privacy)s | %(terms)s | %(cookie)s | %(child)s'
+        ) % {
+            'consent': consent_line,
+            'legal_name': legal_name,
+            'privacy': privacy_url,
+            'terms': terms_url,
+            'cookie': cookie_url,
+            'child': child_url,
+        }
 
     def _omni_post_bot_message(self, channel, body):
         channel = channel.sudo()

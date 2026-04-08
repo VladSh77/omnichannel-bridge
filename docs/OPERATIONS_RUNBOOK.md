@@ -59,6 +59,58 @@
 - Fallback message always enabled for AI outage scenarios.
 - Admin kill switch path documented and tested.
 
+## Platform Window Policy
+
+- Meta (Messenger/Instagram Direct) and WhatsApp Business typically operate with an about-24h customer-initiated window for free-form proactive messaging.
+- This must be treated as an operational constraint and re-validated against current provider docs before campaign launches.
+- Telegram channel/bot flow is not bound by the same 24h rule, but anti-spam and explicit consent rules still apply.
+
+## Expanded Failure SOP
+
+### Ollama unavailable / overloaded
+
+1. Verify `omnichannel_bridge.ollama_base_url` reachability from Odoo host.
+2. If repeated failures: set `omnichannel_bridge.llm_enabled=False` (human-only mode).
+3. Confirm fallback message is delivered and internal escalation notifications are active.
+4. Record incident with model/version and host resource pressure details.
+
+### Resource pressure (RAM/GPU/CPU)
+
+1. Reduce concurrency sources (pause campaigns / temporary queue reduction).
+2. Switch to lighter model if pre-approved by product owner.
+3. Keep strict grounding on; do not disable compliance blocks to gain speed.
+
+### Provider rate limit / API throttling
+
+1. Check outbound retries and error patterns by provider.
+2. Slow non-critical broadcasts first; keep handoff/escalation traffic prioritized.
+3. Re-check tokens/secrets and webhook validity after transient provider incidents.
+
+### Expired or revoked tokens
+
+1. Rotate token in settings/integration config.
+2. Re-run minimal webhook verification test and outbound smoke test.
+3. Update token rotation log (owner, date, expiry) in operations notes.
+
+## Token Rotation Policy
+
+- Owner field: `omnichannel_bridge.token_rotation_owner`.
+- Next planned rotation date: `omnichannel_bridge.token_rotation_next_date`.
+- Minimum cadence recommendation: every 90 days or earlier on suspected compromise.
+- Rotation checklist:
+  1. update token/secret,
+  2. verify inbound webhook challenge/signature,
+  3. verify outbound send test,
+  4. record actor/date/next date.
+
+## Release Fingerprint Policy
+
+- Keep release identifiers in settings before each production deploy:
+  - `omnichannel_bridge.release_odoo_version`
+  - `omnichannel_bridge.release_custom_hash`
+  - `omnichannel_bridge.release_ollama_model_version`
+- These values must be copied to release notes for reproducible rollback and incident analysis.
+
 ## Post-Incident Record
 
 Each incident must include:

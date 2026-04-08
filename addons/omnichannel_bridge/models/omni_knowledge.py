@@ -532,17 +532,59 @@ class OmniKnowledge(models.AbstractModel):
     def omni_legal_context_block(self):
         company = self.env.company.sudo()
         legal_name = (company.name or '').strip() or 'CampScout'
+        icp = self.env['ir.config_parameter'].sudo()
+        terms_url = (icp.get_param('omnichannel_bridge.legal_terms_url') or 'https://campscout.eu/terms').strip()
+        privacy_url = (icp.get_param('omnichannel_bridge.legal_privacy_url') or 'https://campscout.eu/privacy-policy').strip()
+        cookie_url = (icp.get_param('omnichannel_bridge.legal_cookie_url') or 'https://campscout.eu/cookie-policy').strip()
+        child_url = (
+            icp.get_param('omnichannel_bridge.legal_child_protection_url') or
+            'https://campscout.eu/child-protection'
+        ).strip()
+        short_offer = (icp.get_param('omnichannel_bridge.legal_short_offer_text') or '').strip()
+        short_rodo = (icp.get_param('omnichannel_bridge.legal_short_rodo_text') or '').strip()
+        short_child = (icp.get_param('omnichannel_bridge.legal_short_child_text') or '').strip()
+        approved_owner = (icp.get_param('omnichannel_bridge.legal_approved_owner') or '').strip()
+        approved = [x for x in (short_offer, short_rodo, short_child) if x]
+        approved_block = (
+            '- Approved short legal wording (use as-is, no improvisation):\n'
+            + '\n'.join('  • %s' % s[:260] for s in approved)
+            if approved else
+            '- Approved short legal wording: use legal URLs and neutral wording, no invented clauses.'
+        )
         return (
             'LEGAL_CONTEXT:\n'
             '- Data controller / responsible legal entity: %s.\n'
             '- Use only these legal links (no invented legal text):\n'
-            '  • https://campscout.eu/terms\n'
-            '  • https://campscout.eu/privacy-policy\n'
-            '  • https://campscout.eu/cookie-policy\n'
-            '  • https://campscout.eu/child-protection\n'
+            '  • %s\n'
+            '  • %s\n'
+            '  • %s\n'
+            '  • %s\n'
+            '%s\n'
+            '- Legal auto-wording approval owner: %s.\n'
             '- For legal, insurance, child-safety disputes: mandatory human handoff.\n'
             '- Child data minimization: ask only what is needed for camp selection/booking.'
-        ) % legal_name
+        ) % (legal_name, terms_url, privacy_url, cookie_url, child_url, approved_block, approved_owner or 'not set')
+
+    @api.model
+    def omni_channel_consent_policy_block(self):
+        icp = self.env['ir.config_parameter'].sudo()
+        meta = (icp.get_param('omnichannel_bridge.consent_meta_text') or '').strip()
+        tg = (icp.get_param('omnichannel_bridge.consent_telegram_text') or '').strip()
+        wa = (icp.get_param('omnichannel_bridge.consent_whatsapp_text') or '').strip()
+        site = (icp.get_param('omnichannel_bridge.consent_site_text') or '').strip()
+        return (
+            'CHANNEL_CONSENT_POLICY:\n'
+            '- meta_instagram: %s\n'
+            '- telegram: %s\n'
+            '- whatsapp: %s\n'
+            '- site_livechat: %s\n'
+            '- Policy: use channel-specific consent wording when discussing proactive messaging/marketing.'
+        ) % (
+            meta or 'Use approved consent wording configured by legal owner.',
+            tg or 'Use approved consent wording configured by legal owner.',
+            wa or 'Use approved consent wording configured by legal owner.',
+            site or 'Use approved consent wording configured by legal owner.',
+        )
 
     @api.model
     def omni_coupon_policy_block(self):
@@ -605,6 +647,76 @@ class OmniKnowledge(models.AbstractModel):
         return '\n'.join(lines)
 
     @api.model
+    def omni_insurance_context_block(self):
+        packages = self.env['omni.insurance.package'].sudo().search([('active', '=', True)], order='id desc', limit=12)
+        lines = ['INSURANCE_PACKAGES:']
+        for pkg in packages:
+            linked_product = pkg.product_tmpl_id.name if pkg.product_tmpl_id else '—'
+            lines.append(
+                '- %s | code:%s | channel:%s | product:%s | policy:%s | terms:%s'
+                % (
+                    pkg.name,
+                    pkg.code or '—',
+                    pkg.channel_scope or 'all',
+                    linked_product,
+                    pkg.policy_url or '—',
+                    (pkg.short_terms or '').strip()[:180] or '—',
+                )
+            )
+        if len(lines) == 1:
+            lines.append('- no active insurance packages')
+        return '\n'.join(lines)
+
+    @api.model
+    def omni_legal_documents_context_block(self):
+        docs = self.env['omni.legal.document'].sudo().search(
+            [('active', '=', True), ('allow_in_bot', '=', True)],
+            order='id desc',
+            limit=20,
+        )
+        lines = ['LEGAL_DOCUMENTS:']
+        for doc in docs:
+            lines.append(
+                '- %s | type:%s | pdf:%s | url:%s | quote:%s'
+                % (
+                    doc.name,
+                    doc.doc_type or 'other',
+                    'yes' if doc.is_pdf else 'no',
+                    doc.url,
+                    (doc.short_quote or '').strip()[:180] or '—',
+                )
+            )
+        if len(lines) == 1:
+            lines.append('- no bot-approved legal docs configured')
+        return '\n'.join(lines)
+
+    @api.model
+    def omni_prompt_versioning_block(self):
+        icp = self.env['ir.config_parameter'].sudo()
+        version = (icp.get_param('omnichannel_bridge.llm_prompt_version') or 'v1').strip()
+        exp_tag = (icp.get_param('omnichannel_bridge.llm_experiment_tag') or '').strip()
+        return (
+            'PROMPT_VERSIONING:\n'
+            '- prompt_version: %s\n'
+            '- experiment_tag: %s\n'
+            '- Policy: keep answer behavior compliant with strict grounding regardless of experiment tag.'
+        ) % (version, exp_tag or 'none')
+
+    @api.model
+    def omni_release_fingerprint_block(self):
+        icp = self.env['ir.config_parameter'].sudo()
+        return (
+            'RELEASE_FINGERPRINT:\n'
+            '- odoo_version: %s\n'
+            '- custom_repo_hash: %s\n'
+            '- ollama_model_version: %s'
+        ) % (
+            (icp.get_param('omnichannel_bridge.release_odoo_version') or '').strip() or 'not set',
+            (icp.get_param('omnichannel_bridge.release_custom_hash') or '').strip() or 'not set',
+            (icp.get_param('omnichannel_bridge.release_ollama_model_version') or '').strip() or 'not set',
+        )
+
+    @api.model
     def omni_strict_grounding_bundle(self, channel, partner, user_text=''):
         """Єдиний блок фактів для LLM: ORM + умови каталогу + звернення + пам’ять + тред."""
         if channel:
@@ -617,9 +729,19 @@ class OmniKnowledge(models.AbstractModel):
             '---',
             self.omni_legal_context_block(),
             '---',
+            self.omni_channel_consent_policy_block(),
+            '---',
+            self.omni_legal_documents_context_block(),
+            '---',
             self.omni_coupon_policy_block(),
             '---',
             self.omni_promo_context_block(),
+            '---',
+            self.omni_insurance_context_block(),
+            '---',
+            self.omni_prompt_versioning_block(),
+            '---',
+            self.omni_release_fingerprint_block(),
             '---',
             self.omni_reserve_policy_block(),
             '---',

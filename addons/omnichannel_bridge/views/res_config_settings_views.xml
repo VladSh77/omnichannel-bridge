@@ -180,6 +180,67 @@
                         <setting string="Базовий системний промпт">
                             <field name="omnichannel_openai_system_prompt" placeholder="Тон, емпатія, сценарій продажу — без вигаданих цифр (їх дає блок фактів)."/>
                         </setting>
+                        <setting string="Prompt version tag">
+                            <field name="omnichannel_llm_prompt_version"/>
+                        </setting>
+                        <setting string="Prompt experiment tag (A/B)">
+                            <field name="omnichannel_llm_experiment_tag"/>
+                        </setting>
+                    </block>
+                    <block title="Legal Pack (approved snippets)" name="omnichannel_block_legal_pack">
+                        <setting string="Terms URL">
+                            <field name="omnichannel_legal_terms_url"/>
+                        </setting>
+                        <setting string="Privacy URL">
+                            <field name="omnichannel_legal_privacy_url"/>
+                        </setting>
+                        <setting string="Cookie URL">
+                            <field name="omnichannel_legal_cookie_url"/>
+                        </setting>
+                        <setting string="Child protection URL">
+                            <field name="omnichannel_legal_child_protection_url"/>
+                        </setting>
+                        <setting string="Approved short offer wording">
+                            <field name="omnichannel_legal_short_offer_text" placeholder="Коротке узгоджене формулювання для оферти."/>
+                        </setting>
+                        <setting string="Approved short RODO wording">
+                            <field name="omnichannel_legal_short_rodo_text" placeholder="Коротке узгоджене формулювання по обробці даних."/>
+                        </setting>
+                        <setting string="Approved short child-data wording">
+                            <field name="omnichannel_legal_short_child_text" placeholder="Коротке узгоджене формулювання щодо мінімізації даних дітей."/>
+                        </setting>
+                        <setting string="Legal approvals owner">
+                            <field name="omnichannel_legal_approved_owner"/>
+                        </setting>
+                        <setting string="Consent text for Meta/Instagram">
+                            <field name="omnichannel_consent_meta_text"/>
+                        </setting>
+                        <setting string="Consent text for Telegram">
+                            <field name="omnichannel_consent_telegram_text"/>
+                        </setting>
+                        <setting string="Consent text for WhatsApp">
+                            <field name="omnichannel_consent_whatsapp_text"/>
+                        </setting>
+                        <setting string="Consent text for website livechat">
+                            <field name="omnichannel_consent_site_text"/>
+                        </setting>
+                    </block>
+                    <block title="Release & Token Rotation" name="omnichannel_block_release_token">
+                        <setting string="Release Odoo version">
+                            <field name="omnichannel_release_odoo_version"/>
+                        </setting>
+                        <setting string="Release custom repo hash">
+                            <field name="omnichannel_release_custom_hash"/>
+                        </setting>
+                        <setting string="Release Ollama model version">
+                            <field name="omnichannel_release_ollama_model_version"/>
+                        </setting>
+                        <setting string="Token rotation owner">
+                            <field name="omnichannel_token_rotation_owner"/>
+                        </setting>
+                        <setting string="Token rotation next date">
+                            <field name="omnichannel_token_rotation_next_date"/>
+                        </setting>
                     </block>
                     <block title="Sales objections playbook" name="omnichannel_block_objections">
                         <setting string="Price objection">

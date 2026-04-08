@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_insurance_package_tree" model="ir.ui.view">
+        <field name="name">omni.insurance.package.tree</field>
+        <field name="model">omni.insurance.package</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="active"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="channel_scope"/>
+                <field name="product_tmpl_id"/>
+                <field name="policy_url"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_insurance_package_form" model="ir.ui.view">
+        <field name="name">omni.insurance.package.form</field>
+        <field name="model">omni.insurance.package</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="active"/>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="channel_scope"/>
+                        <field name="product_tmpl_id"/>
+                        <field name="policy_url"/>
+                    </group>
+                    <group string="Approved wording">
+                        <field name="short_terms"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_insurance_package" model="ir.actions.act_window">
+        <field name="name">Insurance Packages</field>
+        <field name="res_model">omni.insurance.package</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_omni_insurance_package"
+        name="Insurance Packages"
+        parent="menu_omni_root"
+        action="action_omni_insurance_package"
+        sequence="25"
+    />
+</odoo>

@@ -1436,3 +1436,71 @@
 - `addons/omnichannel_bridge/views/omni_crm_analytics_views.xml`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Insurance entities + legal pack grounding (TZ §4, two blocks)
+
+### Scope
+
+- Added dedicated insurance package entity for controlled bot display.
+- Added management UI and menu for insurance packages.
+- Added `INSURANCE_PACKAGES` context block into strict grounding bundle so LLM can reference only approved insurance package facts from ORM.
+- Reworked legal pack context to use configurable URLs and short approved legal snippets from Settings instead of hardcoded-only wording.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_insurance_package.py` (new)
+- `addons/omnichannel_bridge/views/omni_insurance_package_views.xml` (new)
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Three-block batch: PDF policy + prompt versioning + runbook SOP
+
+### Scope
+
+- Added legal documents registry with explicit PDF flag and bot-allow policy.
+- Added prompt versioning baseline (`prompt_version` + `experiment_tag`) via settings and grounding context.
+- Expanded operations runbook with practical SOP for Ollama outage, resource pressure, provider rate limits, and token expiry.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_legal_document.py` (new)
+- `addons/omnichannel_bridge/views/omni_legal_document_views.xml` (new)
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+  - `omni_legal_documents_context_block(...)`
+  - `omni_prompt_versioning_block(...)`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Five-block batch: consent, legal versioning, release/token governance
+
+### Scope
+
+- Added channel-specific consent wording controls (Meta, Telegram, WhatsApp, site livechat) and injected into strict grounding as `CHANNEL_CONSENT_POLICY`.
+- Extended legal document registry with versioning/approval metadata (`version_tag`, `effective_from`, `approved_by`, `approved_at`) and continued bot-allow filtering.
+- Added legal process owner field for approved auto-wording accountability.
+- Added release fingerprint controls (Odoo version, custom hash, Ollama model version) and injected into grounding as `RELEASE_FINGERPRINT`.
+- Added token rotation owner/date controls and expanded runbook SOP for scheduled rotation and verification.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/models/omni_knowledge.py`
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/omni_legal_document.py`
+- `addons/omnichannel_bridge/views/omni_legal_document_views.xml`
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`

@@ -139,6 +139,22 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('omni_promo_context_block', knowledge)
         self.assertIn('PROMOTIONS:', knowledge)
 
+    def test_insurance_entities_and_context_markers_present(self):
+        insurance = (ROOT / 'addons/omnichannel_bridge/models/omni_insurance_package.py').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('omni.insurance.package', insurance)
+        self.assertIn('omni_insurance_context_block', knowledge)
+        self.assertIn('INSURANCE_PACKAGES:', knowledge)
+
+    def test_legal_document_registry_markers_present(self):
+        legal_doc = (ROOT / 'addons/omnichannel_bridge/models/omni_legal_document.py').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('omni.legal.document', legal_doc)
+        self.assertIn('version_tag', legal_doc)
+        self.assertIn('approved_by', legal_doc)
+        self.assertIn('omni_legal_documents_context_block', knowledge)
+        self.assertIn('LEGAL_DOCUMENTS:', knowledge)
+
     def test_event_registration_truth_sync_markers_present(self):
         knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
         self.assertIn('event.registration', knowledge)
@@ -149,6 +165,30 @@ class ContractRegressionTests(unittest.TestCase):
         knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
         self.assertIn('omni_payment_policy_block', knowledge)
         self.assertIn('PAYMENT_POLICY:', knowledge)
+
+    def test_legal_pack_settings_markers_present(self):
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('legal_terms_url', settings)
+        self.assertIn('legal_short_rodo_text', settings)
+        self.assertIn('Approved short legal wording', knowledge)
+
+    def test_prompt_versioning_markers_present(self):
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn('llm_prompt_version', settings)
+        self.assertIn('llm_experiment_tag', settings)
+        self.assertIn('PROMPT_VERSIONING:', knowledge)
+        self.assertIn('RELEASE_FINGERPRINT:', knowledge)
+
+    def test_channel_consent_policy_markers_present(self):
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
+        self.assertIn('consent_meta_text', settings)
+        self.assertIn('consent_site_text', settings)
+        self.assertIn('CHANNEL_CONSENT_POLICY:', knowledge)
+        self.assertIn('consent_site_text', ai)
 
     def test_reserve_waitlist_model_markers_present(self):
         reserve = (ROOT / 'addons/omnichannel_bridge/models/omni_reserve_entry.py').read_text()
