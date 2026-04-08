@@ -4,11 +4,11 @@
         <field name="name">omni.crm.analytics.wizard.line.tree</field>
         <field name="model">omni.crm.analytics.wizard.line</field>
         <field name="arch" type="xml">
-            <list string="Analytics Breakdown" create="false" delete="false">
+            <tree string="Analytics Breakdown" create="false" delete="false">
                 <field name="section"/>
                 <field name="label"/>
                 <field name="count"/>
-            </list>
+            </tree>
         </field>
     </record>
 
