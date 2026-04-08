@@ -471,6 +471,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.retention_webhook_days',
         default=30,
     )
+    omnichannel_retention_child_data_days = fields.Integer(
+        string='Retention: child-sensitive profile fields (days)',
+        config_parameter='omnichannel_bridge.retention_child_data_days',
+        default=365,
+        help='After this period, child age/preference fields can be auto-minimized by cron.',
+    )
     omnichannel_log_pii_masking = fields.Boolean(
         string='Mask emails/phones in bridge logs',
         config_parameter='omnichannel_bridge.log_pii_masking',

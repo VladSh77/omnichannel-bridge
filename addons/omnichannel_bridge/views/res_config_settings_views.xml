@@ -109,6 +109,9 @@
                         <setting string="Retention: webhook events (days)">
                             <field name="omnichannel_retention_webhook_days"/>
                         </setting>
+                        <setting string="Retention: child-sensitive fields (days)">
+                            <field name="omnichannel_retention_child_data_days"/>
+                        </setting>
                         <setting string="Mask PII in bridge logs">
                             <field name="omnichannel_log_pii_masking"/>
                         </setting>

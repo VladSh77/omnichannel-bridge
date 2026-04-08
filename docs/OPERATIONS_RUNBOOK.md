@@ -63,6 +63,8 @@
 - Staging Meta test checklist documented in `docs/STAGING_META_TEST_PAGE.md`.
 - Backup/restore drill procedure documented in `docs/BACKUP_RESTORE_DRILL.md`.
 - Secret encryption baseline policy documented in `docs/SECRET_ENCRYPTION_POLICY.md`.
+- Child-sensitive retention policy documented in `docs/CHILD_DATA_RETENTION_POLICY.md`.
+- Right-to-erasure procedure documented in `docs/RIGHT_TO_ERASURE_SOP.md`.
 
 ## Platform Window Policy
 

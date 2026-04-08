@@ -84,9 +84,14 @@ class ContractRegressionTests(unittest.TestCase):
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
         webhook = (ROOT / 'addons/omnichannel_bridge/models/omni_webhook_event.py').read_text()
         partner = (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text()
+        settings = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        runbook = (ROOT / 'docs/OPERATIONS_RUNBOOK.md').read_text()
         self.assertIn('omni_cron_purge_old_messages', channel)
         self.assertIn('omni_cron_purge_old_events', webhook)
         self.assertIn('action_omni_right_to_erasure', partner)
+        self.assertIn('omni_cron_purge_child_sensitive_fields', partner)
+        self.assertIn('retention_child_data_days', settings)
+        self.assertIn('RIGHT_TO_ERASURE_SOP.md', runbook)
 
     def test_crm_analytics_markers_present(self):
         analytics = (ROOT / 'addons/omnichannel_bridge/models/omni_crm_analytics.py').read_text()

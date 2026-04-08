@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+from datetime import timedelta
 
 from odoo import _, api, fields, models
 
@@ -320,4 +321,28 @@ class ResPartner(models.Model):
             partner.write({
                 'omni_lead_score': max(0, min(100, score)),
                 'omni_lead_score_reason': (reason or 'auto')[:120],
+            })
+
+    @api.model
+    def omni_cron_purge_child_sensitive_fields(self, limit=500):
+        """Minimize child-related fields after retention window."""
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            retention_days = int(icp.get_param('omnichannel_bridge.retention_child_data_days', '365'))
+        except ValueError:
+            retention_days = 365
+        retention_days = max(30, retention_days)
+        cutoff = fields.Datetime.now() - timedelta(days=retention_days)
+        partners = self.sudo().search(
+            [
+                ('omni_child_age', '!=', False),
+                '|',
+                ('omni_last_stage_change_at', '=', False),
+                ('omni_last_stage_change_at', '<', cutoff),
+            ],
+            limit=max(1, int(limit)),
+        )
+        for partner in partners:
+            partner.write({
+                'omni_child_age': False,
             })

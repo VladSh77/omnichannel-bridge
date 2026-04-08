@@ -40,4 +40,14 @@
         <field name="numbercall">-1</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_omni_purge_child_sensitive_fields" model="ir.cron">
+        <field name="name">Omnichannel Purge Child Sensitive Fields</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="state">code</field>
+        <field name="code">model.omni_cron_purge_child_sensitive_fields()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

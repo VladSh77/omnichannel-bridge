@@ -1783,3 +1783,28 @@
 - `addons/omnichannel_bridge/__manifest__.py`
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
+
+## 2026-04-08 — Wave 8/6 continuation (child-retention policy + erasure SOP)
+
+### Scope
+
+- Added explicit child-sensitive retention controls:
+  - setting `retention_child_data_days`,
+  - daily cron `omni_cron_purge_child_sensitive_fields`,
+  - operational policy doc for minimization.
+- Added right-to-erasure legal-operational SOP:
+  - procedural steps in Odoo,
+  - provider-side limitation notes (Meta/Telegram),
+  - evidence checklist for compliance traceability.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_partner.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/data/omni_ai_job_cron.xml`
+- `docs/CHILD_DATA_RETENTION_POLICY.md` (new)
+- `docs/RIGHT_TO_ERASURE_SOP.md` (new)
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
