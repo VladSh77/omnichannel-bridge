@@ -283,8 +283,11 @@ class OmniAi(models.AbstractModel):
         channel = channel.sudo()
         partner = partner.sudo()
         if not channel.omni_reserve_requested_at:
+            reserve_entry = self._omni_create_or_get_reserve_entry(channel, partner, user_text)
             lead = self._omni_create_or_get_reserve_lead(channel, partner, user_text)
             vals = {'omni_reserve_requested_at': Datetime.now()}
+            if reserve_entry:
+                vals['omni_reserve_entry_id'] = reserve_entry.id
             if lead:
                 vals['omni_reserve_lead_id'] = lead.id
             channel.write(vals)
@@ -306,6 +309,23 @@ class OmniAi(models.AbstractModel):
         if reserve_cta not in (reply or ''):
             return '%s\n\n%s' % ((reply or '').strip(), reserve_cta)
         return reply
+
+    def _omni_create_or_get_reserve_entry(self, channel, partner, user_text):
+        if 'omni.reserve.entry' not in self.env:
+            return self.env['omni.reserve.entry']
+        if channel.omni_reserve_entry_id:
+            return channel.omni_reserve_entry_id.sudo()
+        try:
+            return self.env['omni.reserve.entry'].sudo().create({
+                'partner_id': partner.id,
+                'channel_id': channel.id,
+                'provider': channel.omni_provider or 'site_livechat',
+                'user_text': (user_text or '')[:2000],
+                'state': 'new',
+            })
+        except Exception:
+            _logger.exception('Failed creating reserve entry for channel %s', channel.id)
+            return self.env['omni.reserve.entry']
 
     def _omni_create_or_get_reserve_lead(self, channel, partner, user_text):
         if 'crm.lead' not in self.env:

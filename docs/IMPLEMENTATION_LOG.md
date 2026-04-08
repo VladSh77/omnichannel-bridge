@@ -236,6 +236,29 @@
 - `tests/test_contract_regressions.py`
 - `docs/TZ_CHECKLIST.md`
 
+## 2026-04-08 — Reserve waitlist formal model (sold-out flow)
+
+### Scope
+
+- Added dedicated reserve/waitlist model `omni.reserve.entry`.
+- Integrated reserve entry creation into sold-out runtime flow in `omni.ai`.
+- Linked reserve entry to Discuss channel for operational traceability.
+- Added management UI for waitlist entries in Operations.
+
+### Code Artifacts
+
+- `addons/omnichannel_bridge/models/omni_reserve_entry.py` (new)
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/views/omni_reserve_entry_views.xml` (new)
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/views/mail_channel_views.xml`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — TZ Item 3: Livechat Entry UX flow (§2.2)
 
 ### Scope

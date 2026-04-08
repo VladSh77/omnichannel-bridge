@@ -141,4 +141,11 @@
         action="action_omni_tg_broadcast_wizard"
         sequence="40"
     />
+    <menuitem
+        id="menu_omni_reserve_entries"
+        name="Reserve Waitlist"
+        parent="menu_omni_ops_root"
+        action="action_omni_reserve_entry"
+        sequence="50"
+    />
 </odoo>

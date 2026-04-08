@@ -4,6 +4,7 @@ from . import omni_webhook_event
 from . import omni_integration
 from . import omni_stage_event
 from . import omni_promo
+from . import omni_reserve_entry
 from . import res_partner
 from . import mail_channel
 from . import mail_guest

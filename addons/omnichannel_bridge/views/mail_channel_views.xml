@@ -21,6 +21,7 @@
                     <field name="omni_last_human_reply_at" readonly="1"/>
                     <field name="omni_last_bot_reply_at" readonly="1"/>
                     <field name="omni_last_manager_activity_at" readonly="1"/>
+                    <field name="omni_reserve_entry_id" readonly="1"/>
                     <field name="omni_last_customer_inbound_at" readonly="1"/>
                     <field name="omni_window_reminder_sent_at" readonly="1"/>
                     <field name="omni_window_reminder_count" readonly="1"/>

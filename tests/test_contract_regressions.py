@@ -116,6 +116,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('omni_promo_context_block', knowledge)
         self.assertIn('PROMOTIONS:', knowledge)
 
+    def test_reserve_waitlist_model_markers_present(self):
+        reserve = (ROOT / 'addons/omnichannel_bridge/models/omni_reserve_entry.py').read_text()
+        ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
+        self.assertIn('omni.reserve.entry', reserve)
+        self.assertIn('_omni_create_or_get_reserve_entry', ai)
+        self.assertIn('omni_reserve_entry_id', ai)
+
 
 if __name__ == '__main__':
     unittest.main()
