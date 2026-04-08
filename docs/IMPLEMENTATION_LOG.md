@@ -703,3 +703,25 @@
 ### Notes
 
 - This is intent-level signaling; confirmed payment/order events remain a separate integration step.
+
+## 2026-04-07 — Confirmed purchase event from ORM (`sale.order`)
+
+### Scope
+
+- Added confirmed-purchase internal event based on real ORM transition (`sale.order` to `sale/done`).
+- Event is sent as PRIORITY summary with order reference and amount.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/sale_order.py`
+  - hooks on `create` and `write` to detect confirmed sale state
+- `addons/omnichannel_bridge/models/omni_notify.py`
+  - `notify_purchase_confirmed(...)`
+  - `_find_channel_for_partner(...)`
+  - `purchase_confirmed` event type in formatter
+- `addons/omnichannel_bridge/models/__init__.py`
+
+### Notes
+
+- Channel mapping uses the latest omnichannel thread for partner/commercial partner.
+- This closes event-level visibility; payment.transaction-specific hooks can be added later if needed.

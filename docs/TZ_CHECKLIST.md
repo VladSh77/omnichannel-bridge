@@ -299,7 +299,7 @@
 
 **Продуктові правила:**
 
-- [~] У канал потрапляє **підсумок події**: unified summary для new/escalation/problem/stage-change/purchase-intent; purchase-fact (підтверджена оплата) ще в backlog.
+- [x] У канал потрапляє **підсумок події**: unified summary для new/escalation/problem/stage-change/purchase-intent + purchase-confirmed (ORM `sale.order` state sale/done).
 - [x] **Окремий акцент / окремий тип повідомлень**: `PRIORITY` формат для problematic/escalation + optional `internal_tg_priority_chat_id` (другий канал).
 - [~] Керівник одразу бачить **пріоритетні** кейси: реалізовано префікс `PRIORITY` і optional окремий чат; подальший fine-tune фільтрів/рутин — в backlog.
 

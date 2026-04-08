@@ -138,6 +138,34 @@ class OmniNotify(models.AbstractModel):
         )
         self._send(text, parse_mode='Markdown', priority=True)
 
+    @api.model
+    def notify_purchase_confirmed(self, partner, order=None, source='sale_order'):
+        if not partner:
+            return
+        partner = partner.sudo()
+        channel = self._find_channel_for_partner(partner)
+        if not channel:
+            return
+        amount_line = '—'
+        if order:
+            currency = (order.currency_id.name or '').strip() if hasattr(order, 'currency_id') else ''
+            amount = getattr(order, 'amount_total', 0.0) or 0.0
+            amount_line = '%s %s' % (amount, currency)
+        order_ref = (order.name or '—') if order else '—'
+        text = self._event_summary_text(
+            event='purchase_confirmed',
+            channel=channel,
+            partner=partner,
+            lines=[
+                '✅ Підтверджене замовлення/оплата',
+                '🧾 %s' % self._escape(order_ref),
+                '💳 %s' % self._escape(amount_line.strip()),
+                '🔎 %s' % self._escape(source),
+            ],
+            priority=True,
+        )
+        self._send(text, parse_mode='Markdown', priority=True)
+
     # ------------------------------------------------------------------
     # Внутрішнє
     # ------------------------------------------------------------------
@@ -200,6 +228,7 @@ class OmniNotify(models.AbstractModel):
             'problematic': '⚠️ *Проблемний тред*',
             'stage_change': '🧭 *Зміна етапу*',
             'purchase_intent': '🛒 *Purchase intent*',
+            'purchase_confirmed': '✅ *Purchase confirmed*',
         }
         title = title_map.get(event, 'ℹ️ *Подія*')
         if provider_label:
@@ -235,6 +264,18 @@ class OmniNotify(models.AbstractModel):
         return '%s/web#action=mail.action_discuss&active_id=discuss.channel_%s' % (
             base.rstrip('/'),
             channel.id,
+        )
+
+    def _find_channel_for_partner(self, partner):
+        partner = partner.sudo()
+        p = partner.commercial_partner_id
+        return self.env['discuss.channel'].sudo().search(
+            [
+                ('omni_customer_partner_id', 'child_of', p.id),
+                ('omni_provider', '!=', False),
+            ],
+            order='write_date desc, id desc',
+            limit=1,
         )
 
     @staticmethod
