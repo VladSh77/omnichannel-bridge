@@ -830,3 +830,28 @@
 ### Notes
 
 - This is mapped from repository custom modules; final production mapping must still be verified against the exact server code/DB snapshot.
+
+## 2026-04-08 — Sold-out reserve runtime flow (manager handoff + CRM lead)
+
+### Scope
+
+- Implemented operational reserve flow when catalog facts indicate sold-out (`reserve: manager_waitlist_required`) and user asks availability.
+- Bot now appends explicit reserve CTA, asks for contact, and routes to manager.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+  - `_omni_apply_reserve_flow(...)`
+  - `_omni_create_or_get_reserve_lead(...)`
+  - `_omni_user_asks_availability(...)`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - `omni_reserve_lead_id`
+  - `omni_reserve_requested_at`
+
+### Runtime behavior
+
+- On first sold-out hit per channel:
+  - create/reuse CRM lead for reserve,
+  - send escalation notify to manager,
+  - set sales stage to `handoff`,
+  - include reserve text to client response.

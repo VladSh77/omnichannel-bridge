@@ -229,9 +229,75 @@ class OmniAi(models.AbstractModel):
             self._omni_send_fallback(channel, partner, ICP)
             return
         reply = self._omni_append_next_question(reply, partner, normalized)
+        reply = self._omni_apply_reserve_flow(channel, partner, normalized, facts, reply)
         self._omni_post_bot_message(channel, reply)
         self._omni_update_sales_stage_after_reply(partner, channel=channel)
         self._omni_route_manager_mention_if_needed(channel, partner, text, reply)
+
+    def _omni_apply_reserve_flow(self, channel, partner, user_text, facts, reply):
+        """When catalog facts say no places, enforce manager reserve handoff."""
+        if not channel or not partner:
+            return reply
+        if 'reserve: manager_waitlist_required' not in (facts or ''):
+            return reply
+        if not self._omni_user_asks_availability(user_text):
+            return reply
+        channel = channel.sudo()
+        partner = partner.sudo()
+        if not channel.omni_reserve_requested_at:
+            lead = self._omni_create_or_get_reserve_lead(channel, partner, user_text)
+            vals = {'omni_reserve_requested_at': Datetime.now()}
+            if lead:
+                vals['omni_reserve_lead_id'] = lead.id
+            channel.write(vals)
+            self.env['omni.notify'].sudo().notify_escalation(
+                channel=channel,
+                partner=partner,
+                reason='📌 Sold out: клієнту запропоновано резерв через менеджера',
+            )
+        self._omni_set_sales_stage(partner, 'handoff', channel, 'reserve_waitlist')
+        reserve_cta = (
+            'Зараз по обраному варіанту місць немає. Можу передати ваш контакт менеджеру для резерву '
+            '(лист очікування на випадок звільнення місця). Залиште, будь ласка, телефон або email.'
+        )
+        if self._omni_is_polish_message(user_text):
+            reserve_cta = (
+                'Obecnie na wybrany termin nie ma wolnych miejsc. Mogę przekazać kontakt do managera '
+                'w celu wpisania na listę rezerwową. Proszę zostawić telefon lub email.'
+            )
+        if reserve_cta not in (reply or ''):
+            return '%s\n\n%s' % ((reply or '').strip(), reserve_cta)
+        return reply
+
+    def _omni_create_or_get_reserve_lead(self, channel, partner, user_text):
+        if 'crm.lead' not in self.env:
+            return self.env['crm.lead']
+        if channel.omni_reserve_lead_id:
+            return channel.omni_reserve_lead_id.sudo()
+        try:
+            provider_label = dict(self.env['omni.integration']._selection_providers()).get(
+                channel.omni_provider or 'site_livechat',
+                channel.omni_provider or 'site_livechat',
+            )
+            return self.env['crm.lead'].sudo().create({
+                'name': '[Reserve] %s' % (partner.display_name or 'Camp lead'),
+                'partner_id': partner.id,
+                'description': (
+                    'Reserve request (sold-out) from %s.\nLast user message: %s\nDiscuss channel id: %s'
+                ) % (provider_label, (user_text or '')[:400], channel.id),
+            })
+        except Exception:
+            _logger.exception('Failed creating reserve lead for channel %s', channel.id)
+            return self.env['crm.lead']
+
+    def _omni_user_asks_availability(self, user_text):
+        txt = (user_text or '').lower()
+        keys = (
+            'місц', 'є місця', 'наявн', 'заїзд', 'зміна', 'вільні',
+            'miejsc', 'dostęp', 'wolne', 'turnus',
+            'available', 'availability', 'spots left', 'free spots',
+        )
+        return any(k in txt for k in keys)
 
     def _omni_send_fallback(self, channel, partner, icp):
         """LLM недоступний — надсилаємо шаблонне повідомлення і сповіщаємо менеджера."""

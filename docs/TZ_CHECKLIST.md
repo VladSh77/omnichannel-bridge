@@ -62,7 +62,7 @@
 **Місця та резерв:**
 
 - [~] Python/ORM перевірка вільних місць: додано runtime resolver у `omni_knowledge` з пріоритетом `get_camp_availability` / `bs_event_id.seats_available` / `event.ticket -> event.seats_available`; потрібен прод-аудит конкретного mapping на сервері.
-- [~] Якщо місць **немає**: у prompt/facts зафіксовано mandatory reserve flow через менеджера; окремий CRM waitlist обʼєкт/нотифікація ще в backlog.
+- [x] Якщо місць **немає**: runtime reserve flow через менеджера реалізовано (CTA клієнту + CRM lead + escalation notify + stage=handoff).
 - [~] Анти-галюцинація по місцях: facts bundle містить тільки ORM-derived `places`; при `places<=0` додається `reserve: manager_waitlist_required` і reserve policy у prompt.
 
 **Знижка −5% (лише на табір):**

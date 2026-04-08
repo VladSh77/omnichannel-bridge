@@ -21,6 +21,8 @@ class MailChannel(models.Model):
     omni_last_human_reply_at = fields.Datetime()
     omni_last_bot_reply_at = fields.Datetime()
     omni_legal_notice_sent_at = fields.Datetime()
+    omni_reserve_lead_id = fields.Many2one('crm.lead', ondelete='set null')
+    omni_reserve_requested_at = fields.Datetime()
 
     _sql_constraints = [
         (
