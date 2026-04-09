@@ -261,13 +261,20 @@ class OmniBridge(models.AbstractModel):
         # Telegram test/live dialogs should not feel silent while waiting for SLA window.
         if provider == 'telegram':
             delay = 0
-        self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
+        job = self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
             channel=channel,
             partner=partner,
             text=text,
             provider=provider,
             delay_seconds=delay,
         )
+        # Telegram UX: avoid "silent bot" while waiting for cron tick.
+        # Run the queued job immediately in the same request.
+        if provider == 'telegram' and job:
+            try:
+                job.sudo()._omni_run_single()
+            except Exception:
+                _logger.exception('Immediate Telegram AI run failed, cron fallback will retry')
 
     def _omni_maybe_create_crm_lead(self, partner, provider):
         """Новий клієнт → CRM нагода (якщо увімкнено в налаштуваннях)."""
