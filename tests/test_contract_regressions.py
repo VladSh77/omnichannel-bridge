@@ -215,6 +215,12 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('STAGING_RUNTIME_BOOTSTRAP.md', runbook)
         self.assertIn('PROD_LIVECHAT_SMOKE_2026-04-08.md', runbook)
 
+    def test_camp_product_markers_include_cs_code_and_poszum(self):
+        knowledge = (ROOT / 'addons/omnichannel_bridge/models/omni_knowledge.py').read_text()
+        self.assertIn("code.startswith('CS-')", knowledge)
+        self.assertIn("'poszum'", knowledge)
+        self.assertIn("'пошум'", knowledge)
+
     def test_camp_knowledge_seed_data_linked_in_manifest(self):
         manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
         data = (ROOT / 'addons/omnichannel_bridge/data/omni_camp_knowledge_articles.xml').read_text(

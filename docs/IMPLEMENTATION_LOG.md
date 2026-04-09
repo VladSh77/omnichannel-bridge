@@ -1,5 +1,12 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Camp product detection: `CS-*` default_code + POSHUMIMO; `odoo_probe_camp_places`
+
+### Scope
+
+- `_omni_is_camp_product`: treat `default_code` starting with `CS-` as camp; add `poszum` / `пошум` substring markers.
+- `scripts/odoo_probe_camp_places.py`: odoo-shell probe for places + catalog snippet (POSHUMIMO / CS-PSH).
+
 ## 2026-04-09 — Seed `omni.knowledge.article` from `camp/knowledge-base` (AI camp context)
 
 ### Scope

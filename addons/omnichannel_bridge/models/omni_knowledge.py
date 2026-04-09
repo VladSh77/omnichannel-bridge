@@ -202,10 +202,13 @@ class OmniKnowledge(models.AbstractModel):
 
     @api.model
     def _omni_is_camp_product(self, tmpl):
+        code = (getattr(tmpl, 'default_code', None) or '').strip().upper()
+        if code.startswith('CS-'):
+            return True
         name = (tmpl.name or '').lower()
         cat = (tmpl.categ_id.name or '').lower() if tmpl.categ_id else ''
         terms = (tmpl.omni_chat_terms or '').lower()
-        markers = ('таб', 'camp', 'obóz', 'kolonia', 'заїзд', 'turnus')
+        markers = ('таб', 'camp', 'obóz', 'kolonia', 'заїзд', 'turnus', 'poszum', 'пошум')
         return any(m in name or m in cat or m in terms for m in markers)
 
     @api.model
