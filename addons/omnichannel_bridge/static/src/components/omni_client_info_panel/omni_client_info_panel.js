@@ -90,7 +90,7 @@ export class OmniClientInfoPanel extends Component {
         }
         const action = await this.orm.call(
             "discuss.channel",
-            "omni_action_bind_partner_wizard",
+            "omni_action_open_client_from_panel",
             [this.props.thread.id],
         );
         if (action) {

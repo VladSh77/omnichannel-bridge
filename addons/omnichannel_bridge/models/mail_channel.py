@@ -11,7 +11,7 @@ import requests
 from odoo import _, api, fields, models
 from odoo.fields import Datetime
 
-from .omni_action_utils import ensure_act_window_views
+from .omni_action_utils import ensure_act_window_views, merge_act_window_context
 
 _logger = logging.getLogger(__name__)
 
@@ -712,14 +712,42 @@ class MailChannel(models.Model):
         return self.omni_get_client_info_for_channel(channel.id)
 
     @api.model
+    def omni_action_open_client_from_panel(self, channel_id):
+        """
+        Бічна панель Omnichannel: якщо вже є omni_customer_partner_id — відкрити картку
+        res.partner; інакше — майстер прив'язки. Контекст default_channel_id обов'язково
+        в action['context'] (with_context при _for_xml_id у веб-клієнт не потрапляє).
+        """
+        channel = self.sudo().browse(int(channel_id or 0))
+        if not channel or not channel.exists() or not channel.omni_provider:
+            return False
+        partner = channel.omni_customer_partner_id
+        if partner:
+            act = {
+                'type': 'ir.actions.act_window',
+                'res_model': 'res.partner',
+                'res_id': partner.id,
+                'view_mode': 'form',
+                'views': [(False, 'form')],
+                'target': 'new',
+            }
+            return ensure_act_window_views(act)
+        raw = self.env['ir.actions.act_window']._for_xml_id(
+            'omnichannel_bridge.action_omni_partner_bind_wizard'
+        )
+        act = merge_act_window_context(dict(raw), {'default_channel_id': channel.id})
+        return ensure_act_window_views(act)
+
+    @api.model
     def omni_action_bind_partner_wizard(self, channel_id):
         channel = self.sudo().browse(int(channel_id or 0))
         if not channel or not channel.exists():
             return False
-        raw = self.env['ir.actions.act_window'].with_context(
-            default_channel_id=channel.id,
-        )._for_xml_id('omnichannel_bridge.action_omni_partner_bind_wizard')
-        return ensure_act_window_views(raw)
+        raw = self.env['ir.actions.act_window']._for_xml_id(
+            'omnichannel_bridge.action_omni_partner_bind_wizard'
+        )
+        act = merge_act_window_context(dict(raw), {'default_channel_id': channel.id})
+        return ensure_act_window_views(act)
 
     @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):

@@ -1,4 +1,22 @@
 # -*- coding: utf-8 -*-
+import ast
+
+
+def merge_act_window_context(action, extra):
+    """Merge extra keys into act_window context (str or dict from DB/XML)."""
+    act = dict(action or {})
+    ctx = {}
+    raw = act.get('context')
+    if isinstance(raw, str):
+        try:
+            ctx = ast.literal_eval(raw.strip() or '{}') or {}
+        except (ValueError, SyntaxError, TypeError):
+            ctx = {}
+    elif isinstance(raw, dict):
+        ctx = dict(raw)
+    ctx.update(extra or {})
+    act['context'] = ctx
+    return act
 
 
 def ensure_act_window_views(action):
