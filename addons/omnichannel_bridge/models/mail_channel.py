@@ -536,10 +536,9 @@ class MailChannel(models.Model):
             'omni_external_thread_id': str(external_thread_id),
             'omni_customer_partner_id': partner.id,
         })
-        if hasattr(channel, 'add_members'):
-            channel.add_members(partner_ids=member_ids)
-        else:
-            channel.channel_partner_ids = [(6, 0, member_ids)]
+        # Use direct M2M write to avoid discuss "invited to channel"
+        # service notifications being posted into the customer thread.
+        channel.sudo().write({'channel_partner_ids': [(6, 0, member_ids)]})
         return channel, True
 
     def omni_thread_align_customer(self, partner):
@@ -551,10 +550,8 @@ class MailChannel(models.Model):
         must_have = list(dict.fromkeys([partner.id] + self._omni_operator_partner_ids()))
         missing = [pid for pid in must_have if pid not in member_partner_ids]
         if missing:
-            if hasattr(self, 'add_members'):
-                self.add_members(partner_ids=missing)
-            else:
-                self.channel_partner_ids = [(4, pid) for pid in missing]
+            # Use direct M2M write to keep membership updates silent.
+            self.sudo().write({'channel_partner_ids': [(4, pid) for pid in missing]})
 
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)
