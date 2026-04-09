@@ -98,6 +98,7 @@ Fajna/
 | [docs/LEGAL_FACTS_PACK.md](docs/LEGAL_FACTS_PACK.md) | Дозволені юридичні факти для бота (джерела з camp repo) |
 | [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Тест-план для локального/staging/prod контурів |
 | [docs/MIGRATION_GO_LIVE_PLAYBOOK.md](docs/MIGRATION_GO_LIVE_PLAYBOOK.md) | Покроковий план міграції ботів SendPulse/каналів у Odoo |
+| [docs/SENDPULSE_CONVERSATION_CARD_REFERENCE.md](docs/SENDPULSE_CONVERSATION_CARD_REFERENCE.md) | Еталон «карти розмови» SendPulse в Odoo: поля, форма, панель, зв’язки (паритет § 20.8) |
 | [docs/STAGING_BLUEPRINT.md](docs/STAGING_BLUEPRINT.md) | Blueprint staging-середовища з parity вимогами |
 | [docs/ENGINEERING_DESIGN_V1.md](docs/ENGINEERING_DESIGN_V1.md) | Технічний дизайн v1: idempotency + async queue + race guard |
 | [docs/PROD_CAMP_MAPPING_AUDIT_2026-04-08.md](docs/PROD_CAMP_MAPPING_AUDIT_2026-04-08.md) | Read-only аудит прод-мепінгу місць (кастомні модулі + DB) |

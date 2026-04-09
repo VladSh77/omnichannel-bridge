@@ -1,5 +1,10 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Reference doc: SendPulse conversation card (etalon for § 20.8)
+
+- Added **`docs/SENDPULSE_CONVERSATION_CARD_REFERENCE.md`**: повний розбір моделі `sendpulse.connect`, форми `view_sendpulse_connect_form`, панелі Discuss (`SendpulseInfoPanel`), розмірів, RPC, мапінгу на `omnichannel_bridge`.
+- **`docs/TZ_CHECKLIST.md`**: § 20.8 посилається на цей файл; **`README.md`**: рядок у таблиці документації.
+
 ## 2026-04-09 — Fix: wizard view `search_done` missing in arch (Odoo 17 `invisible` rule) — 17.0.1.0.32
 
 `omni_conversation_identity_wizard_views.xml`: поле **`search_done`** використовувалось у `invisible`, але не було в дереві перегляду → **`ParseError`** під час `-u` на проді. Додано `<field name="search_done" invisible="1"/>`.

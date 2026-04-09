@@ -368,6 +368,16 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('WhatsApp Cloud API', (ROOT / 'docs/MESSENGER_WEBHOOK_IDENTITY_SCHEMA.md').read_text())
         self.assertIn('omniProvider', thread_patch)
 
+    def test_sendpulse_conversation_card_reference_doc_present(self):
+        ref = ROOT / 'docs/SENDPULSE_CONVERSATION_CARD_REFERENCE.md'
+        self.assertTrue(ref.is_file())
+        body = ref.read_text()
+        self.assertIn('sendpulse.connect', body)
+        self.assertIn('view_sendpulse_connect_form', body)
+        self.assertIn('SendpulseInfoPanel', body)
+        chk = (ROOT / 'docs/TZ_CHECKLIST.md').read_text()
+        self.assertIn('SENDPULSE_CONVERSATION_CARD_REFERENCE.md', chk)
+
     def test_telegram_getchat_ingest_marker_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         self.assertIn('def _omni_telegram_getchat_snapshot', bridge)

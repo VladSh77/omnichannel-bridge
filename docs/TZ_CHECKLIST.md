@@ -703,6 +703,8 @@
 
 ### 20.8 100% заміна `sendpulse-odoo` для всіх каналів (mandatory)
 
+**Еталонна карта розмови SendPulse (повний розбір полів, XML, розмірів панелі, зв’язків з Discuss, мапінг на `omnichannel_bridge`):** `docs/SENDPULSE_CONVERSATION_CARD_REFERENCE.md`.
+
 - [x] Принцип канальної рівності: будь-яке покращення ідентифікації/дедуплікації/анти-лупів робиться **channel-agnostic** (Telegram, Instagram/Facebook, WhatsApp, Viber, Website Livechat), а не "тільки для Telegram".
 - [ ] Уніфікувати каскад ідентифікації клієнта в `omnichannel_bridge`: `external_id -> email -> додаткові email поля -> phone`, з обов'язковою прив'язкою identity після успішного match.
 - [ ] Додати fallback-обробку **non-text inbound** (photo/sticker/voice/video/document) у всіх каналах, щоб перший контакт також створював клієнта/тред і не губив лід.
