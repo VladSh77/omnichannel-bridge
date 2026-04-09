@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import psycopg2
+from psycopg2 import errorcodes
+
 from odoo import api, fields, models
 
 
@@ -56,7 +59,7 @@ class OmniIntegration(models.Model):
         if not companies:
             return True
         providers = [key for key, _label in self._selection_providers()]
-        Integration = self.sudo()
+        Integration = self.sudo().with_context(active_test=False)
         for company in companies:
             for provider in providers:
                 integration = Integration.search(
@@ -70,13 +73,19 @@ class OmniIntegration(models.Model):
                     if provider == 'site_livechat' and not integration.active:
                         integration.write({'active': True})
                     continue
-                Integration.create(
-                    {
-                        'company_id': company.id,
-                        'provider': provider,
-                        'active': provider == 'site_livechat',
-                    }
-                )
+                try:
+                    with self.env.cr.savepoint():
+                        Integration.create(
+                            {
+                                'company_id': company.id,
+                                'provider': provider,
+                                'active': provider == 'site_livechat',
+                            }
+                        )
+                except psycopg2.Error as exc:
+                    # Parallel module data hooks or invisible rows: row already exists.
+                    if getattr(exc, 'pgcode', None) != errorcodes.UNIQUE_VIOLATION:
+                        raise
         return True
 
     @api.model
