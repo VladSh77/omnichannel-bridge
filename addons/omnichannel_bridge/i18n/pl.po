@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* omnichannel_bridge
+# * omnichannel_bridge
 #
 msgid ""
 msgstr ""
@@ -9,131 +9,33 @@ msgstr ""
 "PO-Revision-Date: 2026-04-09 00:00+0000\n"
 "Last-Translator: Cursor Agent\n"
 "Language-Team: Polish\n"
-"Language: pl\n"
+"Language: pl_PL\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
+#. module: omnichannel_bridge
+#: code:addons/omnichannel_bridge/models/omni_crm_analytics.py:0
 msgid "CRM-аналітика"
 msgstr "Analityka CRM"
 
+#. module: omnichannel_bridge
+#: code:addons/omnichannel_bridge/models/omni_crm_analytics.py:0
 msgid "Оновити метрики"
 msgstr "Odśwież metryki"
 
+#. module: omnichannel_bridge
+#: code:addons/omnichannel_bridge/models/omni_crm_analytics.py:0
 msgid "Ключові метрики"
 msgstr "Kluczowe metryki"
 
-msgid "Власність відповіді"
-msgstr "Własność odpowiedzi"
-
-msgid "Кампанії / ROMI"
-msgstr "Kampanie / ROMI"
-
-msgid "Деталізація"
-msgstr "Szczegóły"
-
-msgid "Деталізація аналітики"
-msgstr "Szczegóły analityki"
-
+#. module: omnichannel_bridge
+#: code:addons/omnichannel_bridge/models/omni_crm_analytics.py:0
 msgid "Дата від"
 msgstr "Data od"
 
+#. module: omnichannel_bridge
+#: code:addons/omnichannel_bridge/models/omni_crm_analytics.py:0
 msgid "Дата до"
 msgstr "Data do"
-
-msgid "Всього тредів"
-msgstr "Wszystkie wątki"
-
-msgid "Всього лідів"
-msgstr "Wszystkie leady"
-
-msgid "Треди з передачею менеджеру"
-msgstr "Wątki z przekazaniem do managera"
-
-msgid "Середній час відповіді (сек)"
-msgstr "Średni czas odpowiedzi (sek)"
-
-msgid "Події заперечень"
-msgstr "Zdarzenia obiekcji"
-
-msgid "Події наміру купівлі"
-msgstr "Zdarzenia intencji zakupu"
-
-msgid "Треди, де відповідав бот"
-msgstr "Wątki z odpowiedzią bota"
-
-msgid "Треди, де відповідав менеджер"
-msgstr "Wątki z odpowiedzią managera"
-
-msgid "Змішані треди (бот + менеджер)"
-msgstr "Wątki mieszane (bot + manager)"
-
-msgid "Конверсія заперечення -> намір (%)"
-msgstr "Konwersja obiekcja -> intencja (%)"
-
-msgid "Нові Telegram-контакти"
-msgstr "Nowe kontakty Telegram"
-
-msgid "Погашення купонів (к-сть)"
-msgstr "Realizacje kuponów (ilość)"
-
-msgid "Сума знижок за купонами"
-msgstr "Suma rabatów kuponowych"
-
-msgid "Виручка замовлень з купонами"
-msgstr "Przychód zamówień z kuponami"
-
-msgid "Витрати на рекламу"
-msgstr "Wydatki reklamowe"
-
-msgid "Ціль Meta: ліди"
-msgstr "Cel Meta: leady"
-
-msgid "Ціль Meta: покупки"
-msgstr "Cel Meta: zakupy"
-
-msgid "Факт Meta: ліди"
-msgstr "Fakt Meta: leady"
-
-msgid "Факт Meta: покупки"
-msgstr "Fakt Meta: zakupy"
-
-msgid "Виконання цілі Meta (ліди, %)"
-msgstr "Realizacja celu Meta (leady, %)"
-
-msgid "Виконання цілі Meta (покупки, %)"
-msgstr "Realizacja celu Meta (zakupy, %)"
-
-msgid "Треди лише з відповіддю бота"
-msgstr "Wątki tylko z odpowiedzią bota"
-
-msgid "Треди лише з відповіддю менеджера"
-msgstr "Wątki tylko z odpowiedzią managera"
-
-msgid "За каналом"
-msgstr "Według kanału"
-
-msgid "За етапом продажу"
-msgstr "Według etapu sprzedaży"
-
-msgid "За типом заперечення"
-msgstr "Według typu obiekcji"
-
-msgid "Метрики кампанії"
-msgstr "Metryki kampanii"
-
-msgid "За власником відповіді"
-msgstr "Według właściciela odpowiedzi"
-
-msgid "Секція"
-msgstr "Sekcja"
-
-msgid "Ключ"
-msgstr "Klucz"
-
-msgid "Показник"
-msgstr "Wskaźnik"
-
-msgid "Кількість"
-msgstr "Ilość"
