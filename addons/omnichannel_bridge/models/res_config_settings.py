@@ -9,6 +9,9 @@ class ResConfigSettings(models.TransientModel):
 
     omnichannel_client_pain_admin_user_ids = fields.Many2many(
         'res.users',
+        relation='omni_cfg_client_pain_admin_user_rel',
+        column1='config_id',
+        column2='user_id',
         string='Client Pain module access users',
         help='Only these users can view Client Pain reports and weekly conversation audits.',
     )
@@ -412,6 +415,9 @@ class ResConfigSettings(models.TransientModel):
     )
     omnichannel_assignment_manager_user_ids = fields.Many2many(
         'res.users',
+        relation='omni_cfg_assignment_manager_user_rel',
+        column1='config_id',
+        column2='user_id',
         string='Manager queue pool (online routing)',
         help='Only these managers are eligible for live queue routing. Assignment goes to online users only.',
     )
