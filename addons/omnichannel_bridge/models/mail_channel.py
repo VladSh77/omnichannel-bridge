@@ -621,6 +621,17 @@ class MailChannel(models.Model):
                 birth_s = str(birth_raw)
             au = tg_gc.get('active_usernames')
             au_s = ', '.join(au) if isinstance(au, list) else ''
+            active_usernames_list = []
+            if isinstance(au, list):
+                for x in au:
+                    n = str(x).strip().lstrip('@')
+                    if n:
+                        active_usernames_list.append(n)
+            elif au_s:
+                for part in au_s.split(','):
+                    n = part.strip().lstrip('@')
+                    if n:
+                        active_usernames_list.append(n)
             telegram_panel = {
                 'numeric_id': str(tid) if tid is not None else '',
                 'first_name': (tgm.get('first_name') or '').strip(),
@@ -634,7 +645,7 @@ class MailChannel(models.Model):
                 'premium_badge_class': 'badge rounded-pill text-bg-warning text-dark',
                 'chat_type_label': chat_type_labels.get(chat_type, chat_type or ''),
                 'bio': (tg_gc.get('bio') or '').strip(),
-                'active_usernames_str': au_s,
+                'active_usernames_list': active_usernames_list,
                 'birthdate_str': birth_s,
                 'emoji_status_id': str(tg_gc.get('emoji_status_custom_emoji_id') or ''),
                 'profile_bg_emoji_id': str(tg_gc.get('profile_background_custom_emoji_id') or ''),

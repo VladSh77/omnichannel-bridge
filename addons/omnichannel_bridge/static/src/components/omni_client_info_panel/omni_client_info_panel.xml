@@ -104,16 +104,24 @@
                     </t>
                 </div>
 
-                <t t-if="state.card.telegram and (state.card.telegram.bio || state.card.telegram.active_usernames_str || state.card.telegram.birthdate_str || state.card.telegram.emoji_status_id)">
+                <t t-if="state.card.telegram and (state.card.telegram.bio || (state.card.telegram.active_usernames_list and state.card.telegram.active_usernames_list.length) || state.card.telegram.birthdate_str || state.card.telegram.emoji_status_id)">
                     <div class="px-3 py-2 border-bottom">
                         <div class="text-muted small text-uppercase fw-semibold mb-2">Профіль Telegram (getChat)</div>
                         <t t-if="state.card.telegram.bio">
                             <div class="small mb-2" t-esc="state.card.telegram.bio"/>
                         </t>
-                        <t t-if="state.card.telegram.active_usernames_str">
-                            <div class="d-flex gap-2 mb-1 small">
-                                <i class="fa fa-link text-muted mt-1" style="width:14px;"/>
-                                <span t-esc="state.card.telegram.active_usernames_str"/>
+                        <t t-if="state.card.telegram.active_usernames_list and state.card.telegram.active_usernames_list.length">
+                            <div class="d-flex gap-2 mb-1 small flex-wrap align-items-start">
+                                <i class="fa fa-link text-muted mt-1" style="width:14px; flex-shrink:0;"/>
+                                <span class="d-flex flex-wrap gap-2 align-items-center">
+                                    <t t-foreach="state.card.telegram.active_usernames_list" t-as="tu" t-key="tu_index">
+                                        <a t-att-href="'https://t.me/' + tu"
+                                           target="_blank"
+                                           rel="noopener noreferrer"
+                                           class="text-reset"
+                                           t-esc="tu"/>
+                                    </t>
+                                </span>
                             </div>
                         </t>
                         <t t-if="state.card.telegram.birthdate_str">
@@ -183,14 +191,6 @@
                     <t t-if="state.card.telegram and state.card.telegram.numeric_id">
                         <div class="small text-muted mt-1">User id: <span class="font-monospace" t-esc="state.card.telegram.numeric_id"/></div>
                     </t>
-                </div>
-
-                <div class="px-3 py-2">
-                    <div class="text-muted" style="font-size:10px; line-height:1.35;">
-                        Telegram Bot API не передає IP, країну та email у обʼєкті User.
-                        Телефон — лише з повідомлення «поділитися контактом» або з тексту.
-                        Фото — через «Оновити профіль» (getUserProfilePhotos).
-                    </div>
                 </div>
             </t>
         </div>
