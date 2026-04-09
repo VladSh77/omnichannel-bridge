@@ -13,6 +13,7 @@
         'sale_management',
         'stock',
         'account',
+        'web',
     ],
     'data': [
         'security/omni_security.xml',
@@ -46,6 +47,14 @@
     ],
     'external_dependencies': {
         'python': ['requests', 'pytz'],
+    },
+    'assets': {
+        'web.assets_backend': [
+            'omnichannel_bridge/static/src/thread_patch.js',
+            'omnichannel_bridge/static/src/components/omni_client_info_panel/omni_client_info_panel.xml',
+            'omnichannel_bridge/static/src/components/omni_client_info_panel/omni_client_info_panel.js',
+            'omnichannel_bridge/static/src/omni_thread_actions.js',
+        ],
     },
     'installable': True,
     'application': True,

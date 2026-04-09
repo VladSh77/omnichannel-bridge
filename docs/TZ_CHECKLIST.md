@@ -659,11 +659,19 @@
 
 ### 20.8 100% заміна `sendpulse-odoo` для всіх каналів (mandatory)
 
-- [ ] Принцип канальної рівності: будь-яке покращення ідентифікації/дедуплікації/анти-лупів робиться **channel-agnostic** (Telegram, Instagram/Facebook, WhatsApp, Viber, Website Livechat), а не "тільки для Telegram".
+- [x] Принцип канальної рівності: будь-яке покращення ідентифікації/дедуплікації/анти-лупів робиться **channel-agnostic** (Telegram, Instagram/Facebook, WhatsApp, Viber, Website Livechat), а не "тільки для Telegram".
 - [ ] Уніфікувати каскад ідентифікації клієнта в `omnichannel_bridge`: `external_id -> email -> додаткові email поля -> phone`, з обов'язковою прив'язкою identity після успішного match.
 - [ ] Додати fallback-обробку **non-text inbound** (photo/sticker/voice/video/document) у всіх каналах, щоб перший контакт також створював клієнта/тред і не губив лід.
 - [ ] Впровадити channel parity matrix у pre-launch тестах: однакові сценарії для кожного каналу (new contact, known contact, duplicate id, media inbound, handoff, manager online/offline, fallback cooldown, reopen closed thread).
 - [ ] Встановити go-live критерій "replace 100%": модуль проходить parity matrix і покриває критичні сценарії SendPulse без регресій по авторству повідомлень, доставці, SLA, та аудит-логах.
+
+#### 20.8.1 Discuss UI parity з SendPulse (обов'язково)
+
+- [x] Додано mini-card клієнта у правій панелі Discuss для omnichannel-тредів (кнопка в thread actions).
+- [x] Додано `Оновити профіль` у mini-card: підтягує актуальні поля з identity metadata та best-effort avatar refresh для Telegram.
+- [x] Додано перехід у картку `res.partner` (або створення контакту з prefill, якщо ще не прив'язано).
+- [x] Додано frontend/store поля для треда (`omni_provider`, `omni_external_thread_id`, `omni_customer_partner_id`) через `_to_store` + patch `Thread`.
+- [x] Додано contract-regression маркери для Discuss client card parity у `tests/test_contract_regressions.py`.
 
 ### 20.9 Повністю автономний режим без менеджера (mandatory)
 

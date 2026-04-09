@@ -1,5 +1,34 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — SendPulse parity: Discuss mini client card in omnichannel
+
+### Scope
+
+- Implemented Discuss-side mini client card for omnichannel threads (matching SendPulse best practice UX).
+- Added one-click profile refresh and direct transition to Odoo contact card.
+- Wired thread metadata into frontend store to drive conditional panel rendering.
+
+### Code artifacts
+
+- `addons/omnichannel_bridge/models/mail_channel.py`
+  - `_to_store(...)` exposes omnichannel thread fields to Discuss store.
+  - `omni_get_client_info_for_channel(...)` returns normalized card payload.
+  - `omni_refresh_client_info_for_channel(...)` refreshes partner data from identity metadata.
+  - `_omni_refresh_telegram_avatar(...)` best-effort Telegram profile photo sync.
+- `addons/omnichannel_bridge/static/src/thread_patch.js`
+- `addons/omnichannel_bridge/static/src/omni_thread_actions.js`
+- `addons/omnichannel_bridge/static/src/components/omni_client_info_panel/omni_client_info_panel.js`
+- `addons/omnichannel_bridge/static/src/components/omni_client_info_panel/omni_client_info_panel.xml`
+- `addons/omnichannel_bridge/__manifest__.py` (`web` dependency + backend assets)
+- `tests/test_contract_regressions.py` (parity markers)
+- `docs/TZ_CHECKLIST.md`
+
+### Verification
+
+- `python3 -m compileall addons/omnichannel_bridge` — OK
+- `python3 tests/test_webhook_parsers.py` — OK
+- `python3 tests/test_contract_regressions.py` — OK
+
 ## 2026-04-09 — Incident recap: chat-core failures, CI noise, and server-key discipline
 
 ### Scope

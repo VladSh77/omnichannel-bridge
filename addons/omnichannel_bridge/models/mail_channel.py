@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
 import hashlib
+import base64
+import json
 import re
 from datetime import timedelta
+
+import requests
 
 from odoo import _, api, fields, models
 from odoo.fields import Datetime
@@ -75,6 +79,17 @@ class MailChannel(models.Model):
             'A Discuss thread for this messenger conversation already exists.',
         ),
     ]
+
+    def _to_store(self, store, **kwargs):
+        """Expose omnichannel fields to Discuss thread store."""
+        super()._to_store(store, **kwargs)
+        for channel in self:
+            if channel.omni_provider:
+                store.add(channel, {
+                    'omni_provider': channel.omni_provider,
+                    'omni_external_thread_id': channel.omni_external_thread_id or False,
+                    'omni_customer_partner_id': channel.omni_customer_partner_id.id or False,
+                })
 
     def action_omni_pause_bot(self):
         self.sudo().write({
@@ -502,6 +517,168 @@ class MailChannel(models.Model):
             ])
         partners = users.mapped('partner_id').filtered(lambda p: p and p.active)
         return partners.ids
+
+    @api.model
+    def _omni_parse_identity_metadata(self, identity):
+        if not identity or not identity.metadata_json:
+            return {}
+        try:
+            return json.loads(identity.metadata_json or '{}') or {}
+        except Exception:
+            return {}
+
+    @api.model
+    def _omni_partner_avatar_url(self, partner):
+        if not partner:
+            return ''
+        return '/web/image/res.partner/%s/image_128' % partner.id
+
+    @api.model
+    def omni_get_client_info_for_channel(self, channel_id):
+        channel = self.sudo().browse(int(channel_id or 0))
+        if not channel or not channel.exists():
+            return {}
+        if not channel.omni_provider:
+            return {}
+        partner = channel.omni_customer_partner_id.sudo()
+        Identity = self.env['omni.partner.identity'].sudo()
+        identity = Identity.search([
+            ('provider', '=', channel.omni_provider),
+            ('partner_id', '=', partner.id),
+        ], order='id desc', limit=1)
+        meta = self._omni_parse_identity_metadata(identity)
+        tgm = meta.get('telegram') if isinstance(meta.get('telegram'), dict) else {}
+        chat = meta.get('chat') if isinstance(meta.get('chat'), dict) else {}
+        label = dict(self.env['omni.integration']._selection_providers()).get(channel.omni_provider, channel.omni_provider)
+        return {
+            'channel_id': channel.id,
+            'provider': channel.omni_provider,
+            'provider_label': label,
+            'external_thread_id': channel.omni_external_thread_id or '',
+            'thread_name': channel.name or '',
+            'partner': {
+                'id': partner.id if partner else False,
+                'name': (partner.name or '') if partner else '',
+                'email': (partner.email or '') if partner else '',
+                'phone': (partner.phone or partner.mobile or '') if partner else '',
+                'avatar_url': self._omni_partner_avatar_url(partner) if partner else '',
+            },
+            'identity': {
+                'id': identity.id if identity else False,
+                'display_name': (identity.display_name or '') if identity else '',
+                'external_id': (identity.external_id or '') if identity else '',
+                'username': (tgm.get('username') or chat.get('username') or ''),
+                'language_code': (tgm.get('language_code') or ''),
+                'booking_email': (
+                    meta.get('booking_email')
+                    or tgm.get('booking_email')
+                    or ''
+                ),
+            },
+        }
+
+    @api.model
+    def _omni_refresh_telegram_avatar(self, partner, identity):
+        bridge = self.env['omni.bridge'].sudo()
+        token = (bridge._omni_telegram_token() or '').strip()
+        if not token or not identity or not identity.external_id:
+            return False
+        try:
+            tg_user_id = int(str(identity.external_id))
+        except Exception:
+            return False
+        try:
+            photos_resp = requests.get(
+                'https://api.telegram.org/bot%s/getUserProfilePhotos' % token,
+                params={'user_id': tg_user_id, 'limit': 1},
+                timeout=12,
+            )
+            if not photos_resp.ok:
+                return False
+            photos_data = photos_resp.json() if photos_resp.content else {}
+            if not photos_data.get('ok'):
+                return False
+            photos = (photos_data.get('result') or {}).get('photos') or []
+            if not photos or not photos[0]:
+                return False
+            # Use largest image in the first photo set.
+            file_id = photos[0][-1].get('file_id')
+            if not file_id:
+                return False
+            file_resp = requests.get(
+                'https://api.telegram.org/bot%s/getFile' % token,
+                params={'file_id': file_id},
+                timeout=12,
+            )
+            if not file_resp.ok:
+                return False
+            file_data = file_resp.json() if file_resp.content else {}
+            file_path = ((file_data.get('result') or {}).get('file_path') or '').strip()
+            if not file_path:
+                return False
+            img_resp = requests.get(
+                'https://api.telegram.org/file/bot%s/%s' % (token, file_path),
+                timeout=15,
+            )
+            if not img_resp.ok or not img_resp.content:
+                return False
+            partner.sudo().write({
+                'image_1920': base64.b64encode(img_resp.content),
+            })
+            return True
+        except Exception:
+            _logger.exception('Telegram profile photo refresh failed for partner=%s', partner.id)
+            return False
+
+    @api.model
+    def omni_refresh_client_info_for_channel(self, channel_id):
+        channel = self.sudo().browse(int(channel_id or 0))
+        if not channel or not channel.exists() or not channel.omni_provider:
+            return {}
+        partner = channel.omni_customer_partner_id.sudo()
+        if not partner:
+            return self.omni_get_client_info_for_channel(channel_id)
+        Identity = self.env['omni.partner.identity'].sudo()
+        identity = Identity.search([
+            ('provider', '=', channel.omni_provider),
+            ('partner_id', '=', partner.id),
+        ], order='id desc', limit=1)
+        meta = self._omni_parse_identity_metadata(identity)
+        tgm = meta.get('telegram') if isinstance(meta.get('telegram'), dict) else {}
+        updates = {}
+        if not partner.email:
+            for key in ('booking_email', 'email', 'user_email'):
+                val = (meta.get(key) or tgm.get(key) or '').strip().lower()
+                if val and '@' in val:
+                    updates['email'] = val
+                    break
+        if not (partner.phone or partner.mobile):
+            for key in ('phone', 'phone_number'):
+                raw = (meta.get(key) or tgm.get(key) or '').strip()
+                if raw:
+                    updates['phone'] = raw
+                    break
+        placeholder = (partner.name or '').strip().lower()
+        is_placeholder = (
+            not placeholder
+            or placeholder.startswith('telegram:')
+            or placeholder.startswith('meta:')
+            or placeholder.startswith('whatsapp:')
+            or placeholder.startswith('viber:')
+        )
+        if is_placeholder:
+            fresh_name = (
+                (identity.display_name if identity else '')
+                or (' '.join(filter(None, [tgm.get('first_name'), tgm.get('last_name')])).strip())
+                or (tgm.get('username') or '')
+            )
+            if fresh_name:
+                updates['name'] = fresh_name[:80]
+        if updates:
+            partner.sudo().write(updates)
+        if channel.omni_provider == 'telegram':
+            self._omni_refresh_telegram_avatar(partner, identity)
+        return self.omni_get_client_info_for_channel(channel_id)
 
     @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):

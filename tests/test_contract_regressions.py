@@ -284,6 +284,28 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_tag_latest_customer_message', intel)
         self.assertIn('menu_omni_outbound_log', ops)
 
+    def test_discuss_client_card_parity_markers_present(self):
+        manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
+        channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        action_js = (ROOT / 'addons/omnichannel_bridge/static/src/omni_thread_actions.js').read_text()
+        panel_js = (
+            ROOT / 'addons/omnichannel_bridge/static/src/components/omni_client_info_panel/omni_client_info_panel.js'
+        ).read_text()
+        panel_xml = (
+            ROOT / 'addons/omnichannel_bridge/static/src/components/omni_client_info_panel/omni_client_info_panel.xml'
+        ).read_text()
+        thread_patch = (ROOT / 'addons/omnichannel_bridge/static/src/thread_patch.js').read_text()
+        self.assertIn("'web'", manifest)
+        self.assertIn('static/src/omni_thread_actions.js', manifest)
+        self.assertIn('omni_get_client_info_for_channel', channel)
+        self.assertIn('omni_refresh_client_info_for_channel', channel)
+        self.assertIn('_omni_refresh_telegram_avatar', channel)
+        self.assertIn('_to_store', channel)
+        self.assertIn('omni-client-info', action_js)
+        self.assertIn('OmniClientInfoPanel', panel_js)
+        self.assertIn('Оновити профіль', panel_xml)
+        self.assertIn('omniProvider', thread_patch)
+
     def test_anti_repeat_prefill_markers_present(self):
         ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
         self.assertIn('_omni_prefill_partner_from_inbound_text', ai)

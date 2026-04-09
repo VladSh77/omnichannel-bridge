@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="omnichannel_bridge.OmniClientInfoPanel">
+        <div class="o-omni-ClientInfoPanel d-flex flex-column h-100 border-start bg-view"
+             style="width: 290px; min-width: 240px; overflow-y: auto;">
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-100">
+                <span class="fw-semibold text-muted small text-uppercase">Omnichannel</span>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-link p-0 text-muted"
+                            title="Оновити профіль"
+                            t-on-click="onRefreshClick">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                    <button class="btn btn-sm btn-link p-0 text-muted"
+                            title="Відкрити контакт"
+                            t-on-click="onOpenPartnerClick">
+                        <i class="fa fa-external-link"/>
+                    </button>
+                </div>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="d-flex justify-content-center align-items-center p-4">
+                    <i class="fa fa-spinner fa-spin text-muted"/>
+                </div>
+            </t>
+            <t t-elif="state.error">
+                <div class="p-3 text-danger small">
+                    <i class="fa fa-exclamation-circle"/> Помилка завантаження картки
+                </div>
+            </t>
+            <t t-elif="!state.card">
+                <div class="p-3 text-muted small">Картка клієнта недоступна</div>
+            </t>
+            <t t-else="">
+                <div class="d-flex flex-column align-items-center py-3 px-3 border-bottom">
+                    <div class="mb-2" style="width: 64px; height: 64px;">
+                        <t t-if="state.card.partner.avatar_url">
+                            <img t-att-src="state.card.partner.avatar_url"
+                                 class="rounded-circle w-100 h-100 object-fit-cover"
+                                 t-att-alt="state.card.partner.name"/>
+                        </t>
+                        <t t-else="">
+                            <div class="rounded-circle w-100 h-100 d-flex align-items-center justify-content-center bg-primary text-white fs-3">
+                                <i class="fa fa-user"/>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="fw-semibold text-center" t-esc="state.card.partner.name || state.card.identity.display_name || 'Клієнт'"/>
+                    <div class="text-muted small">
+                        <span t-esc="state.card.provider_label"/>
+                    </div>
+                </div>
+
+                <div class="px-3 py-2 border-bottom">
+                    <div class="text-muted small text-uppercase fw-semibold mb-2">Контакт</div>
+                    <t t-if="state.card.identity.username">
+                        <div class="d-flex gap-2 mb-1 small">
+                            <i class="fa fa-at text-muted mt-1" style="width:14px;"/>
+                            <span t-esc="state.card.identity.username"/>
+                        </div>
+                    </t>
+                    <t t-if="state.card.partner.email">
+                        <div class="d-flex gap-2 mb-1 small">
+                            <i class="fa fa-envelope text-muted mt-1" style="width:14px;"/>
+                            <span t-esc="state.card.partner.email"/>
+                        </div>
+                    </t>
+                    <t t-if="state.card.partner.phone">
+                        <div class="d-flex gap-2 mb-1 small">
+                            <i class="fa fa-phone text-muted mt-1" style="width:14px;"/>
+                            <span t-esc="state.card.partner.phone"/>
+                        </div>
+                    </t>
+                    <t t-if="state.card.identity.language_code">
+                        <div class="d-flex gap-2 mb-1 small">
+                            <i class="fa fa-language text-muted mt-1" style="width:14px;"/>
+                            <span t-esc="state.card.identity.language_code"/>
+                        </div>
+                    </t>
+                </div>
+
+                <t t-if="state.card.identity.booking_email">
+                    <div class="px-3 py-2 border-bottom">
+                        <div class="text-muted small text-uppercase fw-semibold mb-2">Дані бота</div>
+                        <div class="d-flex gap-2 mb-1 small">
+                            <i class="fa fa-calendar text-muted mt-1" style="width:14px;"/>
+                            <div>
+                                <div class="text-muted" style="font-size:10px;">Email бронювання</div>
+                                <span t-esc="state.card.identity.booking_email"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <div class="px-3 py-2">
+                    <div class="text-muted small text-uppercase fw-semibold mb-2">Тред</div>
+                    <div class="small text-muted" t-esc="state.card.thread_name"/>
+                    <div class="small text-muted" t-esc="state.card.external_thread_id"/>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>
