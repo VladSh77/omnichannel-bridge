@@ -21,6 +21,7 @@ access_omni_crm_analytics_wizard_line_manager,omni.crm.analytics.wizard.line.man
 access_omni_crm_analytics_wizard_system,omni.crm.analytics.wizard.system,model_omni_crm_analytics_wizard,base.group_system,1,1,1,1
 access_omni_crm_analytics_wizard_line_system,omni.crm.analytics.wizard.line.system,model_omni_crm_analytics_wizard_line,base.group_system,1,1,1,1
 access_omni_tg_broadcast_wizard_manager,omni.tg.broadcast.wizard.manager,model_omni_tg_broadcast_wizard,sales_team.group_sale_manager,1,1,1,0
+access_omni_partner_bind_wizard_user,omni.partner.bind.wizard.user,model_omni_partner_bind_wizard,base.group_user,1,1,1,1
 access_omni_promo_manager,omni.promo.manager,model_omni_promo,sales_team.group_sale_manager,1,1,1,1
 access_omni_insurance_package_manager,omni.insurance.package.manager,model_omni_insurance_package,sales_team.group_sale_manager,1,1,1,1
 access_omni_legal_document_manager,omni.legal.document.manager,model_omni_legal_document,sales_team.group_sale_manager,1,1,1,1

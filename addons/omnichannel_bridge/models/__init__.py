@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import omni_partner_identity
+from . import omni_partner_bind_wizard
 from . import omni_webhook_event
 from . import omni_integration
 from . import omni_stage_event

@@ -1,8 +1,6 @@
 /** @odoo-module **/
 import { Component, onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
-import { _t } from "@web/core/l10n/translation";
-import { SelectCreateDialog } from "@web/views/view_dialogs/select_create_dialog";
 
 export class OmniClientInfoPanel extends Component {
     static template = "omnichannel_bridge.OmniClientInfoPanel";
@@ -13,7 +11,6 @@ export class OmniClientInfoPanel extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
-        this.dialog = useService("dialog");
         this.state = useState({
             loading: true,
             error: false,
@@ -72,34 +69,16 @@ export class OmniClientInfoPanel extends Component {
     }
 
     async onOpenPartnerClick() {
-        this.dialog.add(SelectCreateDialog, {
-            title: _t("Знайти/прив'язати контакт"),
-            resModel: "res.partner",
-            noCreate: false,
-            multiSelect: false,
-            context: {
-                default_name: this.state.card?.identity?.display_name || this.state.card?.thread_name || "",
-                default_email: this.state.card?.identity?.booking_email || "",
-            },
-            onSelected: async (resIds) => {
-                const partnerId = Array.isArray(resIds) ? resIds[0] : false;
-                if (!partnerId || !this.props.thread?.id) {
-                    return;
-                }
-                await this.orm.call(
-                    "discuss.channel",
-                    "omni_bind_partner_to_channel",
-                    [this.props.thread.id, partnerId],
-                );
-                await this._load(this.props.thread.id);
-                await this.action.doAction({
-                    type: "ir.actions.act_window",
-                    res_model: "res.partner",
-                    res_id: partnerId,
-                    views: [[false, "form"]],
-                    target: "current",
-                });
-            },
-        });
+        if (!this.props.thread?.id) {
+            return;
+        }
+        const action = await this.orm.call(
+            "discuss.channel",
+            "omni_action_bind_partner_wizard",
+            [this.props.thread.id],
+        );
+        if (action) {
+            await this.action.doAction(action);
+        }
     }
 }

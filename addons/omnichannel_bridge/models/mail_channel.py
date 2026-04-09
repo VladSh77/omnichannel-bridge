@@ -710,6 +710,22 @@ class MailChannel(models.Model):
         return self.omni_get_client_info_for_channel(channel.id)
 
     @api.model
+    def omni_action_bind_partner_wizard(self, channel_id):
+        channel = self.sudo().browse(int(channel_id or 0))
+        if not channel or not channel.exists():
+            return False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Прив\'язати контакт'),
+            'res_model': 'omni.partner.bind.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_channel_id': channel.id,
+            },
+        }
+
+    @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
         existing = self.sudo().search([
             ('omni_provider', '=', provider),
