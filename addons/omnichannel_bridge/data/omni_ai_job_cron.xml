@@ -50,4 +50,14 @@
         <field name="numbercall">-1</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_omni_weekly_conversation_audit" model="ir.cron">
+        <field name="name">Omnichannel Weekly Conversation Audit</field>
+        <field name="model_id" ref="model_omni_conversation_audit"/>
+        <field name="state">code</field>
+        <field name="code">model.omni_cron_run_weekly_audit()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

@@ -142,13 +142,31 @@ class MailChannel(models.Model):
     def _omni_livechat_entry_menu_text(self):
         return self._omni_livechat_entry_menu_text_lang(is_pl=False)
 
+    def _omni_livechat_online_manager_name(self):
+        manager = self.env['omni.notify'].sudo()._peek_online_manager_user()
+        if not manager:
+            return ''
+        name = (manager.name or '').strip()
+        return name[:60] if name else ''
+
     def _omni_livechat_entry_menu_text_lang(self, is_pl=False):
+        manager_name = self._omni_livechat_online_manager_name()
         if is_pl:
-            return (
+            intro = (
+                '🟢 Na czacie jest dostępny manager: %s.\n' % manager_name
+                if manager_name else
+                '🟡 Manager odpowie, gdy tylko będzie online.\n'
+            )
+            return intro + (
                 '👋 Jak mogę pomóc na start?\n'
                 'Napisz jednym zdaniem, co jest teraz najważniejsze: program, cena, terminy, dojazd czy bezpieczeństwo.'
             )
-        return (
+        intro = (
+            '🟢 Зараз у чаті доступний менеджер: %s.\n' % manager_name
+            if manager_name else
+            '🟡 Менеджер підключиться, щойно буде онлайн.\n'
+        )
+        return intro + (
             '👋 Як можу допомогти на старті?\n'
             'Напишіть одним реченням, що для вас зараз головне: програма, ціна, дати, доїзд чи безпека.'
         )
@@ -157,6 +175,7 @@ class MailChannel(models.Model):
         return self._omni_livechat_contact_prompt_text_lang(is_pl=False)
 
     def _omni_livechat_contact_prompt_text_lang(self, is_pl=False):
+        manager_name = self._omni_livechat_online_manager_name()
         privacy_url = (
             self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.legal_privacy_url')
             or ''
@@ -167,6 +186,8 @@ class MailChannel(models.Model):
                 privacy_url = '%s/privacy-policy' % base_url
         if is_pl:
             base = (
+                ('🟢 Twój manager na czacie: %s.\n' % manager_name) if manager_name else ''
+            ) + (
                 '📞 Aby manager mógł się z Tobą skontaktować, zostaw proszę telefon lub email.\n'
                 '✉️ Przykład: +48 500 600 700 lub rodzic@email.com\n'
                 '🛡️ Wysyłając kontakt, zgadzasz się na przetwarzanie danych w celu doboru obozu.'
@@ -175,6 +196,8 @@ class MailChannel(models.Model):
                 base += '\n🔐 RODO / Polityka prywatności: %s' % privacy_url
             return base
         base = (
+            ('🟢 Ваш менеджер у чаті: %s.\n' % manager_name) if manager_name else ''
+        ) + (
             '📞 Щоб менеджер міг звʼязатися з вами, залиште, будь ласка, телефон або email.\n'
             '✉️ Приклад: +380 67 123 45 67 або parent@email.com\n'
             '🛡️ Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
@@ -247,6 +270,23 @@ class MailChannel(models.Model):
         if len(name) < 2:
             return True
         return False
+
+    def _omni_resolve_livechat_customer_partner(self, message):
+        """Resolve a stable customer partner for website livechat inbound."""
+        self.ensure_one()
+        sudo_channel = self.sudo()
+        author = message.author_id or sudo_channel.omni_customer_partner_id
+        if author:
+            return author.sudo()
+        guest = getattr(message, 'author_guest_id', False)
+        guest_name = (getattr(guest, 'name', '') or '').strip()
+        guest_name = re.sub(r'^(?:visitor|відвідувач)\s*#\d+\s*', '', guest_name, flags=re.IGNORECASE).strip()
+        partner = self.env['res.partner'].sudo().create({
+            'name': (guest_name or 'Гість сайту')[:80],
+            'comment': 'Auto-created from website livechat guest inbound.',
+        })
+        sudo_channel.write({'omni_customer_partner_id': partner.id})
+        return partner
 
     def _omni_refresh_livechat_contact_identity(self, author):
         author = author.sudo()
@@ -513,7 +553,7 @@ class MailChannel(models.Model):
             return
         if message.subtype_id and getattr(message.subtype_id, 'internal', False):
             return
-        author = message.author_id or sudo_channel.omni_customer_partner_id
+        author = self._omni_resolve_livechat_customer_partner(message)
         odoobot = self.env.ref('base.partner_root')
         if author == odoobot:
             return
@@ -558,10 +598,6 @@ class MailChannel(models.Model):
                 reason='🧑‍💼 Клієнт попросив менеджера у live chat',
             )
             return
-        if not author:
-            # Guest visitor messages can come without author_id.
-            # Keep AI dialog working; partner enrichment will be skipped.
-            author = self.env.ref('base.public_partner')
         author_adm = author.sudo() if author else author
         if not sudo_channel.omni_last_customer_inbound_at:
             self.env['omni.notify'].sudo().notify_new_thread(
@@ -579,7 +615,8 @@ class MailChannel(models.Model):
                 'omni_bot_pause_reason': False,
             })
         # Website visitor message -> same AI queue and sales/memory pipeline.
-        sudo_channel.write({'omni_customer_partner_id': author.id})
+        if author:
+            sudo_channel.write({'omni_customer_partner_id': author.id})
         self.env['omni.sales.intel'].sudo().omni_apply_inbound_triggers(
             channel=sudo_channel,
             partner=author_adm,

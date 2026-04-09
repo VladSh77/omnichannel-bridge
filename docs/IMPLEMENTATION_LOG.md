@@ -1,5 +1,63 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Launch readiness pack: UX, language, manager presence, knowledge sync
+
+### Scope
+
+- Added dedicated restricted analytics contour for client behavior insights:
+  - new security group for access,
+  - settings-managed user list for access delegation,
+  - menu/action visibility restricted to approved users.
+- Renamed Operations menu entry to sales-friendly wording:
+  - `Інсайти клієнта` / `Інсайти клієнта для продажів`.
+- Livechat reliability and UX hardening:
+  - fixed runtime error in AI chunk splitter (`import re`),
+  - added livechat pacing between chunks (prevents “all at once” packet feel),
+  - added weather-intent contextual response branch for short user intents,
+  - fixed HTML legal-links rendering for website chat (plain URLs in livechat),
+  - fixed guest/customer attribution by creating stable partner for guest inbound,
+  - fixed bot identity resolution (stable bot partner),
+  - fixed repeated ack/fallback loop by writing `omni_last_bot_reply_at` after bot send.
+- Manager availability routing:
+  - added settings pool for manager queue participation,
+  - assignment now prefers online users from configured pool with round-robin,
+  - livechat first greeting now shows currently available manager name when online.
+- Localization baseline uplift:
+  - CRM analytics UI switched to Ukrainian source labels,
+  - added Polish translation file `i18n/pl.po`,
+  - documented UA/PL as working UI languages (EN fallback).
+- Knowledge base enrichment before ad launch:
+  - generator upgraded to include company/legal/insurance/add-ons/common FAQ static sources from `camp/knowledge-base`,
+  - regenerated `omni_camp_knowledge_articles.xml` to 29 records.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/security/omni_security.xml` (new)
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/views/omni_conversation_audit_views.xml`
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/mail_channel.py`
+- `addons/omnichannel_bridge/models/omni_notify.py`
+- `addons/omnichannel_bridge/models/omni_crm_analytics.py`
+- `addons/omnichannel_bridge/views/omni_crm_analytics_views.xml`
+- `addons/omnichannel_bridge/i18n/pl.po` (new)
+- `scripts/generate_camp_knowledge_data.py`
+- `addons/omnichannel_bridge/data/omni_camp_knowledge_articles.xml` (regenerated)
+- `docs/TZ_CHECKLIST.md`
+- `README.md`
+- `addons/omnichannel_bridge/__manifest__.py`
+
+### Deployment notes
+
+- Module version advanced through iterative fixes to `17.0.1.0.16`.
+- Required rollout order remains strict:
+  1. local changes,
+  2. git commit + push,
+  3. server pull + `-u omnichannel_bridge` + restart,
+  4. runtime smoke on livechat + Telegram test bot.
+
 ## 2026-04-09 — Fix `res.config.settings`: `config_parameter` fields must be `Char`, not `Text`
 
 ### Scope

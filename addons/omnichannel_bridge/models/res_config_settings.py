@@ -7,6 +7,12 @@ from odoo import fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
+    omnichannel_client_pain_admin_user_ids = fields.Many2many(
+        'res.users',
+        string='Client Pain module access users',
+        help='Only these users can view Client Pain reports and weekly conversation audits.',
+    )
+
     omnichannel_new_contact_as_lead = fields.Boolean(
         string='Create CRM opportunity for new chat contacts',
         config_parameter='omnichannel_bridge.new_contact_as_lead',
@@ -404,6 +410,11 @@ class ResConfigSettings(models.TransientModel):
         string='Default manager user (handoff owner)',
         config_parameter='omnichannel_bridge.default_manager_user_id',
     )
+    omnichannel_assignment_manager_user_ids = fields.Many2many(
+        'res.users',
+        string='Manager queue pool (online routing)',
+        help='Only these managers are eligible for live queue routing. Assignment goes to online users only.',
+    )
     omnichannel_internal_notify_email_manager = fields.Boolean(
         string='Also send manager email on escalation/priority',
         config_parameter='omnichannel_bridge.internal_notify_email_manager',
@@ -512,8 +523,32 @@ class ResConfigSettings(models.TransientModel):
             categ_ids = [int(x) for x in json.loads(raw or '[]') if int(x) > 0]
         except Exception:
             categ_ids = []
+        raw_pain_users = icp.get_param('omnichannel_bridge.client_pain_admin_user_ids', '[]')
+        try:
+            pain_user_ids = [int(x) for x in json.loads(raw_pain_users or '[]') if int(x) > 0]
+        except Exception:
+            pain_user_ids = []
+        raw_manager_pool = icp.get_param('omnichannel_bridge.assignment_manager_user_ids', '[]')
+        try:
+            manager_pool_ids = [int(x) for x in json.loads(raw_manager_pool or '[]') if int(x) > 0]
+        except Exception:
+            manager_pool_ids = []
+        if not pain_user_ids:
+            default_user = self.env['res.users'].sudo().search([
+                '|',
+                ('login', '=', 'admin@campscout.eu'),
+                ('email', '=', 'admin@campscout.eu'),
+            ], limit=1)
+            if default_user:
+                pain_user_ids = [default_user.id]
+                icp.set_param('omnichannel_bridge.client_pain_admin_user_ids', json.dumps(pain_user_ids))
+                group = self.env.ref('omnichannel_bridge.group_omni_client_pain_admin', raise_if_not_found=False)
+                if group:
+                    group.sudo().write({'users': [(6, 0, pain_user_ids)]})
         res.update({
             'omnichannel_coupon_allowed_categ_ids': [(6, 0, categ_ids)],
+            'omnichannel_client_pain_admin_user_ids': [(6, 0, pain_user_ids)],
+            'omnichannel_assignment_manager_user_ids': [(6, 0, manager_pool_ids)],
         })
         return res
 
@@ -536,6 +571,21 @@ class ResConfigSettings(models.TransientModel):
         for settings in self:
             ids_payload = json.dumps(settings.omnichannel_coupon_allowed_categ_ids.ids or [])
             icp.set_param('omnichannel_bridge.coupon_allowed_categ_ids', ids_payload)
+            pain_ids = settings.omnichannel_client_pain_admin_user_ids.ids or []
+            if not pain_ids:
+                default_user = self.env['res.users'].sudo().search([
+                    '|',
+                    ('login', '=', 'admin@campscout.eu'),
+                    ('email', '=', 'admin@campscout.eu'),
+                ], limit=1)
+                if default_user:
+                    pain_ids = [default_user.id]
+            icp.set_param('omnichannel_bridge.client_pain_admin_user_ids', json.dumps(pain_ids))
+            group = self.env.ref('omnichannel_bridge.group_omni_client_pain_admin', raise_if_not_found=False)
+            if group:
+                group.sudo().write({'users': [(6, 0, pain_ids)]})
+            manager_pool_payload = json.dumps(settings.omnichannel_assignment_manager_user_ids.ids or [])
+            icp.set_param('omnichannel_bridge.assignment_manager_user_ids', manager_pool_payload)
         after = {k: (icp.get_param(k, '') or '') for k in tracked_keys}
         Audit = self.env['omni.prompt.audit'].sudo()
         for key in tracked_keys:

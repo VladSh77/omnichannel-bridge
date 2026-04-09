@@ -11,38 +11,44 @@ _OBJECTION_RE = re.compile(r'objection_detected:\s*([a-z_]+)', re.IGNORECASE)
 
 class OmniCrmAnalyticsWizard(models.TransientModel):
     _name = 'omni.crm.analytics.wizard'
-    _description = 'Omnichannel CRM analytics'
+    _description = 'Омніканальна CRM-аналітика'
 
     date_from = fields.Date(
+        string='Дата від',
         required=True,
         default=lambda self: fields.Date.context_today(self) - timedelta(days=30),
     )
     date_to = fields.Date(
+        string='Дата до',
         required=True,
         default=lambda self: fields.Date.context_today(self),
     )
-    total_threads = fields.Integer(readonly=True)
-    total_leads = fields.Integer(readonly=True)
-    handoff_threads = fields.Integer(readonly=True)
-    avg_response_seconds = fields.Float(readonly=True, digits=(16, 2))
-    objection_events = fields.Integer(readonly=True)
-    purchase_intent_events = fields.Integer(readonly=True)
-    bot_reply_threads = fields.Integer(readonly=True)
-    human_reply_threads = fields.Integer(readonly=True)
-    mixed_reply_threads = fields.Integer(readonly=True)
-    objection_to_intent_percent = fields.Float(readonly=True, digits=(16, 2))
-    tg_new_contacts = fields.Integer(readonly=True)
-    coupon_redemptions_count = fields.Integer(readonly=True)
-    coupon_discount_total = fields.Float(readonly=True, digits=(16, 2))
-    coupon_orders_revenue = fields.Float(readonly=True, digits=(16, 2))
-    ad_spend_amount = fields.Float(digits=(16, 2))
-    romi_percent = fields.Float(readonly=True, digits=(16, 2))
-    meta_goal_leads = fields.Integer()
-    meta_goal_purchases = fields.Integer()
-    meta_leads_fact = fields.Integer(readonly=True)
-    meta_purchases_fact = fields.Integer(readonly=True)
-    meta_goal_leads_achievement_percent = fields.Float(readonly=True, digits=(16, 2))
-    meta_goal_purchases_achievement_percent = fields.Float(readonly=True, digits=(16, 2))
+    total_threads = fields.Integer(string='Всього тредів', readonly=True)
+    total_leads = fields.Integer(string='Всього лідів', readonly=True)
+    handoff_threads = fields.Integer(string='Треди з передачею менеджеру', readonly=True)
+    avg_response_seconds = fields.Float(string='Середній час відповіді (сек)', readonly=True, digits=(16, 2))
+    objection_events = fields.Integer(string='Події заперечень', readonly=True)
+    purchase_intent_events = fields.Integer(string='Події наміру купівлі', readonly=True)
+    bot_reply_threads = fields.Integer(string='Треди, де відповідав бот', readonly=True)
+    human_reply_threads = fields.Integer(string='Треди, де відповідав менеджер', readonly=True)
+    mixed_reply_threads = fields.Integer(string='Змішані треди (бот + менеджер)', readonly=True)
+    objection_to_intent_percent = fields.Float(string='Конверсія заперечення -> намір (%)', readonly=True, digits=(16, 2))
+    tg_new_contacts = fields.Integer(string='Нові Telegram-контакти', readonly=True)
+    coupon_redemptions_count = fields.Integer(string='Погашення купонів (к-сть)', readonly=True)
+    coupon_discount_total = fields.Float(string='Сума знижок за купонами', readonly=True, digits=(16, 2))
+    coupon_orders_revenue = fields.Float(string='Виручка замовлень з купонами', readonly=True, digits=(16, 2))
+    ad_spend_amount = fields.Float(string='Витрати на рекламу', digits=(16, 2))
+    romi_percent = fields.Float(string='ROMI (%)', readonly=True, digits=(16, 2))
+    meta_goal_leads = fields.Integer(string='Ціль Meta: ліди')
+    meta_goal_purchases = fields.Integer(string='Ціль Meta: покупки')
+    meta_leads_fact = fields.Integer(string='Факт Meta: ліди', readonly=True)
+    meta_purchases_fact = fields.Integer(string='Факт Meta: покупки', readonly=True)
+    meta_goal_leads_achievement_percent = fields.Float(
+        string='Виконання цілі Meta (ліди, %)', readonly=True, digits=(16, 2)
+    )
+    meta_goal_purchases_achievement_percent = fields.Float(
+        string='Виконання цілі Meta (покупки, %)', readonly=True, digits=(16, 2)
+    )
     line_ids = fields.One2many(
         'omni.crm.analytics.wizard.line',
         'wizard_id',
@@ -209,49 +215,49 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
         line_vals.append((0, 0, {
             'section': 'campaign',
             'key': 'telegram_new_contacts',
-            'label': 'Telegram new contacts',
+            'label': 'Нові Telegram-контакти',
             'count': self.tg_new_contacts,
         }))
         line_vals.append((0, 0, {
             'section': 'campaign',
             'key': 'coupon_redemptions',
-            'label': 'Coupon redemptions',
+            'label': 'Погашення купонів',
             'count': self.coupon_redemptions_count,
         }))
         line_vals.append((0, 0, {
             'section': 'objection',
             'key': 'objection_to_intent_percent',
-            'label': 'Objection to intent conversion %',
+            'label': 'Конверсія заперечення -> намір (%)',
             'count': int(self.objection_to_intent_percent),
         }))
         line_vals.append((0, 0, {
             'section': 'campaign',
             'key': 'meta_leads_fact',
-            'label': 'Meta leads fact',
+            'label': 'Факт Meta: ліди',
             'count': self.meta_leads_fact,
         }))
         line_vals.append((0, 0, {
             'section': 'campaign',
             'key': 'meta_purchases_fact',
-            'label': 'Meta purchases fact',
+            'label': 'Факт Meta: покупки',
             'count': self.meta_purchases_fact,
         }))
         line_vals.append((0, 0, {
             'section': 'reply_owner',
             'key': 'bot_only_threads',
-            'label': 'Bot-only replied threads',
+            'label': 'Треди лише з відповіддю бота',
             'count': self.bot_reply_threads,
         }))
         line_vals.append((0, 0, {
             'section': 'reply_owner',
             'key': 'human_only_threads',
-            'label': 'Manager-only replied threads',
+            'label': 'Треди лише з відповіддю менеджера',
             'count': self.human_reply_threads,
         }))
         line_vals.append((0, 0, {
             'section': 'reply_owner',
             'key': 'mixed_threads',
-            'label': 'Mixed bot+manager replied threads',
+            'label': 'Змішані треди (бот + менеджер)',
             'count': self.mixed_reply_threads,
         }))
         self.line_ids.unlink()
@@ -267,19 +273,20 @@ class OmniCrmAnalyticsWizard(models.TransientModel):
 
 class OmniCrmAnalyticsWizardLine(models.TransientModel):
     _name = 'omni.crm.analytics.wizard.line'
-    _description = 'Omnichannel CRM analytics line'
+    _description = 'Рядок омніканальної CRM-аналітики'
 
     wizard_id = fields.Many2one('omni.crm.analytics.wizard', required=True, ondelete='cascade')
     section = fields.Selection(
         selection=[
-            ('provider', 'By Provider'),
-            ('stage', 'By Sales Stage'),
-            ('objection', 'By Objection Type'),
-            ('campaign', 'Campaign Metrics'),
-            ('reply_owner', 'By Reply Owner'),
+            ('provider', 'За каналом'),
+            ('stage', 'За етапом продажу'),
+            ('objection', 'За типом заперечення'),
+            ('campaign', 'Метрики кампанії'),
+            ('reply_owner', 'За власником відповіді'),
         ],
+        string='Секція',
         required=True,
     )
-    key = fields.Char(required=True)
-    label = fields.Char(required=True)
-    count = fields.Integer(required=True)
+    key = fields.Char(string='Ключ', required=True)
+    label = fields.Char(string='Показник', required=True)
+    count = fields.Integer(string='Кількість', required=True)

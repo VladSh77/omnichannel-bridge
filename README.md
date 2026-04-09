@@ -69,6 +69,23 @@ Fajna/
 - Backup route: **SendPulse as bridge** only if direct delivery fails release criteria for a wave.
 - Migration rule: preserve compatibility mapping for SendPulse fields (`contact_id`, phone, email, avatar, language, profile URL) to enable fast fallback without redesign.
 
+## Мовна політика модуля (UA/PL)
+
+- Робочі мови інтерфейсу для команди: **українська** та **польська**.
+- Англійська лишається технічним fallback для рядків без перекладу.
+- Після оновлень модуля обов'язково:
+  1. `-u omnichannel_bridge`
+  2. оновлення перекладів (`uk_UA`, `pl_PL`) в Odoo.
+- Для чат-відповідей клієнтам діє runtime-політика: UA/PL за мовою звернення; російська для відповідей не використовується.
+
+## Останні зміни перед launch
+
+- Окремий контур `Інсайти клієнта` з керованим доступом (тільки обрані користувачі).
+- Livechat стабілізація: anti-loop, коректна атрибуція автора (guest/customer/bot), mobile chunking + pacing.
+- Додано online-routing менеджерів: queue pool + round-robin тільки по `online`.
+- В перших повідомленнях livechat показується доступний онлайн-менеджер (якщо є).
+- Базу знань розширено з `camp` repo: компанія, гарантії, страхування, add-ons, RODO/contract/policies + картки таборів.
+
 ## Документація для команди
 
 | Документ | Призначення |

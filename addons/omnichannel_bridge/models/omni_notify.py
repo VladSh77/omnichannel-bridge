@@ -362,11 +362,33 @@ class OmniNotify(models.AbstractModel):
 
     def _default_manager_user(self):
         ICP = self.env['ir.config_parameter'].sudo()
+        manager = self._pick_next_online_manager_user()
+        if manager:
+            return manager
         user_id_raw = (ICP.get_param('omnichannel_bridge.default_manager_user_id') or '').strip()
         if not user_id_raw.isdigit():
-            return self._pick_online_manager_user()
+            return self.env['res.users']
         user = self.env['res.users'].sudo().browse(int(user_id_raw))
-        return user if user.exists() else self._pick_online_manager_user()
+        if not user.exists():
+            return self.env['res.users']
+        return user if user.im_status == 'online' else self.env['res.users']
+
+    def _manager_pool_users(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        raw = (ICP.get_param('omnichannel_bridge.assignment_manager_user_ids', '[]') or '[]').strip()
+        ids = []
+        try:
+            import json
+            ids = [int(x) for x in json.loads(raw or '[]') if int(x) > 0]
+        except Exception:
+            ids = []
+        if not ids:
+            return self.env['res.users']
+        return self.env['res.users'].sudo().search([
+            ('id', 'in', ids),
+            ('share', '=', False),
+            ('active', '=', True),
+        ], order='id asc')
 
     def _pick_online_manager_user(self):
         users = self.env['res.users'].sudo().search([
@@ -375,6 +397,44 @@ class OmniNotify(models.AbstractModel):
             ('im_status', '=', 'online'),
         ], limit=1)
         return users[:1] if users else self.env['res.users']
+
+    def _pick_next_online_manager_user(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        pool = self._manager_pool_users()
+        if pool:
+            online = pool.filtered(lambda u: u.im_status == 'online')
+        else:
+            online = self.env['res.users']
+        if not online:
+            online = self.env['res.users'].sudo().search([
+                ('share', '=', False),
+                ('active', '=', True),
+                ('im_status', '=', 'online'),
+            ], order='id asc')
+        if not online:
+            return self.env['res.users']
+        ids = sorted(online.ids)
+        last_raw = (ICP.get_param('omnichannel_bridge.manager_rr_last_user_id') or '').strip()
+        last_id = int(last_raw) if last_raw.isdigit() else 0
+        chosen_id = ids[0]
+        for uid in ids:
+            if uid > last_id:
+                chosen_id = uid
+                break
+        ICP.set_param('omnichannel_bridge.manager_rr_last_user_id', str(chosen_id))
+        return self.env['res.users'].sudo().browse(chosen_id)
+
+    def _peek_online_manager_user(self):
+        """Read-only online manager lookup for UI greetings."""
+        pool = self._manager_pool_users()
+        online = pool.filtered(lambda u: u.im_status == 'online') if pool else self.env['res.users']
+        if not online:
+            online = self.env['res.users'].sudo().search([
+                ('share', '=', False),
+                ('active', '=', True),
+                ('im_status', '=', 'online'),
+            ], order='id asc', limit=1)
+        return online[:1] if online else self.env['res.users']
 
     def _notify_manager_direct(self, channel, partner, subject, summary):
         manager = self._default_manager_user()

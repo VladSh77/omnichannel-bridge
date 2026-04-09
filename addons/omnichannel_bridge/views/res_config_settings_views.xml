@@ -172,6 +172,9 @@
                         <setting string="Default manager user" help="Used as handoff owner for direct assignment and activities on priority events.">
                             <field name="omnichannel_default_manager_user_id"/>
                         </setting>
+                        <setting string="Manager queue pool (online only)" help="Only selected managers participate in chat queue. New handoffs are assigned round-robin among online users.">
+                            <field name="omnichannel_assignment_manager_user_ids" widget="many2many_tags"/>
+                        </setting>
                         <setting string="Send manager email on priority events">
                             <field name="omnichannel_internal_notify_email_manager"/>
                         </setting>
@@ -323,6 +326,11 @@
                         </setting>
                         <setting string="FOMO manager internal notify">
                             <field name="omnichannel_fomo_internal_notify"/>
+                        </setting>
+                    </block>
+                    <block title="Болі клієнта (доступ до звітів)" name="omnichannel_block_client_pain_access">
+                        <setting string="Users allowed to open Client Pain reports" help="Only selected users will have access to Client Pain reports and weekly conversation audits.">
+                            <field name="omnichannel_client_pain_admin_user_ids" widget="many2many_tags"/>
                         </setting>
                     </block>
                 </app>

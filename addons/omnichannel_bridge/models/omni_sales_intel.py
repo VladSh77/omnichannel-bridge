@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
+from collections import Counter
+from datetime import timedelta
 
 from odoo import _, api, fields, models
 
@@ -194,6 +196,60 @@ class OmniSalesIntel(models.AbstractModel):
             '- Offer at most one relevant add-on/upgrade after core fit is confirmed.\n'
             '- Keep non-aggressive wording and provide manager help option.'
         )
+
+    @api.model
+    def omni_behavioral_coaching_block(self, lookback_days=28):
+        """Inject recent sales-psychology signals into AI prompt."""
+        if 'omni.conversation.audit' not in self.env:
+            return ''
+        cutoff = fields.Datetime.now() - timedelta(days=max(1, int(lookback_days or 28)))
+        audits = self.env['omni.conversation.audit'].sudo().search(
+            [('run_at', '>=', cutoff)],
+            order='run_at desc',
+            limit=8,
+        )
+        if not audits:
+            return ''
+
+        behavior_counts = Counter()
+        manager_error_counts = Counter()
+        silence_counts = Counter()
+        for audit in audits:
+            for line in audit.line_ids:
+                if line.section == 'behavior':
+                    behavior_counts[line.key] += line.count
+                elif line.section == 'manager_error':
+                    manager_error_counts[line.key] += line.count
+                elif line.section == 'silence':
+                    silence_counts[line.key] += line.count
+
+        if not behavior_counts and not manager_error_counts and not silence_counts:
+            return ''
+
+        playbook = {
+            'price_expensive': '- If price objection appears: ask budget corridor and offer one best-fit option.',
+            'think_later': '- If client says "later": set a gentle follow-up checkpoint and ask one blocker question.',
+            'self_followup': '- If client says "I will write myself": confirm and schedule one light reminder only.',
+            'need_family_consult': '- If family approval is needed: give a concise 3-point summary for forwarding.',
+            'ask_children_first': '- If child decision pending: ask when to reconnect and keep message pressure-free.',
+            'distance_far': '- If distance/logistics concern: answer transport plan first, before upsell topics.',
+            'silence_wording': '- If "not now/not relevant": respect pause and avoid aggressive next-step push.',
+        }
+        lines = ['BEHAVIORAL_COACHING (recent real dialogs):']
+        for key, count in behavior_counts.most_common(5):
+            guidance = playbook.get(key, '- %s: keep reply concise and propose one clear next step.' % key)
+            lines.append('%s [seen %s]' % (guidance, count))
+        if manager_error_counts:
+            lines.append(
+                '- Manager errors observed (%s): AI should bridge with clear interim guidance and handoff CTA.'
+                % sum(manager_error_counts.values())
+            )
+        if silence_counts:
+            lines.append(
+                '- Silence patterns observed (%s): end replies with one simple CTA and low-friction follow-up option.'
+                % sum(silence_counts.values())
+            )
+        return '\n'.join(lines)
 
     @api.model
     def _omni_notify_fomo_hot_lead(self, channel, partner, fomo_line):

@@ -4,7 +4,7 @@
         <field name="name">omni.crm.analytics.wizard.line.tree</field>
         <field name="model">omni.crm.analytics.wizard.line</field>
         <field name="arch" type="xml">
-            <tree string="Analytics Breakdown" create="false" delete="false">
+            <tree string="Деталізація аналітики" create="false" delete="false">
                 <field name="section"/>
                 <field name="label"/>
                 <field name="count"/>
@@ -16,9 +16,9 @@
         <field name="name">omni.crm.analytics.wizard.form</field>
         <field name="model">omni.crm.analytics.wizard</field>
         <field name="arch" type="xml">
-            <form string="CRM Analytics" create="true" edit="true">
+            <form string="CRM-аналітика" create="true" edit="true">
                 <header>
-                    <button name="action_refresh" type="object" string="Refresh metrics" class="btn-primary"/>
+                    <button name="action_refresh" type="object" string="Оновити метрики" class="btn-primary"/>
                 </header>
                 <sheet>
                     <group>
@@ -27,7 +27,7 @@
                             <field name="date_to"/>
                         </group>
                     </group>
-                    <group string="Key Metrics">
+                    <group string="Ключові метрики">
                         <group>
                             <field name="total_threads" readonly="1"/>
                             <field name="total_leads" readonly="1"/>
@@ -42,14 +42,14 @@
                             <field name="coupon_redemptions_count" readonly="1"/>
                         </group>
                     </group>
-                    <group string="Reply Ownership">
+                    <group string="Власність відповіді">
                         <group>
                             <field name="bot_reply_threads" readonly="1"/>
                             <field name="human_reply_threads" readonly="1"/>
                             <field name="mixed_reply_threads" readonly="1"/>
                         </group>
                     </group>
-                    <group string="Campaign / ROMI">
+                    <group string="Кампанії / ROMI">
                         <group>
                             <field name="coupon_discount_total" readonly="1"/>
                             <field name="coupon_orders_revenue" readonly="1"/>
@@ -65,7 +65,7 @@
                             <field name="meta_goal_purchases_achievement_percent" readonly="1"/>
                         </group>
                     </group>
-                    <group string="Breakdown">
+                    <group string="Деталізація">
                         <field name="line_ids" readonly="1" nolabel="1"/>
                     </group>
                 </sheet>
@@ -74,7 +74,7 @@
     </record>
 
     <record id="action_omni_crm_analytics_wizard" model="ir.actions.act_window">
-        <field name="name">CRM Analytics</field>
+        <field name="name">CRM-аналітика</field>
         <field name="res_model">omni.crm.analytics.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">current</field>

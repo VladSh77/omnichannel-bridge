@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_conversation_audit_tree" model="ir.ui.view">
+        <field name="name">omni.conversation.audit.tree</field>
+        <field name="model">omni.conversation.audit</field>
+        <field name="arch" type="xml">
+            <tree string="Weekly Conversation Audits" create="false">
+                <field name="run_at"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="total_threads"/>
+                <field name="behavior_hits"/>
+                <field name="client_silence_threads"/>
+                <field name="manager_slow_reply_threads"/>
+                <field name="manager_missing_reply_threads"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_conversation_audit_line_tree" model="ir.ui.view">
+        <field name="name">omni.conversation.audit.line.tree</field>
+        <field name="model">omni.conversation.audit.line</field>
+        <field name="arch" type="xml">
+            <tree string="Audit lines" create="false" delete="false" edit="false">
+                <field name="section"/>
+                <field name="label"/>
+                <field name="count"/>
+                <field name="sample_channel_id"/>
+                <field name="sample_text"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_omni_conversation_audit_form" model="ir.ui.view">
+        <field name="name">omni.conversation.audit.form</field>
+        <field name="model">omni.conversation.audit</field>
+        <field name="arch" type="xml">
+            <form string="Weekly Conversation Audit" create="false">
+                <header>
+                    <button name="action_refresh" type="object" string="Recompute" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="run_at"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="total_threads"/>
+                            <field name="total_customer_messages"/>
+                            <field name="behavior_hits"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="client_silence_threads"/>
+                            <field name="delayed_client_reply_threads"/>
+                        </group>
+                        <group>
+                            <field name="manager_slow_reply_threads"/>
+                            <field name="manager_missing_reply_threads"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note"/>
+                    </group>
+                    <notebook>
+                        <page string="Findings">
+                            <field name="line_ids" nolabel="1" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_conversation_audit" model="ir.actions.act_window">
+        <field name="name">Інсайти клієнта для продажів</field>
+        <field name="res_model">omni.conversation.audit</field>
+        <field name="view_mode">list,form</field>
+        <field name="groups_id" eval="[(4, ref('omnichannel_bridge.group_omni_client_pain_admin'))]"/>
+    </record>
+
+    <menuitem
+        id="menu_omni_conversation_audit"
+        name="Інсайти клієнта"
+        parent="menu_omni_ops_root"
+        action="action_omni_conversation_audit"
+        sequence="32"
+        groups="omnichannel_bridge.group_omni_client_pain_admin"
+    />
+</odoo>

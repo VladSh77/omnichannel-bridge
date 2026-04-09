@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import re
 import time
 from datetime import datetime, timedelta, time as time_cls
 
@@ -199,6 +200,10 @@ class OmniAi(models.AbstractModel):
                 subtype_xmlid='mail.mt_note',
             )
             return
+        if self._omni_is_weather_message(normalized):
+            self._omni_post_bot_message(channel, self._omni_weather_to_camp_reply(normalized))
+            self._omni_update_sales_stage_after_reply(partner, channel=channel)
+            return
         if not self._omni_is_camp_scope_message(normalized):
             self._omni_send_out_of_scope_reply(channel)
             self._omni_set_sales_stage(partner, 'handoff', channel, 'out_of_scope')
@@ -240,6 +245,7 @@ class OmniAi(models.AbstractModel):
         objection_next_step = self.env['omni.sales.intel'].sudo().omni_objection_next_step_block(normalized)
         pain_script = self.env['omni.sales.intel'].sudo().omni_pain_script_block()
         upsell_script = self.env['omni.sales.intel'].sudo().omni_upsell_script_block()
+        behavioral_coaching = self.env['omni.sales.intel'].sudo().omni_behavioral_coaching_block()
         system_parts = [base_system]
         if strict:
             system_parts.append(_STRICT_POLICY_UK)
@@ -252,6 +258,8 @@ class OmniAi(models.AbstractModel):
             system_parts.append(pain_script)
         if upsell_script:
             system_parts.append(upsell_script)
+        if behavioral_coaching:
+            system_parts.append(behavioral_coaching)
         system_parts.append(self._omni_warm_style_policy())
         system_parts.append(self._omni_reply_language_instruction(normalized, channel=channel))
         system_parts.append(facts)
@@ -288,7 +296,10 @@ class OmniAi(models.AbstractModel):
             'STYLE_POLICY:\n'
             '- Warm, respectful, premium communication for parents.\n'
             '- No aggressive urgency, no pressure tactics.\n'
-            '- Keep concise, helpful, and factual.'
+            '- Keep concise, helpful, and factual.\n'
+            '- Mobile-first: one short paragraph, no long walls of text.\n'
+            '- Ask at most one question per reply.\n'
+            '- If more details are needed, continue step-by-step in next turns.'
         )
 
     def _omni_coupon_meta_offer_text(self):
@@ -471,6 +482,24 @@ class OmniAi(models.AbstractModel):
             'ℹ️ Коротко про дані: натискаючи "надіслати", ви погоджуєтесь на обробку контактних даних '
             'для підбору табору та звʼязку з менеджером.'
         )
+        if channel._omni_is_website_livechat_channel():
+            # Plain URLs render reliably in website chat bubbles and avoid broken HTML when chunked.
+            return (
+                '%(consent)s\n'
+                'Відповідає юридична особа: %(legal_name)s.\n'
+                'Політики:\n'
+                'Privacy: %(privacy)s\n'
+                'Terms: %(terms)s\n'
+                'Cookies: %(cookie)s\n'
+                'Child protection: %(child)s'
+            ) % {
+                'consent': consent_line,
+                'legal_name': legal_name,
+                'privacy': privacy_url,
+                'terms': terms_url,
+                'cookie': cookie_url,
+                'child': child_url,
+            }
         return (
             '%(consent)s\n'
             'Відповідає юридична особа: %(legal_name)s.\n'
@@ -488,22 +517,117 @@ class OmniAi(models.AbstractModel):
             'child': child_url,
         }
 
+    def _omni_max_message_len(self, channel):
+        channel = channel.sudo()
+        provider = channel.omni_provider or 'site_livechat'
+        # Operational caps are intentionally far below platform hard limits.
+        # Goal: readable mobile bubbles across channels.
+        if provider in ('meta', 'whatsapp', 'twilio_whatsapp', 'viber'):
+            return 320
+        if provider == 'telegram':
+            return 500
+        return 360
+
+    def _omni_split_mobile_chunks(self, text, max_len):
+        txt = re.sub(r'\s+\n', '\n', re.sub(r'\n\s+', '\n', (text or '').strip()))
+        if len(txt) <= max_len:
+            return [txt] if txt else []
+        chunks = []
+        remaining = txt
+        while remaining:
+            if len(remaining) <= max_len:
+                chunks.append(remaining.strip())
+                break
+            cut = remaining.rfind('\n', 0, max_len + 1)
+            if cut < int(max_len * 0.55):
+                cut = remaining.rfind('. ', 0, max_len + 1)
+                if cut != -1:
+                    cut += 1
+            if cut < int(max_len * 0.45):
+                cut = max_len
+            piece = remaining[:cut].strip()
+            if piece:
+                chunks.append(piece)
+            remaining = remaining[cut:].strip()
+        return [c for c in chunks if c]
+
     def _omni_post_bot_message(self, channel, body):
         channel = channel.sudo()
+        bot_partner = self._omni_resolve_bot_partner()
         legal = self._omni_legal_notice_block(channel)
         final_body = (body or '').strip()
         if channel._omni_is_website_livechat_channel() and not final_body.startswith('🤖'):
             final_body = '🤖 %s' % final_body
-        if legal:
+        if legal and not channel.omni_legal_notice_sent_at:
             final_body = '%s\n\n%s' % (final_body, legal)
-        channel.with_context(omni_skip_livechat_inbound=True).message_post(
-            body=final_body,
-            message_type='comment',
-            subtype_xmlid='mail.mt_comment',
-            author_id=self.env.ref('base.partner_root').id,
-        )
+        max_len = self._omni_max_message_len(channel)
+        chunks = self._omni_split_mobile_chunks(final_body, max_len=max_len)
+        if not chunks:
+            return
+        is_livechat = channel._omni_is_website_livechat_channel()
+        if is_livechat:
+            # Tiny delay makes bot responses feel natural instead of instant packet bursts.
+            time.sleep(0.9)
+        for idx, chunk in enumerate(chunks):
+            channel.with_context(omni_skip_livechat_inbound=True).message_post(
+                body=chunk,
+                message_type='comment',
+                subtype_xmlid='mail.mt_comment',
+                author_id=bot_partner.id,
+            )
+            if is_livechat and idx < (len(chunks) - 1):
+                time.sleep(0.55)
+        channel.write({'omni_last_bot_reply_at': Datetime.now()})
         if legal and not channel.omni_legal_notice_sent_at:
             channel.write({'omni_legal_notice_sent_at': Datetime.now()})
+
+    def _omni_resolve_bot_partner(self):
+        """Use stable bot identity, not admin profile."""
+        icp = self.env['ir.config_parameter'].sudo()
+        pid_raw = icp.get_param('omnichannel_bridge.bot_partner_id', '')
+        pid = int(pid_raw) if str(pid_raw).isdigit() else 0
+        partner = self.env['res.partner'].sudo().browse(pid) if pid else self.env['res.partner']
+        if not partner or not partner.exists():
+            partner = self.env['res.partner'].sudo().search([('name', 'ilike', 'OdooBot')], limit=1)
+        if not partner or not partner.exists():
+            partner = self.env.ref('base.partner_root')
+        icp.set_param('omnichannel_bridge.bot_partner_id', str(partner.id))
+        return partner
+
+    def _omni_is_weather_message(self, user_text):
+        txt = (user_text or '').lower()
+        if not txt:
+            return False
+        weather_keys = (
+            'погод',
+            'погода',
+            'дощ',
+            'дощить',
+            'сонячно',
+            'спека',
+            'холодно',
+            'weather',
+            'forecast',
+            'rain',
+            'sunny',
+            'pogoda',
+            'deszcz',
+        )
+        return any(k in txt for k in weather_keys)
+
+    def _omni_weather_to_camp_reply(self, user_text):
+        is_pl = self._omni_is_polish_message(user_text or '')
+        if is_pl:
+            return (
+                'Pogoda jest ważna przy wyborze obozu — dobieramy program i wyposażenie do warunków, '
+                'aby dziecku było komfortowo i bezpiecznie.\n\n'
+                'Proszę podać wiek dziecka, a zaproponuję najlepszy format obozu.'
+            )
+        return (
+            'Сьогодні погода — якраз привід обрати табір правильно: підбираємо програму та формат так, '
+            'щоб дитині було комфортно і безпечно за будь-яких умов.\n\n'
+            'Підкажіть вік дитини, і я запропоную найкращі варіанти табору.'
+        )
 
     def _omni_is_sensitive_message(self, user_text):
         txt = (user_text or '').lower()
