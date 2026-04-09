@@ -1241,29 +1241,12 @@ class MailChannel(models.Model):
     @api.model
     def omni_action_open_client_from_panel(self, channel_id):
         """
-        Бічна панель Omnichannel: якщо вже є omni_customer_partner_id — відкрити картку
-        res.partner; інакше — майстер прив'язки. Контекст default_channel_id обов'язково
-        в action['context'] (with_context при _for_xml_id у веб-клієнт не потрапляє).
+        Старе ім'я RPC (до зміни панелі). Залишено навмисно: у браузері може жити
+        закешований `web.assets_backend`, який ще викликає цей метод. Раніше тут
+        відкривали `res.partner`, якщо партнер уже був — це суперечило картці розмови
+        і провокувало дублікати контактів. Єдиний коректний шлях — картка розмови.
         """
-        channel = self.sudo().browse(int(channel_id or 0))
-        if not channel or not channel.exists() or not channel.omni_provider:
-            return False
-        partner = channel.omni_customer_partner_id
-        if partner:
-            act = {
-                'type': 'ir.actions.act_window',
-                'res_model': 'res.partner',
-                'res_id': partner.id,
-                'view_mode': 'form',
-                'views': [(False, 'form')],
-                'target': 'new',
-            }
-            return ensure_act_window_views(act)
-        raw = self.env['ir.actions.act_window']._for_xml_id(
-            'omnichannel_bridge.action_omni_partner_bind_wizard'
-        )
-        act = merge_act_window_context(dict(raw), {'default_channel_id': channel.id})
-        return ensure_act_window_views(act)
+        return self.omni_action_open_conversation_card_from_panel(channel_id)
 
     @api.model
     def omni_action_bind_partner_wizard(self, channel_id):

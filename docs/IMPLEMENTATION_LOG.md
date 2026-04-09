@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Fix: stale RPC `omni_action_open_client_from_panel` opened `res.partner` (17.0.1.0.31)
+
+### Scope
+
+- **Помилка:** метод **`omni_action_open_client_from_panel`** при вже прив’язаному партнері відкривав форму **`res.partner`**. Закешований **`web.assets_backend`** міг продовжувати викликати саме цей RPC після зміни JS — тому в UI здавалося, що «стрілка» веде в контакт, хоча в репозиторії вже був новий виклик.
+- **Виправлення:** `omni_action_open_client_from_panel` лише **делегує** в **`omni_action_open_conversation_card_from_panel`**.
+- **Процес:** пункти ТЗ про UX не вважати «прийнято в експлуатації» без ручної перевірки після `-u` і оновлення assets; у `TZ_CHECKLIST` § 20.8.1 додано окремий `[ ]` на приймання на інстансі.
+
+### Verification
+
+- Contract test: наявність рядка делегування в `mail_channel.py`.
+
 ## 2026-04-09 — Conversation card + identity wizard (Discuss panel, anti-duplicate `res.partner`)
 
 ### Scope
