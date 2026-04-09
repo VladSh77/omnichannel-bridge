@@ -343,8 +343,9 @@ class ResConfigSettings(models.TransientModel):
         string='Token rotation owner',
         config_parameter='omnichannel_bridge.token_rotation_owner',
     )
-    omnichannel_token_rotation_next_date = fields.Date(
+    omnichannel_token_rotation_next_date = fields.Char(
         string='Token rotation next date',
+        help='Date in YYYY-MM-DD format.',
         config_parameter='omnichannel_bridge.token_rotation_next_date',
     )
     omnichannel_coupon_allowed_categ_ids = fields.Many2many(
