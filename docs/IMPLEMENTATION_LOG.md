@@ -1,5 +1,42 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — P1 production incident: campscout.eu `KeyError` for `omni.*` models (registry mismatch)
+
+### Summary (UA)
+
+Критичні збої на **campscout.eu**: при відкритті меню / RPC клієнт отримує `RPC_ERROR` → `KeyError: '<omni.*>'` у `request.env[model]` (`web/controllers/dataset.py`). Моделі **є в репозиторії**, але **процес Odoo на проді не реєструє** їх у registry: типово застарілий код на сервері, невідповідність addons-path, незавершений або провалений `-u omnichannel_bridge`, імпортний traceback при старті, або різні воркери з різним кодом.
+
+### Environment
+
+- **Site:** campscout.eu (Odoo 17, traceback path `/usr/lib/python3/dist-packages/odoo/...`).
+- **Severity:** **P1** — частина back-office меню omnichannel недоступна; каскад різних імен моделей і повторне `omni.legal.document` вказує на **нестабільне вирівнювання коду/БД/воркерів**, а не на точковий баг модуля в git.
+
+### Observed `KeyError` technical names (same incident class)
+
+- `omni.legal.document` (повторно)
+- `omni.insurance.package`
+- `omni.prompt.audit`
+- `omni.objection.policy`
+- `omni.manager.reply.template`
+- `omni.reserve.entry`
+- `omni.outbound.log`
+
+### Expected remediation (ops)
+
+1. Єдиний **addons-path** з `omnichannel_bridge` на **коміті `main`** (файли моделей на диску).
+2. **Повний рестарт** усіх воркерів Odoo; лог старту без `ImportError` по `omnichannel_bridge`.
+3. Успішний **`-u omnichannel_bridge`** на продакшн-БД.
+4. Перевірка: `scripts/odoo_runtime_smoke.py` → `run(env)` у `odoo shell` (тюпл `_REQUIRED_OMNI_MODELS`).
+
+### Repo mitigations (already on `main`)
+
+- `docs/OPERATIONS_RUNBOOK.md` — секція KeyError / registry.
+- `scripts/odoo_runtime_smoke.py` — `_REQUIRED_OMNI_MODELS` (повний перелік `omni.*` з аддона).
+
+### Status
+
+- **Production:** не закрито з боку репо; потрібне підтверджене серверне вирівнювання та upgrade (deployment law: після явного узгодження).
+
 ## 2026-04-09 — Smoke: full `_REQUIRED_OMNI_MODELS` registry loop (incl. objection policy)
 
 ### Scope
