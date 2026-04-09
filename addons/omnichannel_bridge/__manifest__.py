@@ -2,7 +2,7 @@
 {
     'name': 'Omnichannel Bridge',
     'summary': 'Aggregate messengers into Discuss; webhooks, CRM partner match, AI/sales hooks',
-    'version': '17.0.1.0.2',
+    'version': '17.0.1.0.3',
     'category': 'Productivity/Discuss',
     'author': 'Fajna',
     'license': 'LGPL-3',
@@ -17,6 +17,7 @@
     'data': [
         'security/ir.model.access.csv',
         'data/omni_defaults.xml',
+        'data/omni_camp_knowledge_articles.xml',
         'data/omni_ai_job_cron.xml',
         'views/omni_integration_views.xml',
         'views/omni_promo_views.xml',

@@ -215,6 +215,15 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('STAGING_RUNTIME_BOOTSTRAP.md', runbook)
         self.assertIn('PROD_LIVECHAT_SMOKE_2026-04-08.md', runbook)
 
+    def test_camp_knowledge_seed_data_linked_in_manifest(self):
+        manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
+        data = (ROOT / 'addons/omnichannel_bridge/data/omni_camp_knowledge_articles.xml').read_text(
+            encoding='utf-8'
+        )
+        self.assertIn('omni_camp_knowledge_articles.xml', manifest)
+        self.assertIn('omni_kb_camp_schedule_day', data)
+        self.assertIn('model="omni.knowledge.article"', data)
+
     def test_ukrainian_i18n_covers_main_omni_menus(self):
         po = (ROOT / 'addons/omnichannel_bridge/i18n/uk_UA.po').read_text(encoding='utf-8')
         self.assertIn('msgid "Integrations"', po)

@@ -1,5 +1,19 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Seed `omni.knowledge.article` from `camp/knowledge-base` (AI camp context)
+
+### Scope
+
+- Added `scripts/generate_camp_knowledge_data.py` to build `data/omni_camp_knowledge_articles.xml` from `camp/knowledge-base/00_schedule.md`, `00_camp_types.md`, and `camps/*.md` (dates, duration, program, FAQs).
+- Loaded via manifest (`noupdate="1"`) so the bot’s dynamic RAG can match user questions to camp facts; **authoritative prices/places remain on `product.template`** in Odoo.
+- Documented in `docs/OPERATIONS_RUNBOOK.md`.
+
+### Artifacts
+
+- `scripts/generate_camp_knowledge_data.py`
+- `addons/omnichannel_bridge/data/omni_camp_knowledge_articles.xml`
+- `tests/test_contract_regressions.py`
+
 ## 2026-04-09 — Ukrainian UI: `i18n/uk_UA.po` for omnichannel menus and actions
 
 ### Scope

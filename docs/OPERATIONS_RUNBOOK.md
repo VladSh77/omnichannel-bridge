@@ -1,5 +1,12 @@
 # Operations Runbook — `omnichannel_bridge`
 
+## Camp knowledge articles (AI RAG) vs product catalog
+
+- **Prices and free places** for autoreplies come from Odoo **`product.template`** / events (`omni.knowledge.omni_catalog_context_for_llm`), not from the `camp` git repo.
+- **Descriptive camp cards** (dates, duration, program text) are synced into **`omni.knowledge.article`** via generated data:
+  - Source: sibling repo `camp/knowledge-base` (markdown).
+  - Regenerate: `python3 scripts/generate_camp_knowledge_data.py` (optional `CAMP_KNOWLEDGE_BASE=...`), then commit `data/omni_camp_knowledge_articles.xml` and bump module upgrade.
+
 ## Deployment Guardrail
 
 - No direct server edits from uncommitted local code.
