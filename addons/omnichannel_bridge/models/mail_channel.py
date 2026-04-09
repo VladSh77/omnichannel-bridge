@@ -681,6 +681,35 @@ class MailChannel(models.Model):
         return self.omni_get_client_info_for_channel(channel_id)
 
     @api.model
+    def omni_bind_partner_to_channel(self, channel_id, partner_id):
+        channel = self.sudo().browse(int(channel_id or 0))
+        partner = self.env['res.partner'].sudo().browse(int(partner_id or 0))
+        if not channel or not channel.exists() or not channel.omni_provider:
+            return {}
+        if not partner or not partner.exists():
+            return self.omni_get_client_info_for_channel(channel.id)
+
+        external_id = (channel.omni_external_thread_id or '').strip() or ('channel:%s' % channel.id)
+        Identity = self.env['omni.partner.identity'].sudo()
+        identity = Identity.search([
+            ('provider', '=', channel.omni_provider),
+            ('external_id', '=', external_id),
+        ], limit=1)
+        if identity:
+            if identity.partner_id.id != partner.id:
+                identity.write({'partner_id': partner.id})
+        else:
+            Identity.create({
+                'provider': channel.omni_provider,
+                'external_id': external_id,
+                'partner_id': partner.id,
+                'display_name': partner.name or channel.name or '',
+            })
+
+        channel.sudo().omni_thread_align_customer(partner)
+        return self.omni_get_client_info_for_channel(channel.id)
+
+    @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
         existing = self.sudo().search([
             ('omni_provider', '=', provider),
