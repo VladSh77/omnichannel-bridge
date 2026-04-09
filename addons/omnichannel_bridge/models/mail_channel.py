@@ -146,7 +146,14 @@ class MailChannel(models.Model):
         manager = self.env['omni.notify'].sudo()._peek_online_manager_user()
         if not manager:
             return ''
-        name = (manager.name or '').strip()
+        # Prefer per-user livechat display name configured in Odoo user settings.
+        livechat_name = ''
+        for attr in ('livechat_username', 'im_livechat_username'):
+            if attr in manager._fields:
+                livechat_name = (getattr(manager, attr, '') or '').strip()
+                if livechat_name:
+                    break
+        name = (livechat_name or manager.name or '').strip()
         if not name:
             return ''
         # For UA prompts prefer natural addressing (vocative/known transliteration);
