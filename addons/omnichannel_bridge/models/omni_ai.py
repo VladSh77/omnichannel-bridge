@@ -770,7 +770,7 @@ class OmniAi(models.AbstractModel):
             'temperature': 0.15,
         }
         try:
-            resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
+            resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=(5, 30))
             if not resp.ok:
                 _logger.error('OpenAI error %s: %s', resp.status_code, resp.text)
                 return ''
@@ -793,7 +793,7 @@ class OmniAi(models.AbstractModel):
             'stream': False,
         }
         try:
-            resp = requests.post(openai_url, json=payload_oa, timeout=(3, 8))
+            resp = requests.post(openai_url, json=payload_oa, timeout=(5, 60))
             if resp.ok:
                 data = resp.json()
                 return (data.get('choices') or [{}])[0].get('message', {}).get('content', '').strip()
@@ -810,7 +810,7 @@ class OmniAi(models.AbstractModel):
             'options': {'temperature': 0.15},
         }
         try:
-            resp = requests.post(native_url, json=payload_native, timeout=(3, 8))
+            resp = requests.post(native_url, json=payload_native, timeout=(5, 60))
             if not resp.ok:
                 _logger.error('Ollama error %s: %s', resp.status_code, resp.text)
                 return ''
