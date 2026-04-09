@@ -1,5 +1,41 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Incident recap: chat-core failures, CI noise, and server-key discipline
+
+### Scope
+
+- Synchronized project documentation with real incident history and remediation flow.
+- Added explicit operational note about recurring SSH key/context mismatch during urgent server actions ("forgotten server keys" effect).
+- Reaffirmed mandatory deployment sequence and server preflight checks.
+
+### Incident errors captured (resolved in code)
+
+- `webhook 500` in Telegram flow caused by `UnboundLocalError` in customer resolution (`email_candidates` init order).
+- Livechat recursion (`message_post -> inbound handler -> message_post`) causing RPC errors and unstable runtime.
+- Discuss service notifications (`invited/joined channel`) leaking to customer channels.
+- Non-text first touchpoints skipped (sticker/photo/voice), causing missing partner/thread creation.
+- Fallback over-delivery during LLM outage (cooldown too weak).
+
+### Resolution approach
+
+- Applied targeted code fixes in `res_partner.py`, `mail_channel.py`, `omni_bridge.py`, `omni_ai.py`.
+- Added stronger anti-spam and service-message filtering rules.
+- Stabilized channel membership updates to avoid notification noise.
+- Validated with local compile/tests/lint and runtime spot checks.
+
+### Server access/process correction
+
+- Repeated access friction originated from mismatched SSH key/context between local automation environment and server authorized keys.
+- Operational rule locked:
+  1. preflight key login with `BatchMode=yes`;
+  2. verify correct host/repo target;
+  3. only then run server `git pull` + module upgrade + restart.
+
+### Artifacts
+
+- `docs/TZ_CHECKLIST.md`
+- `docs/IMPLEMENTATION_LOG.md`
+
 ## 2026-04-09 — Migration go-live playbook for SendPulse/channel cutover
 
 ### Scope
