@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Ukrainian UI: `i18n/uk_UA.po` for omnichannel menus and actions
+
+### Scope
+
+- Added `addons/omnichannel_bridge/i18n/uk_UA.po` translating root submenus, Operations submenu, and matching `ir.actions.act_window` names (breadcrumb/list titles where applicable).
+- After deploy: install/activate **Ukrainian (uk_UA)** in Odoo Languages if needed, set user language to Ukrainian, **upgrade** `omnichannel_bridge` (or reload translations).
+
+### Artifacts
+
+- `addons/omnichannel_bridge/i18n/uk_UA.po`
+- `tests/test_contract_regressions.py` (`test_ukrainian_i18n_covers_main_omni_menus`)
+
 ## 2026-04-09 — Production upgrade blocker: `ParseError` — `omnichannel_sla_scope` missing on `res.config.settings`
 
 ### Summary (UA)

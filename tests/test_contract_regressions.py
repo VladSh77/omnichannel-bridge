@@ -215,6 +215,14 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('STAGING_RUNTIME_BOOTSTRAP.md', runbook)
         self.assertIn('PROD_LIVECHAT_SMOKE_2026-04-08.md', runbook)
 
+    def test_ukrainian_i18n_covers_main_omni_menus(self):
+        po = (ROOT / 'addons/omnichannel_bridge/i18n/uk_UA.po').read_text(encoding='utf-8')
+        self.assertIn('msgid "Integrations"', po)
+        self.assertIn('msgstr "Інтеграції"', po)
+        self.assertIn('msgid "Operations"', po)
+        self.assertIn('msgstr "Операції"', po)
+        self.assertIn('model:ir.ui.menu,name:omnichannel_bridge.menu_omni_ops_root', po)
+
     def test_res_config_settings_fields_referenced_in_settings_xml_exist_in_python(self):
         """Avoid upgrade ParseError: field X does not exist on res.config.settings (XML ahead of models)."""
         py = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
