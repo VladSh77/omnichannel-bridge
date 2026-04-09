@@ -31,6 +31,7 @@ from . import omni_notify
 from . import omni_crm_analytics
 from . import omni_conversation_audit
 from . import omni_tg_broadcast
+from . import res_company
 from . import res_config_settings
 from . import omni_coupon_redemption
 from . import omni_payment_event

@@ -40,20 +40,14 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <!-- Root opens Discuss (message dashboard); credentials are on res.company. -->
     <menuitem
         id="menu_omni_root"
         name="Чати CampScout"
-        action="action_omni_integration"
+        action="mail.action_discuss"
         sequence="45"
     />
     <record id="menu_omni_root" model="ir.ui.menu">
         <field name="web_icon">omnichannel_bridge,static/description/icon.svg</field>
     </record>
-    <menuitem
-        id="menu_omni_integration"
-        name="Integrations"
-        parent="menu_omni_root"
-        action="action_omni_integration"
-        sequence="10"
-    />
 </odoo>

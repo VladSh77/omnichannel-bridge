@@ -292,6 +292,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_omni_tag_latest_customer_message', intel)
         self.assertIn('menu_omni_outbound_log', ops)
 
+    def test_res_company_omnichannel_tab_markers_present(self):
+        rc = (ROOT / 'addons/omnichannel_bridge/models/res_company.py').read_text()
+        v = (ROOT / 'addons/omnichannel_bridge/views/res_company_views.xml').read_text()
+        self.assertIn('omni_integration_ids', rc)
+        self.assertIn('view_company_form_omnichannel', v)
+        self.assertIn('base.view_company_form', v)
+
     def test_discuss_client_card_parity_markers_present(self):
         manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
@@ -303,6 +310,9 @@ class ContractRegressionTests(unittest.TestCase):
             ROOT / 'addons/omnichannel_bridge/static/src/components/omni_client_info_panel/omni_client_info_panel.xml'
         ).read_text()
         thread_patch = (ROOT / 'addons/omnichannel_bridge/static/src/thread_patch.js').read_text()
+        integration_views = (
+            ROOT / 'addons/omnichannel_bridge/views/omni_integration_views.xml'
+        ).read_text()
         self.assertIn("'web'", manifest)
         self.assertIn('static/src/omni_thread_actions.js', manifest)
         self.assertIn('omni_get_client_info_for_channel', channel)
@@ -311,6 +321,7 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_to_store', channel)
         self.assertIn('omni-client-info', action_js)
         self.assertIn('OmniClientInfoPanel', panel_js)
+        self.assertIn('mail.action_discuss', integration_views)
         self.assertIn('Оновити профіль', panel_xml)
         self.assertIn('state.card.channel_profile', panel_xml)
         self.assertIn('getChat', channel)

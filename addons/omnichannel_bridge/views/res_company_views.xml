@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_omnichannel" model="ir.ui.view">
+        <field name="name">res.company.form.omnichannel</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Чати CampScout (Omnichannel)" name="omnichannel_integrations">
+                    <p class="text-muted">
+                        Токени та секрети месенджерів для цієї компанії. Після зміни — перевірте вебхуки у зовнішніх сервісах.
+                    </p>
+                    <field name="omni_integration_ids" nolabel="1"
+                           context="{'default_company_id': id}">
+                        <tree string="Інтеграції" editable="bottom" create="false" delete="false">
+                            <field name="provider" readonly="1"/>
+                            <field name="active"/>
+                            <field name="api_token" password="True"/>
+                            <field name="webhook_secret" password="True"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
