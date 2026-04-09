@@ -528,8 +528,7 @@ class MailChannel(models.Model):
 
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)
-        if self.env.context.get('omni_skip_livechat_inbound'):
-            return message
+        skip_livechat_inbound = self.env.context.get('omni_skip_livechat_inbound')
         odoobot = self.env.ref('base.partner_root')
         for channel in self:
             if message.author_id == odoobot:
@@ -547,7 +546,8 @@ class MailChannel(models.Model):
                         'omni_bot_pause_reason': 'manager_session_active',
                     })
                 channel.sudo().write(vals)
-            channel._omni_handle_website_livechat_inbound(message)
+            if not skip_livechat_inbound:
+                channel._omni_handle_website_livechat_inbound(message)
             channel._omni_route_operator_reply_to_messenger(message)
         return message
 
