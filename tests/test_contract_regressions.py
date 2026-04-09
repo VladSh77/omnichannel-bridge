@@ -221,7 +221,9 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn("('awaiting_name', 'Awaiting name')", channel)
         self.assertIn('_omni_livechat_name_prompt_text_lang', channel)
         self.assertIn('def run(env):', smoke)
+        self.assertIn('_REQUIRED_OMNI_MODELS', smoke)
         self.assertIn('omni.stage.transition', smoke)
+        self.assertIn('omni.objection.policy', smoke)
 
     def test_outbound_log_and_message_tags_markers_present(self):
         bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()

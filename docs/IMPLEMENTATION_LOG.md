@@ -1,5 +1,18 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Smoke: full `_REQUIRED_OMNI_MODELS` registry loop (incl. objection policy)
+
+### Scope
+
+- Replaced per-model smoke asserts with a single tuple `_REQUIRED_OMNI_MODELS` covering all `omni.*` models in the addon (avoids whack-a-mole KeyError after stale deploys).
+- Runbook KeyError section points at the tuple; contract test expects `omni.objection.policy` in smoke.
+
+### Artifacts
+
+- `scripts/odoo_runtime_smoke.py`
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+
 ## 2026-04-09 — Smoke: assert `omni.prompt.audit`; runbook KeyError examples
 
 ### Scope
