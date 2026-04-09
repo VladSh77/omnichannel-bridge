@@ -413,6 +413,10 @@ class OmniAi(models.AbstractModel):
 
     def _omni_send_fallback(self, channel, partner, icp):
         """LLM недоступний — надсилаємо шаблонне повідомлення і сповіщаємо менеджера."""
+        channel = channel.sudo()
+        # Anti-flood: do not repeat the same fallback in tight loops.
+        if channel.omni_last_bot_reply_at and Datetime.now() <= channel.omni_last_bot_reply_at + timedelta(seconds=90):
+            return
         msg = (icp.get_param('omnichannel_bridge.fallback_message') or '').strip()
         if not msg:
             # Динамічний fallback: якщо зараз неробочий час — з часом відповіді

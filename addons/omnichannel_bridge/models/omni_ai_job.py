@@ -42,6 +42,18 @@ class OmniAiJob(models.Model):
     def omni_enqueue_autoreply(self, channel, partner, text, provider, delay_seconds=0):
         if not channel or not text:
             return False
+        # Keep only the freshest pending request per thread/provider to avoid
+        # backlog floods after temporary outages of LLM/backend.
+        stale = self.sudo().search([
+            ('channel_id', '=', channel.id),
+            ('provider', '=', provider),
+            ('state', '=', 'queued'),
+        ])
+        if stale:
+            stale.write({
+                'state': 'cancelled',
+                'last_error': 'superseded_by_new_inbound',
+            })
         next_at = fields.Datetime.now()
         if delay_seconds and delay_seconds > 0:
             next_at = Datetime.now() + timedelta(seconds=int(delay_seconds))
