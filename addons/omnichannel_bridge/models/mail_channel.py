@@ -145,22 +145,12 @@ class MailChannel(models.Model):
     def _omni_livechat_entry_menu_text_lang(self, is_pl=False):
         if is_pl:
             return (
-                'Aby szybciej pomóc, wybierz temat:\n'
-                '1) O firmie CampScout\n'
-                '2) Obozy/programy\n'
-                '3) Inne usługi\n'
-                '4) Ceny i warunki\n'
-                '5) Zostaw kontakt do managera\n\n'
-                'Możesz też od razu napisać własne pytanie poniżej.'
+                'Jak mogę pomóc na start?\n'
+                'Napisz jednym zdaniem, co jest teraz najważniejsze: program, cena, terminy, dojazd czy bezpieczeństwo.'
             )
         return (
-            'Щоб швидше допомогти, оберіть напрямок:\n'
-            '1) Про компанію CampScout\n'
-            '2) Табори/програми\n'
-            '3) Інші послуги\n'
-            '4) Ціни та умови\n'
-            '5) Залишити контакт для менеджера\n\n'
-            'Можна просто написати власне питання нижче.'
+            'Як можу допомогти на старті?\n'
+            'Напишіть одним реченням, що для вас зараз головне: програма, ціна, дати, доїзд чи безпека.'
         )
 
     def _omni_livechat_contact_prompt_text(self):
@@ -293,7 +283,7 @@ class MailChannel(models.Model):
         if state == 'new':
             vals = {'omni_livechat_entry_topic': topic}
             if self._omni_livechat_name_needs_clarification(author):
-                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                     body=self._omni_livechat_name_prompt_text_lang(is_pl=is_pl),
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
@@ -304,7 +294,7 @@ class MailChannel(models.Model):
                 return True
             # Off-hours policy: before long bot dialog we require at least one contact point.
             if not manager_hours_now and not has_contact:
-                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                     body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
@@ -315,7 +305,7 @@ class MailChannel(models.Model):
                 self.sudo().write(vals)
                 return True
             if topic == 'unknown':
-                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                     body=self._omni_livechat_entry_menu_text_lang(is_pl=is_pl),
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
@@ -329,7 +319,7 @@ class MailChannel(models.Model):
                 self.sudo().write(vals)
                 return True
             if topic == 'contact' and not has_contact:
-                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                     body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
@@ -349,7 +339,7 @@ class MailChannel(models.Model):
                 author.write({'name': guessed_name})
                 self._omni_refresh_livechat_channel_label(author)
                 if not has_contact:
-                    self.with_context(omni_skip_livechat_inbound=True).message_post(
+                    self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                         body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
                         message_type='comment',
                         subtype_xmlid='mail.mt_comment',
@@ -362,7 +352,7 @@ class MailChannel(models.Model):
                     return True
                 self.sudo().write({'omni_livechat_entry_state': 'ready'})
                 return False
-            self.with_context(omni_skip_livechat_inbound=True).message_post(
+            self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                 body=self._omni_livechat_name_prompt_text_lang(is_pl=is_pl),
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
@@ -375,14 +365,14 @@ class MailChannel(models.Model):
                 if guessed_name:
                     author.write({'name': guessed_name})
                     self._omni_refresh_livechat_channel_label(author)
-                    self.with_context(omni_skip_livechat_inbound=True).message_post(
+                    self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                         body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
                         message_type='comment',
                         subtype_xmlid='mail.mt_comment',
                         author_id=odoobot.id,
                     )
                     return True
-                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                     body=self._omni_livechat_name_prompt_text_lang(is_pl=is_pl),
                     message_type='comment',
                     subtype_xmlid='mail.mt_comment',
@@ -413,7 +403,7 @@ class MailChannel(models.Model):
             text_has_contact_intent = any(k in (body or '').lower() for k in ('mail', '@', 'пошта', 'email', 'телефон', 'phone'))
             if attempts >= 2 or text_has_contact_intent:
                 prompt = self._omni_livechat_contact_invalid_text(is_pl=is_pl)
-            self.with_context(omni_skip_livechat_inbound=True).message_post(
+            self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                 body=prompt,
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
@@ -556,7 +546,7 @@ class MailChannel(models.Model):
                         new_stage=new_stage,
                         reason='client_requested_human_livechat',
                     )
-            self.with_context(omni_skip_livechat_inbound=True).message_post(
+            self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                 body=_('Передаю діалог менеджеру. Будь ласка, зачекайте трохи.'),
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
@@ -599,7 +589,7 @@ class MailChannel(models.Model):
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(author_adm, body)
         # Anti-silence UX for livechat: instant acknowledge, then async AI reply.
         if not self.omni_last_bot_reply_at:
-            self.with_context(omni_skip_livechat_inbound=True).message_post(
+            self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                 body=_('Дякуємо! Отримали ваше повідомлення, підбираю варіанти табору...'),
                 message_type='comment',
                 subtype_xmlid='mail.mt_comment',
