@@ -10,10 +10,20 @@
                     <p class="text-muted">
                         Токени та секрети месенджерів для цієї компанії. Після зміни — перевірте вебхуки у зовнішніх сервісах.
                     </p>
+                    <p class="text-muted">
+                        <strong>Усі канали з реєстру:</strong> натисніть кнопку нижче — з’являться рядки Meta, WhatsApp, Viber тощо (якщо їх ще немає).
+                        <strong>Вручну:</strong> «Додати рядок» — оберіть провайдера; дублікат для тієї ж компанії Odoo не дасть зберегти.
+                    </p>
+                    <div class="mb-2">
+                        <button name="action_omni_sync_messenger_channels" type="object"
+                                string="Додати всі канали з реєстру"
+                                class="btn btn-secondary"/>
+                    </div>
                     <field name="omni_integration_ids" nolabel="1"
                            context="{'default_company_id': id}">
-                        <tree string="Інтеграції" editable="bottom" create="false" delete="false">
-                            <field name="provider" readonly="1"/>
+                        <tree string="Інтеграції" editable="bottom" create="1" delete="1">
+                            <field name="company_id" column_invisible="1"/>
+                            <field name="provider"/>
                             <field name="active"/>
                             <field name="api_token" password="True"/>
                             <field name="webhook_secret" password="True"/>

@@ -295,9 +295,13 @@ class ContractRegressionTests(unittest.TestCase):
     def test_res_company_omnichannel_tab_markers_present(self):
         rc = (ROOT / 'addons/omnichannel_bridge/models/res_company.py').read_text()
         v = (ROOT / 'addons/omnichannel_bridge/views/res_company_views.xml').read_text()
+        oi = (ROOT / 'addons/omnichannel_bridge/models/omni_integration.py').read_text()
         self.assertIn('omni_integration_ids', rc)
+        self.assertIn('action_omni_sync_messenger_channels', rc)
+        self.assertIn('omni_ensure_integration_rows_for_company_ids', oi)
         self.assertIn('view_company_form_omnichannel', v)
         self.assertIn('base.view_company_form', v)
+        self.assertIn('Додати всі канали з реєстру', v)
 
     def test_discuss_client_card_parity_markers_present(self):
         manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()

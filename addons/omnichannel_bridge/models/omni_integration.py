@@ -47,15 +47,14 @@ class OmniIntegration(models.Model):
         ]
 
     @api.model
-    def omni_ensure_all_provider_integration_rows(self):
+    def omni_ensure_integration_rows_for_company_ids(self, company_ids):
         """
-        One row per (company, provider) so the integrations list shows every channel.
-
-        New rows are inactive except ``site_livechat`` (on by default). Operators
-        enable a row and fill tokens when connecting that messenger; credentials
-        code only uses rows with ``active=True``.
+        Create missing ``omni.integration`` rows for the given companies
+        (one per provider from ``_selection_providers``).
         """
-        companies = self.env['res.company'].sudo().search([])
+        companies = self.env['res.company'].sudo().browse(company_ids).exists()
+        if not companies:
+            return True
         providers = [key for key, _label in self._selection_providers()]
         Integration = self.sudo()
         for company in companies:
@@ -78,7 +77,19 @@ class OmniIntegration(models.Model):
                         'active': provider == 'site_livechat',
                     }
                 )
+        return True
 
+    @api.model
+    def omni_ensure_all_provider_integration_rows(self):
+        """
+        One row per (company, provider) so the integrations list shows every channel.
+
+        New rows are inactive except ``site_livechat`` (on by default). Operators
+        enable a row and fill tokens when connecting that messenger; credentials
+        code only uses rows with ``active=True``.
+        """
+        companies = self.env['res.company'].sudo().search([])
+        self.omni_ensure_integration_rows_for_company_ids(companies.ids)
         icp_model = self.env['ir.config_parameter'].sudo()
         icp_model.set_param('omnichannel_bridge.site_livechat_enabled', 'True')
         return True
