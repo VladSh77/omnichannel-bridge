@@ -39,6 +39,8 @@ class ContractRegressionTests(unittest.TestCase):
         content = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         parsers = (ROOT / 'addons/omnichannel_bridge/utils/webhook_parsers.py').read_text()
         self.assertIn('_omni_process_whatsapp_stub', content)
+        self.assertIn('whatsapp_cloud', content)
+        self.assertIn('provider_stub', content)
         self.assertIn('_omni_process_twilio_whatsapp', content)
         self.assertIn('_omni_whatsapp_send_to_wa_id', content)
         self.assertIn('extract_whatsapp_message_id', parsers)
@@ -307,6 +309,15 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('state.card.channel_profile', panel_xml)
         self.assertIn('getChat', channel)
         self.assertIn('channel_profile', channel)
+        self.assertIn('omni_is_stub_provider', channel)
+        self.assertIn('_omni_whatsapp_cloud_parts', channel)
+        contracts = (
+            ROOT / 'addons/omnichannel_bridge/utils/omni_provider_contracts.py'
+        ).read_text()
+        self.assertIn('OMNI_PROVIDER_DELIVERY', contracts)
+        self.assertIn("'tiktok'", contracts)
+        self.assertTrue((ROOT / 'docs/MESSENGER_WEBHOOK_IDENTITY_SCHEMA.md').is_file())
+        self.assertIn('WhatsApp Cloud API', (ROOT / 'docs/MESSENGER_WEBHOOK_IDENTITY_SCHEMA.md').read_text())
         self.assertIn('omniProvider', thread_patch)
 
     def test_telegram_getchat_ingest_marker_present(self):

@@ -12,6 +12,7 @@ from psycopg2 import IntegrityError
 from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 
+from ..utils.omni_provider_contracts import omni_is_stub_provider
 from ..utils.webhook_parsers import (
     extract_meta_mid,
     extract_telegram_update_id,
@@ -34,6 +35,16 @@ class OmniBridge(models.AbstractModel):
     @api.model
     def omni_process_webhook(self, provider, payload, headers=None):
         headers = headers or {}
+        if omni_is_stub_provider(provider):
+            _logger.info(
+                'Omnichannel webhook: provider=%s is a documented stub (no ingest yet)',
+                provider,
+            )
+            return {
+                'ok': False,
+                'error': 'provider_stub',
+                'doc': 'docs/MESSENGER_WEBHOOK_IDENTITY_SCHEMA.md',
+            }
         if provider == 'meta':
             return self._omni_process_meta(payload, headers)
         if provider == 'telegram':
@@ -698,7 +709,14 @@ class OmniBridge(models.AbstractModel):
                         text=text,
                         phone=sender,
                         email='',
-                        metadata_obj=msg,
+                        metadata_obj={
+                            'whatsapp_cloud': {
+                                'message': msg,
+                                'contacts': contacts,
+                                'phone_number_metadata': value.get('metadata') or {},
+                                'messaging_product': value.get('messaging_product'),
+                            },
+                        },
                     )
         webhook_event.sudo().write({
             'state': 'processed',

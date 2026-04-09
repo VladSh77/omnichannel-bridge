@@ -12,6 +12,7 @@ from odoo import _, api, fields, models
 from odoo.fields import Datetime
 
 from .omni_action_utils import ensure_act_window_views, merge_act_window_context
+from ..utils.omni_provider_contracts import omni_is_stub_provider
 
 _logger = logging.getLogger(__name__)
 
@@ -587,6 +588,28 @@ class MailChannel(models.Model):
         return ('https://wa.me/%s' % digits) if len(digits) >= 8 else ''
 
     @api.model
+    def _omni_whatsapp_cloud_parts(self, meta):
+        """WhatsApp Cloud: wrapped `whatsapp_cloud` or legacy message-only dict."""
+        if not isinstance(meta, dict):
+            return {}, [], '', ''
+        wc = meta.get('whatsapp_cloud')
+        if isinstance(wc, dict) and wc:
+            msg = wc.get('message') or {}
+            if not isinstance(msg, dict):
+                msg = {}
+            contacts = wc.get('contacts') or []
+            if not isinstance(contacts, list):
+                contacts = []
+            wa_id = str(msg.get('from') or '').strip()
+            contact = next((c for c in contacts if str(c.get('wa_id') or '') == wa_id), {}) or {}
+            prof = contact.get('profile') or {}
+            pname = (prof.get('name') or '').strip()
+            return msg, contacts, wa_id, pname
+        msg = meta
+        wa_id = str(msg.get('from') or '').strip() if isinstance(msg, dict) else ''
+        return msg if isinstance(msg, dict) else {}, [], wa_id, ''
+
+    @api.model
     def _omni_build_channel_profile_payload(
         self, channel, provider, meta, identity, telegram_panel
     ):
@@ -599,6 +622,42 @@ class MailChannel(models.Model):
             channel.omni_external_thread_id or (identity.external_id if identity else '') or ''
         ).strip()
         thread_user_id = ext
+
+        if omni_is_stub_provider(provider):
+            prov_label = dict(self.env['omni.integration']._selection_providers()).get(
+                provider, provider or ''
+            )
+            badges.append(
+                {
+                    'label': _('Заглушка'),
+                    'class': 'badge rounded-pill text-bg-secondary',
+                }
+            )
+            section_title = _('%s — інтеграція не підключена') % (prov_label or provider)
+            rows.append(
+                {
+                    'kind': 'text',
+                    'text': _(
+                        'Webhook/API для цього каналу ще не реалізовані в модулі. '
+                        'Очікувані поля та посилання на офіційні доки: '
+                        'docs/MESSENGER_WEBHOOK_IDENTITY_SCHEMA.md'
+                    ),
+                }
+            )
+            if ext:
+                rows.append({'kind': 'text', 'text': _('Зовнішній id треду: %s') % ext})
+            ext_cmp = (channel.omni_external_thread_id or '').strip()
+            tid = (thread_user_id or '').strip()
+            if tid and ext_cmp and tid == ext_cmp:
+                thread_user_id = ''
+                thread_user_caption = ''
+            section = {'title': section_title, 'rows': rows}
+            return {
+                'badges': badges,
+                'section': section,
+                'thread_user_caption': thread_user_caption,
+                'thread_user_id': thread_user_id,
+            }
 
         if provider == 'telegram' and telegram_panel:
             if telegram_panel.get('status_badge_label'):
@@ -668,10 +727,24 @@ class MailChannel(models.Model):
                 }
             )
             section_title = _('Профіль WhatsApp (Cloud API)')
-            wa_id = ''
-            if isinstance(meta, dict):
-                wa_id = str(meta.get('from') or '').strip()
-            wa_id = wa_id or ext
+            msg, _contacts, wa_id, wa_prof_name = self._omni_whatsapp_cloud_parts(meta)
+            wa_id = (wa_id or ext or '').strip()
+            wc = meta.get('whatsapp_cloud') if isinstance(meta, dict) else {}
+            if wa_prof_name:
+                rows.append({'kind': 'text', 'text': _('Ім’я (contacts[]): %s') % wa_prof_name})
+            if isinstance(wc, dict):
+                pn_meta = wc.get('phone_number_metadata')
+                if isinstance(pn_meta, dict):
+                    dpn = (pn_meta.get('display_phone_number') or '').strip()
+                    pnid = (pn_meta.get('phone_number_id') or '').strip()
+                    if dpn:
+                        rows.append(
+                            {'kind': 'text', 'text': _('Лінія бізнесу (display): %s') % dpn}
+                        )
+                    if pnid:
+                        rows.append(
+                            {'kind': 'text', 'text': _('phone_number_id: %s') % pnid}
+                        )
             if wa_id:
                 rows.append({'kind': 'text', 'text': _('WhatsApp id: %s') % wa_id})
                 href = self._omni_wa_me_href(wa_id)
@@ -711,16 +784,24 @@ class MailChannel(models.Model):
                 }
             )
             section_title = _('Профіль Viber')
-            vid, vname = '', ''
+            vid, vname, avatar_url, v_lang = '', '', '', ''
             if isinstance(meta, dict) and isinstance(meta.get('sender'), dict):
                 s = meta['sender']
                 vid = str(s.get('id') or '').strip()
                 vname = (s.get('name') or '').strip()
+                avatar_url = (s.get('avatar') or '').strip()
+                v_lang = (s.get('language') or '').strip()
             vid = vid or ext
             if vname:
                 rows.append({'kind': 'text', 'text': _('Ім’я у Viber: %s') % vname})
+            if v_lang:
+                rows.append({'kind': 'text', 'text': _('Мова (sender): %s') % v_lang})
             if vid:
                 rows.append({'kind': 'text', 'text': _('Viber id: %s') % vid})
+            if avatar_url:
+                rows.append(
+                    {'kind': 'link', 'text': _('Аватар (URL з webhook)'), 'href': avatar_url}
+                )
             thread_user_caption = _('Viber id')
             thread_user_id = vid or ext
         elif provider == 'site_livechat':
@@ -879,9 +960,7 @@ class MailChannel(models.Model):
                 ('https://t.me/%s' % contact_username) if contact_username else ''
             )
         elif prov == 'whatsapp':
-            wa_id = ''
-            if isinstance(meta, dict):
-                wa_id = str(meta.get('from') or '').strip()
+            _msg, _c, wa_id, _pn = self._omni_whatsapp_cloud_parts(meta)
             wa_id = wa_id or (channel.omni_external_thread_id or '').strip()
             if wa_id:
                 contact_username = wa_id
@@ -932,6 +1011,8 @@ class MailChannel(models.Model):
                 or pl.startswith('meta:')
                 or pl.startswith('whatsapp:')
                 or pl.startswith('viber:')
+                or pl.startswith('tiktok:')
+                or pl.startswith('line:')
             )
             and not (partner.email or partner.phone or partner.mobile)
         )
@@ -1072,6 +1153,8 @@ class MailChannel(models.Model):
             or placeholder.startswith('meta:')
             or placeholder.startswith('whatsapp:')
             or placeholder.startswith('viber:')
+            or placeholder.startswith('tiktok:')
+            or placeholder.startswith('line:')
         )
         if is_placeholder:
             fresh_name = (

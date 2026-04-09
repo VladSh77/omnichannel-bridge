@@ -227,6 +227,8 @@ class ResPartner(models.Model):
                 or current_name.lower().startswith('meta:')
                 or current_name.lower().startswith('whatsapp:')
                 or current_name.lower().startswith('viber:')
+                or current_name.lower().startswith('tiktok:')
+                or current_name.lower().startswith('line:')
             )
             if vals.get('display_name') and placeholder_name:
                 patch_vals['name'] = vals.get('display_name')

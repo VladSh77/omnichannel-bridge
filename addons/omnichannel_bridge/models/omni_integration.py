@@ -42,6 +42,8 @@ class OmniIntegration(models.Model):
             ('meta', 'Facebook / Instagram'),
             ('twilio_whatsapp', 'Twilio (WhatsApp)'),
             ('site_livechat', 'Website Live Chat'),
+            ('tiktok', 'TikTok (stub)'),
+            ('line', 'LINE (stub)'),
         ]
 
     @api.model
