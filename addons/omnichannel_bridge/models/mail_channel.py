@@ -728,6 +728,18 @@ class MailChannel(models.Model):
         body = message.body
         if not body:
             return
+        # Never forward service/system discuss notifications to customers.
+        plain_service = re.sub(r'<[^>]+>', ' ', body or '')
+        plain_service = re.sub(r'\s+', ' ', plain_service).strip().lower()
+        if 'o_mail_notification' in (body or ''):
+            return
+        service_markers = (
+            'запрошено', 'до каналу',
+            'invited', 'joined the channel', 'left the channel',
+            'приєднався до каналу', 'покинув канал',
+        )
+        if any(marker in plain_service for marker in service_markers):
+            return
         odoobot = self.env.ref('base.partner_root')
         is_bot_author = author == odoobot
         now = fields.Datetime.now()
@@ -746,8 +758,7 @@ class MailChannel(models.Model):
                     conflict_sec,
                 )
                 return
-        plain = re.sub(r'<[^>]+>', ' ', body or '')
-        plain = re.sub(r'\s+', ' ', plain).strip().lower()
+        plain = plain_service
         outbound_hash = hashlib.sha1(plain.encode('utf-8')).hexdigest() if plain else ''
         # Anti-duplicate safeguard for retried posts.
         if (

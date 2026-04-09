@@ -163,6 +163,20 @@ class ResPartner(models.Model):
                 metadata = json.loads(vals.get('metadata_json') or '{}') or {}
             except Exception:
                 metadata = {}
+        email_candidates = []
+        if vals.get('email'):
+            email_candidates.append(vals.get('email'))
+        # Channel-specific payloads may carry additional customer emails.
+        for key in ('user_email', 'booking_email', 'email'):
+            v = metadata.get(key)
+            if v:
+                email_candidates.append(v)
+        for nested_key in ('telegram', 'meta', 'whatsapp', 'viber', 'contact'):
+            nested = metadata.get(nested_key) or {}
+            if isinstance(nested, dict):
+                v = nested.get('email')
+                if v:
+                    email_candidates.append(v)
         existing = Identity.search([
             ('provider', '=', provider),
             ('external_id', '=', external_id),
@@ -201,21 +215,6 @@ class ResPartner(models.Model):
             if not addr:
                 return self.browse()
             return self.sudo().search([('email', '=', addr)], limit=1)
-
-        email_candidates = []
-        if vals.get('email'):
-            email_candidates.append(vals.get('email'))
-        # Channel-specific payloads may carry additional customer emails.
-        for key in ('user_email', 'booking_email', 'email'):
-            v = metadata.get(key)
-            if v:
-                email_candidates.append(v)
-        for nested_key in ('telegram', 'meta', 'whatsapp', 'viber', 'contact'):
-            nested = metadata.get(nested_key) or {}
-            if isinstance(nested, dict):
-                v = nested.get('email')
-                if v:
-                    email_candidates.append(v)
 
         partner = self.browse()
         for email in email_candidates:
