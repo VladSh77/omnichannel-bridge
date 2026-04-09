@@ -9,6 +9,7 @@
                     <button name="action_search" type="object" string="Пошук у базі" class="btn-primary"/>
                 </header>
                 <sheet>
+                    <field name="search_done" invisible="1"/>
                     <group>
                         <field name="channel_id"/>
                         <field name="search_email" placeholder="Email клієнта (з чату)"/>

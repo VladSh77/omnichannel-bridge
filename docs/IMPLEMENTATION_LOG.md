@@ -1,5 +1,9 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Fix: wizard view `search_done` missing in arch (Odoo 17 `invisible` rule) — 17.0.1.0.32
+
+`omni_conversation_identity_wizard_views.xml`: поле **`search_done`** використовувалось у `invisible`, але не було в дереві перегляду → **`ParseError`** під час `-u` на проді. Додано `<field name="search_done" invisible="1"/>`.
+
 ## 2026-04-09 — Fix: stale RPC `omni_action_open_client_from_panel` opened `res.partner` (17.0.1.0.31)
 
 ### Scope

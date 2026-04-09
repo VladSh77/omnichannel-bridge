@@ -318,8 +318,11 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('menu_omni_open_discuss', menu)
         self.assertIn('view_omni_inbox_thread_form_conversation', v)
         wiz = (ROOT / 'addons/omnichannel_bridge/models/omni_conversation_identity_wizard.py').read_text()
+        wiz_xml = (ROOT / 'addons/omnichannel_bridge/views/omni_conversation_identity_wizard_views.xml').read_text()
         self.assertIn("_name = 'omni.conversation.identity.wizard'", wiz)
         self.assertIn('def action_link_partner', wiz)
+        self.assertIn('name="search_done"', wiz_xml)
+        self.assertIn('invisible="not search_done"', wiz_xml)
 
     def test_discuss_client_card_parity_markers_present(self):
         manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
