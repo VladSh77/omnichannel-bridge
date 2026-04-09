@@ -536,6 +536,37 @@ class MailChannel(models.Model):
         return '/web/image/res.partner/%s/image_128' % partner.id
 
     @api.model
+    def _omni_identity_for_channel(self, channel):
+        """Best-effort omni.partner.identity for a discuss.channel (partner link, else external id)."""
+        channel = channel.sudo()
+        if not channel or not channel.exists() or not channel.omni_provider:
+            return self.env['omni.partner.identity'].browse()
+        Identity = self.env['omni.partner.identity'].sudo()
+        partner = channel.omni_customer_partner_id.sudo()
+        if partner:
+            found = Identity.search(
+                [
+                    ('provider', '=', channel.omni_provider),
+                    ('partner_id', '=', partner.id),
+                ],
+                order='id desc',
+                limit=1,
+            )
+            if found:
+                return found
+        ext = (channel.omni_external_thread_id or '').strip()
+        if ext:
+            return Identity.search(
+                [
+                    ('provider', '=', channel.omni_provider),
+                    ('external_id', '=', ext),
+                ],
+                order='id desc',
+                limit=1,
+            )
+        return Identity.browse()
+
+    @api.model
     def omni_get_client_info_for_channel(self, channel_id):
         channel = self.sudo().browse(int(channel_id or 0))
         if not channel or not channel.exists():
@@ -543,11 +574,7 @@ class MailChannel(models.Model):
         if not channel.omni_provider:
             return {}
         partner = channel.omni_customer_partner_id.sudo()
-        Identity = self.env['omni.partner.identity'].sudo()
-        identity = Identity.search([
-            ('provider', '=', channel.omni_provider),
-            ('partner_id', '=', partner.id),
-        ], order='id desc', limit=1)
+        identity = self._omni_identity_for_channel(channel)
         meta = self._omni_parse_identity_metadata(identity)
         tgm = meta.get('telegram') if isinstance(meta.get('telegram'), dict) else {}
         chat = meta.get('chat') if isinstance(meta.get('chat'), dict) else {}
@@ -640,11 +667,7 @@ class MailChannel(models.Model):
         partner = channel.omni_customer_partner_id.sudo()
         if not partner:
             return self.omni_get_client_info_for_channel(channel_id)
-        Identity = self.env['omni.partner.identity'].sudo()
-        identity = Identity.search([
-            ('provider', '=', channel.omni_provider),
-            ('partner_id', '=', partner.id),
-        ], order='id desc', limit=1)
+        identity = self._omni_identity_for_channel(channel)
         meta = self._omni_parse_identity_metadata(identity)
         tgm = meta.get('telegram') if isinstance(meta.get('telegram'), dict) else {}
         updates = {}

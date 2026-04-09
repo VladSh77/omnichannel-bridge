@@ -306,6 +306,12 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('Оновити профіль', panel_xml)
         self.assertIn('omniProvider', thread_patch)
 
+    def test_omni_get_client_info_identity_fallback_when_partner_unlinked(self):
+        """Guest / not-yet-bound threads: identity is keyed by external_id, not partner_id."""
+        py = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        self.assertIn('def _omni_identity_for_channel', py)
+        self.assertIn("'external_id', '=', ext)", py)
+
     def test_anti_repeat_prefill_markers_present(self):
         ai = (ROOT / 'addons/omnichannel_bridge/models/omni_ai.py').read_text()
         self.assertIn('_omni_prefill_partner_from_inbound_text', ai)
