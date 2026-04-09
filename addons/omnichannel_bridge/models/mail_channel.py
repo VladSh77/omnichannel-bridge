@@ -1277,6 +1277,40 @@ class MailChannel(models.Model):
         return ensure_act_window_views(act)
 
     @api.model
+    def omni_action_open_conversation_card_from_panel(self, channel_id):
+        """
+        Бічна панель Omnichannel: стрілка відкриває **картку розмови** (`omni.inbox.thread`),
+        а не одразу `res.partner` — щоб оператор ідентифікував/прив'язував контакт без дублів.
+        """
+        channel = self.sudo().browse(int(channel_id or 0))
+        if not channel.exists() or not channel.omni_provider:
+            return False
+        self.env['omni.inbox.thread'].sudo()._sync_from_discuss_channels(channel)
+        row = self.env['omni.inbox.thread'].sudo().search(
+            [('channel_id', '=', channel.id)],
+            limit=1,
+        )
+        if not row:
+            return False
+        view = self.env.ref(
+            'omnichannel_bridge.view_omni_inbox_thread_form_conversation',
+            raise_if_not_found=False,
+        )
+        act = {
+            'type': 'ir.actions.act_window',
+            'name': _('Картка розмови'),
+            'res_model': 'omni.inbox.thread',
+            'res_id': row.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': dict(self.env.context, dialog_size='large'),
+        }
+        if view:
+            act['view_id'] = view.id
+            act['views'] = [(view.id, 'form')]
+        return ensure_act_window_views(act)
+
+    @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
         existing = self.sudo().search([
             ('omni_provider', '=', provider),

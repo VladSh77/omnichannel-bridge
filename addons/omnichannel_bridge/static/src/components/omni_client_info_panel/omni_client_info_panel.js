@@ -84,13 +84,13 @@ export class OmniClientInfoPanel extends Component {
         }
     }
 
-    async onOpenPartnerClick() {
+    async onOpenConversationCardClick() {
         if (!this.props.thread?.id) {
             return;
         }
         const action = await this.orm.call(
             "discuss.channel",
-            "omni_action_open_client_from_panel",
+            "omni_action_open_conversation_card_from_panel",
             [this.props.thread.id],
         );
         if (action) {

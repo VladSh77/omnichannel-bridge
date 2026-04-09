@@ -77,4 +77,44 @@
             </p>
         </field>
     </record>
+
+    <!-- Картка розмови (з Discuss): редагування прив'язки клієнта, ідентифікація без дублів -->
+    <record id="view_omni_inbox_thread_form_conversation" model="ir.ui.view">
+        <field name="name">omni.inbox.thread.form.conversation</field>
+        <field name="model">omni.inbox.thread</field>
+        <field name="priority">32</field>
+        <field name="arch" type="xml">
+            <form string="Картка розмови" create="false" delete="false">
+                <header>
+                    <button name="action_open_identify_wizard" type="object"
+                            string="Знайти за email / телефоном" class="btn-primary"/>
+                    <button name="action_open_quick_bind_wizard" type="object"
+                            string="Прив'язати контакт вручну" class="btn-secondary"/>
+                    <button name="action_open_partner_form" type="object"
+                            string="Картка клієнта" class="btn-secondary" invisible="not partner_id"/>
+                    <button name="action_open_in_discuss" type="object"
+                            string="Відкрити Discuss" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <group string="Тред">
+                        <field name="thread_name" readonly="1"/>
+                        <field name="provider" readonly="1"/>
+                        <field name="external_thread_id" readonly="1"/>
+                    </group>
+                    <group string="Клієнт Odoo">
+                        <field name="partner_id"
+                               options="{'no_create': True, 'no_create_edit': True}"
+                               placeholder="Оберіть існуючий контакт або скористайтесь кнопками вище"/>
+                    </group>
+                    <group string="Остання активність">
+                        <field name="last_message_preview" readonly="1"/>
+                        <field name="last_message_at" readonly="1"/>
+                        <field name="operator_status" readonly="1"/>
+                        <field name="needaction_counter" readonly="1"/>
+                    </group>
+                    <field name="channel_id" invisible="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
 </odoo>

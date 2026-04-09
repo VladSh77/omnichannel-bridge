@@ -12,8 +12,8 @@
                         <i class="fa fa-refresh"/>
                     </button>
                     <button class="btn btn-sm btn-link p-0 text-muted"
-                            title="Відкрити контакт"
-                            t-on-click="onOpenPartnerClick">
+                            title="Картка розмови (ідентифікація / прив'язка клієнта)"
+                            t-on-click="onOpenConversationCardClick">
                         <i class="fa fa-external-link"/>
                     </button>
                 </div>

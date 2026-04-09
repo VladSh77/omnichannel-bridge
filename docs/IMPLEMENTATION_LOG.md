@@ -1,5 +1,29 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Conversation card + identity wizard (Discuss panel, anti-duplicate `res.partner`)
+
+### Scope
+
+- **SendPulse-style flow:** кнопка «зовнішнє посилання» у шапці omnichannel-панелі відкриває **картку розмови** (`omni.inbox.thread` у діалозі), а не одразу форму контакту — оператор ідентифікує клієнта (email/телефон → пошук → прив’язка або створення) і прив’язує **поточний** `discuss.channel` до одного партнера, щоб не плодити окремі `res.partner` для Telegram / Viber / WhatsApp тощо.
+- Синхронізація `partner_id` на рядку інбоксу з полем каналу `omni_customer_partner_id` (з захистом від циклу через контекст `omni_inbox_sync_from_channel`).
+
+### Code artifacts
+
+- `addons/omnichannel_bridge/models/omni_conversation_identity_wizard.py`
+- `addons/omnichannel_bridge/views/omni_conversation_identity_wizard_views.xml`
+- `addons/omnichannel_bridge/models/omni_inbox_thread.py` (форма розмови, `action_open_identify_wizard`, `write` → bind на канал)
+- `addons/omnichannel_bridge/models/mail_channel.py` — `omni_action_open_conversation_card_from_panel`
+- `addons/omnichannel_bridge/static/src/components/omni_client_info_panel/*` — `onOpenConversationCardClick`
+- `addons/omnichannel_bridge/views/omni_inbox_thread_views.xml` — `view_omni_inbox_thread_form_conversation`
+- `addons/omnichannel_bridge/views/omni_partner_bind_wizard_views.xml` — `no_create` / `no_create_edit` на `partner_id`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `tests/test_contract_regressions.py`
+- `docs/TZ_CHECKLIST.md` (§ 20.8.1–20.8.2)
+
+### Verification
+
+- `python3 -m unittest tests.test_contract_regressions.ContractRegressionTests.test_omni_inbox_thread_operator_dashboard_markers_present tests.test_contract_regressions.ContractRegressionTests.test_discuss_client_card_parity_markers_present` — OK
+
 ## 2026-04-09 — **CRITICAL INCIDENT** — SendPulse scope violation (process failure, goal not met)
 
 <div style="color:#b00020; border:2px solid #b00020; padding:12px 16px; margin:8px 0; background:#fff8f8;">
@@ -25,7 +49,7 @@
 ### Scope
 
 - Implemented Discuss-side mini client card for omnichannel threads (matching SendPulse best practice UX).
-- Added one-click profile refresh and direct transition to Odoo contact card.
+- Added one-click profile refresh; перехід у форму контакту — не єдиний сценарій з панелі (див. запис вище: **картка розмови** + майстер ідентифікації).
 - Wired thread metadata into frontend store to drive conditional panel rendering.
 
 ### Code artifacts

@@ -7,7 +7,7 @@
             <form string="Прив'язати контакт">
                 <group>
                     <field name="channel_id" readonly="1"/>
-                    <field name="partner_id" options="{'no_create_edit': False}"/>
+                    <field name="partner_id" options="{'no_create': True, 'no_create_edit': True}"/>
                 </group>
                 <footer>
                     <button name="action_bind_partner" type="object" string="Прив'язати" class="btn-primary"/>

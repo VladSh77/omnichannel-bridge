@@ -316,6 +316,10 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('action_omni_inbox_thread', v)
         self.assertIn('action_omni_inbox_thread', menu)
         self.assertIn('menu_omni_open_discuss', menu)
+        self.assertIn('view_omni_inbox_thread_form_conversation', v)
+        wiz = (ROOT / 'addons/omnichannel_bridge/models/omni_conversation_identity_wizard.py').read_text()
+        self.assertIn("_name = 'omni.conversation.identity.wizard'", wiz)
+        self.assertIn('def action_link_partner', wiz)
 
     def test_discuss_client_card_parity_markers_present(self):
         manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
@@ -339,6 +343,8 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('_to_store', channel)
         self.assertIn('omni-client-info', action_js)
         self.assertIn('OmniClientInfoPanel', panel_js)
+        self.assertIn('omni_action_open_conversation_card_from_panel', channel)
+        self.assertIn('onOpenConversationCardClick', panel_js)
         self.assertIn('mail.action_discuss', integration_views)
         self.assertIn('Оновити профіль', panel_xml)
         self.assertIn('state.card.channel_profile', panel_xml)

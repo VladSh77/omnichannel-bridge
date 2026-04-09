@@ -713,7 +713,9 @@
 
 - [x] Додано mini-card клієнта у правій панелі Discuss для omnichannel-тредів (кнопка в thread actions).
 - [x] Додано `Оновити профіль` у mini-card: підтягує актуальні поля з identity metadata та best-effort avatar refresh для Telegram.
-- [x] Додано перехід у картку `res.partner` (або створення контакту з prefill, якщо ще не прив'язано).
+- [x] **Картка розмови** з панелі Discuss: іконка «зовнішнє посилання» відкриває **`omni.inbox.thread`** (діалог), а не одразу форму **`res.partner`** — щоб оператор спершу **ідентифікував** клієнта (email/телефон → пошук → прив’язка або створення) і не плодив окремі контакти для кожного месенджера.
+- [x] Майстер **`omni.conversation.identity.wizard`**: пошук партнера, **прив’язка** до поточного треду, **створити й прив’язати**; перехід у картку контакту вже **після** вибору/створення запису.
+- [x] Прямий перехід у **`res.partner`** — з форми картки розмови / блоку «Клієнт Odoo» у панелі (коли контакт відомий), а не як єдиний сценарій зі стрілки панелі.
 - [x] Додано frontend/store поля для треда (`omni_provider`, `omni_external_thread_id`, `omni_customer_partner_id`) через `_to_store` + patch `Thread`.
 - [x] Додано contract-regression маркери для Discuss client card parity у `tests/test_contract_regressions.py`.
 
@@ -723,7 +725,7 @@
 
 **Застосування по каналах:** той самий каркас панелі (шапка, контакт, блок профілю каналу, Odoo, тред) — для **усіх** увімкнених omnichannel-провайдерів (Telegram, Meta/Messenger та Instagram, WhatsApp Cloud, Twilio WhatsApp, Viber, живий чат сайту) і для **майбутніх** каналів з тією ж моделлю треду. Зміст рядків профілю та посилань — залежить від того, що реально дає webhook/API (без вигаданих полів). Офіційні схеми payload, ключі `metadata_json` і стан live/stub: **`docs/MESSENGER_WEBHOOK_IDENTITY_SCHEMA.md`**, реєстр у коді: **`utils/omni_provider_contracts.py`**.
 
-1. **Шапка:** напис «Omnichannel»; кнопки **Оновити профіль** (RPC refresh + для Telegram — у т.ч. оновлення знімка getChat у metadata) та **Відкрити контакт** (картка `res.partner` або майстер прив’язки).
+1. **Шапка:** напис «Omnichannel»; кнопки **Оновити профіль** (RPC refresh + для Telegram — у т.ч. оновлення знімка getChat у metadata) та **Картка розмови** (іконка зовнішнього посилання): діалог **`omni.inbox.thread`** — ідентифікація / прив’язка партнера до **цього** треду (**`omni.conversation.identity.wizard`**), без примусового одразу відкриття форми `res.partner` (щоб уникнути дублікатів між каналами).
 2. **Верхній блок:** аватар (або плейсхолдер без «камери» Odoo, поки немає `image` у партнера); **ім’я**; рядок **емодзі каналу + підпис провайдера** (напр. ✈️ Telegram); **бейджі** з payload `channel_profile.badges` (мінімум «Активний» де доречно; для Telegram — додатково **Telegram Premium**, якщо `is_premium`).
 3. **Контакт:** основний **ідентифікатор у каналі** (username Telegram, WA id, PSID тощо) — **клікабельне посилання**, якщо є стабільний публічний URL (`t.me`, `wa.me`, `m.me` тощо); **мова** (`language_code`, коли є); телефон з **поділеного контакту** Telegram (якщо є); email/телефон з картки партнера Odoo.
 4. **Блок профілю каналу** (`channel_profile.section`): заголовок і рядки з identity metadata — для Telegram це відповідає **getChat** (біо; **active usernames** — кожен нік окремим **клікабельним** `t.me`; дата народження за наявності). **Не** показувати в UI сирі дампи Bot API чи зайві внутрішні id «для діагностики».

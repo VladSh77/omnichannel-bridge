@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
+
+from .omni_action_utils import ensure_act_window_views, merge_act_window_context
 
 OPERATOR_STATUS_SELECTION = [
     ('needaction', 'Потребує уваги'),
@@ -66,6 +68,53 @@ class OmniInboxThread(models.Model):
         ('omni_inbox_thread_channel_unique', 'unique(channel_id)', 'One inbox row per Discuss thread.'),
     ]
 
+    def write(self, vals):
+        res = super().write(vals)
+        if self.env.context.get('omni_inbox_sync_from_channel'):
+            return res
+        if 'partner_id' in vals:
+            Channel = self.env['discuss.channel'].sudo()
+            for rec in self:
+                ch = rec.channel_id
+                if not ch or not ch.exists() or not ch.omni_provider:
+                    continue
+                if rec.partner_id:
+                    Channel.omni_bind_partner_to_channel(ch.id, rec.partner_id.id)
+                else:
+                    ch.write({'omni_customer_partner_id': False})
+        return res
+
+    def action_open_identify_wizard(self):
+        self.ensure_one()
+        raw = self.env['ir.actions.act_window']._for_xml_id(
+            'omnichannel_bridge.action_omni_conversation_identity_wizard'
+        )
+        act = merge_act_window_context(dict(raw), {'default_channel_id': self.channel_id.id})
+        return ensure_act_window_views(act)
+
+    def action_open_quick_bind_wizard(self):
+        self.ensure_one()
+        raw = self.env['ir.actions.act_window']._for_xml_id(
+            'omnichannel_bridge.action_omni_partner_bind_wizard'
+        )
+        act = merge_act_window_context(dict(raw), {'default_channel_id': self.channel_id.id})
+        return ensure_act_window_views(act)
+
+    def action_open_partner_form(self):
+        self.ensure_one()
+        if not self.partner_id:
+            return False
+        act = {
+            'type': 'ir.actions.act_window',
+            'name': _('Картка клієнта'),
+            'res_model': 'res.partner',
+            'res_id': self.partner_id.id,
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+        }
+        return ensure_act_window_views(act)
+
     @api.model
     def _sync_from_discuss_channels(self, channels):
         """Upsert dashboard rows from discuss.channel records (omnichannel only)."""
@@ -119,7 +168,7 @@ class OmniInboxThread(models.Model):
             }
             row = existing.get(channel.id)
             if row:
-                row.sudo().write(vals)
+                row.sudo().with_context(omni_inbox_sync_from_channel=True).write(vals)
             else:
                 self.sudo().create(dict(vals, channel_id=channel.id))
 
