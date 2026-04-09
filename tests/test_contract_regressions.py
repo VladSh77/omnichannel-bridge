@@ -215,6 +215,14 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('STAGING_RUNTIME_BOOTSTRAP.md', runbook)
         self.assertIn('PROD_LIVECHAT_SMOKE_2026-04-08.md', runbook)
 
+    def test_res_config_settings_fields_referenced_in_settings_xml_exist_in_python(self):
+        """Avoid upgrade ParseError: field X does not exist on res.config.settings (XML ahead of models)."""
+        py = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        xml = (ROOT / 'addons/omnichannel_bridge/views/res_config_settings_views.xml').read_text()
+        self.assertIn('omnichannel_sla_scope', py)
+        self.assertIn("config_parameter='omnichannel_bridge.sla_scope'", py)
+        self.assertIn('name="omnichannel_sla_scope"', xml)
+
     def test_livechat_prechat_and_runtime_smoke_markers_present(self):
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
         smoke = (ROOT / 'scripts/odoo_runtime_smoke.py').read_text()

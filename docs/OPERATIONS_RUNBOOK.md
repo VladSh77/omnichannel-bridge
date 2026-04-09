@@ -44,6 +44,20 @@ Recovery:
 
 If the DB was restored from another environment with newer data but older code, align code first, then upgrade; do not delete production data without a plan.
 
+## Module upgrade `ParseError`: field missing on `res.config.settings`
+
+Symptoms: `button_immediate_upgrade` / `-u omnichannel_bridge` fails in `res_config_settings_views.xml` with a message like **field `…` does not exist on model `res.config.settings`** (may appear in Ukrainian in the UI).
+
+Meaning: the **view XML on disk references a field** that the **loaded Python model** does not define — almost always **stale or partial `models/res_config_settings.py`** on the server (older git revision, failed rsync, leftover bytecode, or two trees and the wrong one is imported).
+
+Recovery:
+
+1. On the server, open `addons/omnichannel_bridge/models/res_config_settings.py` and confirm it defines the field named in the error (e.g. `omnichannel_sla_scope` with `config_parameter='omnichannel_bridge.sla_scope'`).
+2. Ensure **one** canonical checkout: `git fetch` / `git reset --hard origin/main` (or your release tag), then remove `__pycache__` under that addon if suspicious.
+3. **Restart** Odoo and retry **`-u omnichannel_bridge`**.
+
+The repository ties settings fields to the form in `tests/test_contract_regressions.py` (`test_res_config_settings_fields_referenced_in_settings_xml_exist_in_python`).
+
 ## Known High-Risk Areas
 
 - Duplicate webhook delivery without idempotency guard.

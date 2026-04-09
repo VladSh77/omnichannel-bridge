@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Production upgrade blocker: `ParseError` — `omnichannel_sla_scope` missing on `res.config.settings`
+
+### Summary (UA)
+
+Під час **Upgrade** модуля на проді: `odoo.tools.convert.ParseError` у `res_config_settings_views.xml` — поле **`omnichannel_sla_scope`** «не існує» в моделі **`res.config.settings`**. У **git** поле визначене в `models/res_config_settings.py` (разом із `config_parameter='omnichannel_bridge.sla_scope'`). На сервері типово **застарілий або неповний** `res_config_settings.py` відносно XML (частковий деплой, старий коміт, кеш `__pycache__`).
+
+### Repo follow-up
+
+- `docs/OPERATIONS_RUNBOOK.md` — секція **Module upgrade ParseError: field missing on res.config.settings**.
+- `tests/test_contract_regressions.py` — `test_res_config_settings_fields_referenced_in_settings_xml_exist_in_python`.
+- `__manifest__.py` version **17.0.1.0.1** (видимість оновлення в Apps).
+
 ## 2026-04-09 — P1 production incident: campscout.eu `KeyError` for `omni.*` models (registry mismatch)
 
 ### Summary (UA)
