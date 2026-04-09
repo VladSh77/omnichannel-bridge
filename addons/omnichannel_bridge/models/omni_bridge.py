@@ -391,11 +391,20 @@ class OmniBridge(models.AbstractModel):
             return {'ok': True, 'skipped': True}
         text = (message.get('text') or message.get('caption') or '').strip()
         if not text:
-            webhook_event.sudo().write({
-                'state': 'processed',
-                'processed_at': fields.Datetime.now(),
-            })
-            return {'ok': True, 'skipped': True}
+            # Keep inbound flow alive for first non-text touchpoints (sticker/photo/voice),
+            # otherwise the customer may never be created in Odoo.
+            if message.get('sticker'):
+                text = '[sticker]'
+            elif message.get('photo'):
+                text = '[photo]'
+            elif message.get('voice'):
+                text = '[voice]'
+            elif message.get('video'):
+                text = '[video]'
+            elif message.get('document'):
+                text = '[document]'
+            else:
+                text = '[non-text]'
         from_user = message.get('from') or {}
         chat = message.get('chat') or {}
 

@@ -489,6 +489,21 @@ class MailChannel(models.Model):
         return False
 
     @api.model
+    def _omni_operator_partner_ids(self):
+        """Partners who should always see omnichannel threads in Discuss."""
+        notify = self.env['omni.notify'].sudo()
+        users = notify._manager_pool_users()
+        # Fallback: if manager pool is empty, expose chats to internal users
+        # so operators are not blocked by an empty Discuss inbox.
+        if not users:
+            users = self.env['res.users'].sudo().search([
+                ('share', '=', False),
+                ('active', '=', True),
+            ])
+        partners = users.mapped('partner_id').filtered(lambda p: p and p.active)
+        return partners.ids
+
+    @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
         existing = self.sudo().search([
             ('omni_provider', '=', provider),
@@ -497,7 +512,20 @@ class MailChannel(models.Model):
         if existing:
             existing.sudo().omni_thread_align_customer(partner)
             return existing, False
+        # Fallback: if identity/thread id changed upstream, reuse latest channel
+        # of the same customer/provider instead of creating duplicates.
+        if partner:
+            existing = self.sudo().search([
+                ('omni_provider', '=', provider),
+                ('omni_customer_partner_id', '=', partner.id),
+            ], order='write_date desc, id desc', limit=1)
+            if existing:
+                existing.sudo().write({'omni_external_thread_id': str(external_thread_id)})
+                existing.sudo().omni_thread_align_customer(partner)
+                return existing, False
         odoobot = self.env.ref('base.partner_root')
+        operator_partner_ids = self._omni_operator_partner_ids()
+        member_ids = list(dict.fromkeys([partner.id, odoobot.id] + operator_partner_ids))
         channel = self.sudo().create({
             'name': label or _('[%(provider)s] %(name)s') % {
                 'provider': provider,
@@ -509,9 +537,9 @@ class MailChannel(models.Model):
             'omni_customer_partner_id': partner.id,
         })
         if hasattr(channel, 'add_members'):
-            channel.add_members(partner_ids=[partner.id, odoobot.id])
+            channel.add_members(partner_ids=member_ids)
         else:
-            channel.channel_partner_ids = [(6, 0, [partner.id, odoobot.id])]
+            channel.channel_partner_ids = [(6, 0, member_ids)]
         return channel, True
 
     def omni_thread_align_customer(self, partner):
@@ -520,11 +548,13 @@ class MailChannel(models.Model):
             return
         self.sudo().write({'omni_customer_partner_id': partner.id})
         member_partner_ids = self.channel_partner_ids.ids if 'channel_partner_ids' in self._fields else []
-        if partner.id not in member_partner_ids:
+        must_have = list(dict.fromkeys([partner.id] + self._omni_operator_partner_ids()))
+        missing = [pid for pid in must_have if pid not in member_partner_ids]
+        if missing:
             if hasattr(self, 'add_members'):
-                self.add_members(partner_ids=[partner.id])
+                self.add_members(partner_ids=missing)
             else:
-                self.channel_partner_ids = [(4, partner.id)]
+                self.channel_partner_ids = [(4, pid) for pid in missing]
 
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)

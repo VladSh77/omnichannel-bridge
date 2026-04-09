@@ -630,3 +630,43 @@
   - conversation audit + CRM analytics,
   - security/ACL + localization.
 - [x] Принцип переносу: переносити патерни/контракти, не копіювати CampScout-специфічні дані та тексти «як є».
+
+### 20.7 Best-of `celestix-ifr` для покращення RAG/AI (mandatory)
+
+- [ ] Застосувати **hybrid retrieval** як стандарт: `RAG top-k + graph/IFR candidates -> RRF fusion -> cross-encoder rerank -> LLM`, без переходу на "pure IFR only".
+- [ ] Додати **anti-drift policy** для multi-hop retrieval: anchor до оригінального запиту (мін. 50%) + hard reset при надмірному drift, щоб уникати "вигаданих" або нерелевантних відповідей.
+- [ ] Зафіксувати **контекстний U-curve** для прод-навантаження: підібрати оптимальний `k` (не гнати великий контекст), бо надлишковий контекст погіршує якість відповіді.
+- [ ] Включити в acceptance не тільки retrieval-метрики, а й **E2E-метрики відповіді**: faithfulness, context precision/recall, answer relevancy, частка "NOT FOUND", і цільове покращення до launch gate.
+- [ ] Для knowledge-пайплайна зафіксувати правило: retrieval-інновації приймаються в прод лише якщо **E2E quality не падає** відносно базового RAG.
+
+### 20.8 100% заміна `sendpulse-odoo` для всіх каналів (mandatory)
+
+- [ ] Принцип канальної рівності: будь-яке покращення ідентифікації/дедуплікації/анти-лупів робиться **channel-agnostic** (Telegram, Instagram/Facebook, WhatsApp, Viber, Website Livechat), а не "тільки для Telegram".
+- [ ] Уніфікувати каскад ідентифікації клієнта в `omnichannel_bridge`: `external_id -> email -> додаткові email поля -> phone`, з обов'язковою прив'язкою identity після успішного match.
+- [ ] Додати fallback-обробку **non-text inbound** (photo/sticker/voice/video/document) у всіх каналах, щоб перший контакт також створював клієнта/тред і не губив лід.
+- [ ] Впровадити channel parity matrix у pre-launch тестах: однакові сценарії для кожного каналу (new contact, known contact, duplicate id, media inbound, handoff, manager online/offline, fallback cooldown, reopen closed thread).
+- [ ] Встановити go-live критерій "replace 100%": модуль проходить parity matrix і покриває критичні сценарії SendPulse без регресій по авторству повідомлень, доставці, SLA, та аудит-логах.
+
+### 20.9 Повністю автономний режим без менеджера (mandatory)
+
+- [ ] Ціль launch: модуль має працювати **без людини в контурі** для стандартних sales/FAQ сценаріїв у всіх каналах (Telegram, Meta/Instagram, WhatsApp, Viber, Website Livechat).
+- [ ] Менеджер у прод-потоці — тільки як **аварійний ескалаційний рівень**, а не штатний етап діалогу.
+- [ ] Для переходу в "AI-only primary mode" обов'язкові критерії якості:
+  - [ ] `>=97%` релевантних відповідей у regression-наборі (по таборах, мовах UA/PL, каналах);
+  - [ ] `<=1%` critical hallucination rate (ціни, дати, локації, legal/insurance факти);
+  - [ ] `>=95%` успішних діалогів без ручного втручання (automation resolution rate);
+  - [ ] `<=3%` fallback-only відповідей без змісту;
+  - [ ] `0` блокуючих помилок авторства/ідентифікації клієнта в Discuss.
+- [ ] Knowledge base є "single source of truth": тільки затверджені факти (docs + YouTube з link+timestamp + editorial approve) допускаються до генерації відповідей.
+- [ ] Додати **автоматичний контроль актуальності фактів** (ціни/дати/умови): прострочені факти не використовуються у відповіді, поки не re-approved.
+- [ ] Додати hard-policy відповіді: якщо факт не підтверджений у knowledge base, AI не вигадує; замість цього дає контрольовану відповідь і пропонує асинхронне уточнення.
+- [ ] Канальний launch-гейт: AI-only режим вмикається лише після проходження однакового acceptance по кожному каналу окремо (не "в середньому").
+
+### 20.10 Фазування запуску: спочатку 100% chat-core, потім outbound (mandatory)
+
+- [ ] **Фаза 1 (обов'язково спочатку):** модуль працює як повний chat-core фірми у всіх каналах (Telegram, Meta/Instagram, WhatsApp, Viber, Website Livechat) з AI+knowledge без ручного менеджерського контуру за правилами `20.8` + `20.9`.
+- [ ] **Блокування Фази 2:** будь-які нові outbound-функції (email/SMS/масові кампанії/нагадування) не запускаються в прод, доки Фаза 1 не отримала formal sign-off по acceptance-метриках.
+- [ ] **Фаза 2 (після sign-off Фази 1):** вмикаються Email/SMS сценарії тільки для already-resolved chat use-cases, без зміни перевіреної chat-логіки.
+- [ ] Для Email/SMS обов'язково наслідувати ті самі політики якості: idempotency, dedup, SLA, авторство, audit trail, anti-spam cooldown.
+- [ ] Усі outbound-події (chat/email/sms) мають потрапляти в єдину аналітику "болей клієнта" для безперервного оновлення knowledge base.
+- [ ] Gate-перевірка перед Фазою 2: підтвердження власником проекту (`admin@campscout.eu`) на основі звіту acceptance та стабільності за останні 7 днів.

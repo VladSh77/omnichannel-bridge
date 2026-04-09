@@ -524,6 +524,18 @@ class ResConfigSettings(models.TransientModel):
     def get_values(self):
         res = super().get_values()
         icp = self.env['ir.config_parameter'].sudo()
+        tg_token = (icp.get_param('omnichannel_bridge.telegram_bot_token', '') or '').strip()
+        tg_secret = (icp.get_param('omnichannel_bridge.telegram_webhook_secret', '') or '').strip()
+        tg_row = self.env['omni.integration'].sudo().search([
+            ('provider', '=', 'telegram'),
+            ('company_id', '=', self.env.company.id),
+        ], order='active desc, id desc', limit=1)
+        if not tg_token and tg_row and tg_row.api_token:
+            tg_token = (tg_row.api_token or '').strip()
+            icp.set_param('omnichannel_bridge.telegram_bot_token', tg_token)
+        if not tg_secret and tg_row and tg_row.webhook_secret:
+            tg_secret = (tg_row.webhook_secret or '').strip()
+            icp.set_param('omnichannel_bridge.telegram_webhook_secret', tg_secret)
         raw = icp.get_param('omnichannel_bridge.coupon_allowed_categ_ids', '[]')
         try:
             categ_ids = [int(x) for x in json.loads(raw or '[]') if int(x) > 0]
@@ -552,6 +564,8 @@ class ResConfigSettings(models.TransientModel):
                 if group:
                     group.sudo().write({'users': [(6, 0, pain_user_ids)]})
         res.update({
+            'omnichannel_telegram_bot_token': tg_token,
+            'omnichannel_telegram_webhook_secret': tg_secret,
             'omnichannel_coupon_allowed_categ_ids': [(6, 0, categ_ids)],
             'omnichannel_client_pain_admin_user_ids': [(6, 0, pain_user_ids)],
             'omnichannel_assignment_manager_user_ids': [(6, 0, manager_pool_ids)],
@@ -575,6 +589,28 @@ class ResConfigSettings(models.TransientModel):
         before = {k: (icp.get_param(k, '') or '') for k in tracked_keys}
         super().set_values()
         for settings in self:
+            tg_token = (settings.omnichannel_telegram_bot_token or '').strip()
+            tg_secret = (settings.omnichannel_telegram_webhook_secret or '').strip()
+            tg_row = self.env['omni.integration'].sudo().search([
+                ('provider', '=', 'telegram'),
+                ('company_id', '=', self.env.company.id),
+            ], order='id desc', limit=1)
+            if tg_row:
+                vals = {}
+                if tg_token:
+                    vals['api_token'] = tg_token
+                if tg_secret:
+                    vals['webhook_secret'] = tg_secret
+                if vals:
+                    tg_row.sudo().write(vals)
+            elif tg_token or tg_secret:
+                self.env['omni.integration'].sudo().create({
+                    'provider': 'telegram',
+                    'company_id': self.env.company.id,
+                    'active': True,
+                    'api_token': tg_token or False,
+                    'webhook_secret': tg_secret or False,
+                })
             ids_payload = json.dumps(settings.omnichannel_coupon_allowed_categ_ids.ids or [])
             icp.set_param('omnichannel_bridge.coupon_allowed_categ_ids', ids_payload)
             pain_ids = settings.omnichannel_client_pain_admin_user_ids.ids or []

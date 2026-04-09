@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import re
 from datetime import timedelta
 
@@ -156,20 +157,73 @@ class ResPartner(models.Model):
         Identity = self.env['omni.partner.identity'].sudo()
         provider = vals['provider']
         external_id = str(vals['external_id'])
+        metadata = {}
+        if vals.get('metadata_json'):
+            try:
+                metadata = json.loads(vals.get('metadata_json') or '{}') or {}
+            except Exception:
+                metadata = {}
         existing = Identity.search([
             ('provider', '=', provider),
             ('external_id', '=', external_id),
         ], limit=1)
         if existing:
-            return existing.partner_id
-        partner = self.browse()
-        if vals.get('phone'):
-            partner = self._omni_find_by_phone(vals['phone'])
-        if not partner and vals.get('email'):
-            partner = self.sudo().search(
-                [('email', '=', vals['email'].strip().lower())],
-                limit=1,
+            partner = existing.partner_id.sudo()
+            patch_vals = {}
+            # Keep customer card enriched even when identity already exists.
+            current_name = (partner.name or '').strip()
+            placeholder_name = (
+                not current_name
+                or current_name.lower().startswith('telegram:')
+                or current_name.lower().startswith('meta:')
+                or current_name.lower().startswith('whatsapp:')
+                or current_name.lower().startswith('viber:')
             )
+            if vals.get('display_name') and placeholder_name:
+                patch_vals['name'] = vals.get('display_name')
+            if vals.get('name') and placeholder_name:
+                patch_vals['name'] = vals.get('name')
+            if not partner.email:
+                candidate_email = next(
+                    (e for e in [((x or '').strip().lower()) for x in email_candidates] if e),
+                    '',
+                )
+                if candidate_email:
+                    patch_vals['email'] = candidate_email
+            if not (partner.phone or partner.mobile) and vals.get('phone'):
+                patch_vals['phone'] = vals.get('phone')
+            if patch_vals:
+                partner.write(patch_vals)
+            return partner
+
+        def _search_by_email(addr):
+            addr = (addr or '').strip().lower()
+            if not addr:
+                return self.browse()
+            return self.sudo().search([('email', '=', addr)], limit=1)
+
+        email_candidates = []
+        if vals.get('email'):
+            email_candidates.append(vals.get('email'))
+        # Channel-specific payloads may carry additional customer emails.
+        for key in ('user_email', 'booking_email', 'email'):
+            v = metadata.get(key)
+            if v:
+                email_candidates.append(v)
+        for nested_key in ('telegram', 'meta', 'whatsapp', 'viber', 'contact'):
+            nested = metadata.get(nested_key) or {}
+            if isinstance(nested, dict):
+                v = nested.get('email')
+                if v:
+                    email_candidates.append(v)
+
+        partner = self.browse()
+        for email in email_candidates:
+            partner = _search_by_email(email)
+            if partner:
+                break
+        if not partner and vals.get('phone'):
+            partner = self._omni_find_by_phone(vals['phone'])
         if not partner:
             crm_lead_type = (
                 self.env['ir.config_parameter']
@@ -179,7 +233,7 @@ class ResPartner(models.Model):
             partner_vals = {
                 'name': vals.get('name') or vals.get('display_name') or external_id,
                 'phone': vals.get('phone'),
-                'email': vals.get('email'),
+                'email': next((e for e in [((x or '').strip().lower()) for x in email_candidates] if e), vals.get('email')),
             }
             partner_vals = {k: v for k, v in partner_vals.items() if v}
             if partner_vals.get('email'):
