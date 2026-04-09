@@ -6,6 +6,7 @@
 - **Descriptive camp cards** (dates, duration, program text) are synced into **`omni.knowledge.article`** via generated data:
   - Source: sibling repo `camp/knowledge-base` (markdown).
   - Regenerate: `python3 scripts/generate_camp_knowledge_data.py` (optional `CAMP_KNOWLEDGE_BASE=...`), then commit `data/omni_camp_knowledge_articles.xml` and bump module upgrade.
+- **Probe free places** for a camp product (e.g. POSHUMIMO): in `odoo shell`, run `scripts/odoo_probe_camp_places.py` → `run(env)` (see file docstring).
 
 ## Deployment Guardrail
 
@@ -56,6 +57,8 @@ If the DB was restored from another environment with newer data but older code, 
 Symptoms: `button_immediate_upgrade` / `-u omnichannel_bridge` fails in `res_config_settings_views.xml` with a message like **field `…` does not exist on model `res.config.settings`** (may appear in Ukrainian in the UI).
 
 Meaning: the **view XML on disk references a field** that the **loaded Python model** does not define — almost always **stale or partial `models/res_config_settings.py`** on the server (older git revision, failed rsync, leftover bytecode, or two trees and the wrong one is imported).
+
+If the error is **`Field … must have type 'boolean', 'integer', …`** for an `omnichannel_*` field: **`res.config.settings` cannot use `fields.Text` with `config_parameter`** (use `fields.Char` + optional `widget="text"` in the form view).
 
 Recovery:
 

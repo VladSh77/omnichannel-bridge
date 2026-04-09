@@ -160,7 +160,7 @@ class ResConfigSettings(models.TransientModel):
         default='qwen2.5:7b',
         config_parameter='omnichannel_bridge.ollama_model',
     )
-    omnichannel_fallback_message = fields.Text(
+    omnichannel_fallback_message = fields.Char(
         string='Fallback message when LLM is unavailable',
         config_parameter='omnichannel_bridge.fallback_message',
     )
@@ -195,7 +195,7 @@ class ResConfigSettings(models.TransientModel):
         default='gpt-4o-mini',
         config_parameter='omnichannel_bridge.openai_model',
     )
-    omnichannel_openai_system_prompt = fields.Text(
+    omnichannel_openai_system_prompt = fields.Char(
         config_parameter='omnichannel_bridge.openai_system_prompt',
     )
     omnichannel_llm_prompt_version = fields.Char(
@@ -218,39 +218,39 @@ class ResConfigSettings(models.TransientModel):
         default='default',
         config_parameter='omnichannel_bridge.llm_assistant_profile',
     )
-    omnichannel_objection_playbook_price = fields.Text(
+    omnichannel_objection_playbook_price = fields.Char(
         string='Objection playbook: price',
         config_parameter='omnichannel_bridge.objection_playbook_price',
     )
-    omnichannel_objection_playbook_timing = fields.Text(
+    omnichannel_objection_playbook_timing = fields.Char(
         string='Objection playbook: timing',
         config_parameter='omnichannel_bridge.objection_playbook_timing',
     )
-    omnichannel_objection_playbook_trust = fields.Text(
+    omnichannel_objection_playbook_trust = fields.Char(
         string='Objection playbook: trust',
         config_parameter='omnichannel_bridge.objection_playbook_trust',
     )
-    omnichannel_objection_playbook_need_to_think = fields.Text(
+    omnichannel_objection_playbook_need_to_think = fields.Char(
         string='Objection playbook: need_to_think',
         config_parameter='omnichannel_bridge.objection_playbook_need_to_think',
     )
-    omnichannel_objection_playbook_competitor = fields.Text(
+    omnichannel_objection_playbook_competitor = fields.Char(
         string='Objection playbook: competitor',
         config_parameter='omnichannel_bridge.objection_playbook_competitor',
     )
-    omnichannel_objection_playbook_not_decision_maker = fields.Text(
+    omnichannel_objection_playbook_not_decision_maker = fields.Char(
         string='Objection playbook: not_decision_maker',
         config_parameter='omnichannel_bridge.objection_playbook_not_decision_maker',
     )
-    omnichannel_pain_script = fields.Text(
+    omnichannel_pain_script = fields.Char(
         string='Pain discovery script',
         config_parameter='omnichannel_bridge.pain_script',
     )
-    omnichannel_upsell_script = fields.Text(
+    omnichannel_upsell_script = fields.Char(
         string='Upsell script',
         config_parameter='omnichannel_bridge.upsell_script',
     )
-    omnichannel_style_warm_policy = fields.Text(
+    omnichannel_style_warm_policy = fields.Char(
         string='Warm style policy',
         config_parameter='omnichannel_bridge.style_warm_policy',
     )
@@ -294,15 +294,15 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.legal_child_protection_url',
         default='https://campscout.eu/child-protection',
     )
-    omnichannel_legal_short_offer_text = fields.Text(
+    omnichannel_legal_short_offer_text = fields.Char(
         string='Approved short offer wording',
         config_parameter='omnichannel_bridge.legal_short_offer_text',
     )
-    omnichannel_legal_short_rodo_text = fields.Text(
+    omnichannel_legal_short_rodo_text = fields.Char(
         string='Approved short RODO wording',
         config_parameter='omnichannel_bridge.legal_short_rodo_text',
     )
-    omnichannel_legal_short_child_text = fields.Text(
+    omnichannel_legal_short_child_text = fields.Char(
         string='Approved short child-data wording',
         config_parameter='omnichannel_bridge.legal_short_child_text',
     )
@@ -311,19 +311,19 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.legal_approved_owner',
         help='Process owner who approves legal auto-wording in bot context.',
     )
-    omnichannel_consent_meta_text = fields.Text(
+    omnichannel_consent_meta_text = fields.Char(
         string='Consent text: Meta/Instagram',
         config_parameter='omnichannel_bridge.consent_meta_text',
     )
-    omnichannel_consent_telegram_text = fields.Text(
+    omnichannel_consent_telegram_text = fields.Char(
         string='Consent text: Telegram',
         config_parameter='omnichannel_bridge.consent_telegram_text',
     )
-    omnichannel_consent_whatsapp_text = fields.Text(
+    omnichannel_consent_whatsapp_text = fields.Char(
         string='Consent text: WhatsApp',
         config_parameter='omnichannel_bridge.consent_whatsapp_text',
     )
-    omnichannel_consent_site_text = fields.Text(
+    omnichannel_consent_site_text = fields.Char(
         string='Consent text: Website livechat',
         config_parameter='omnichannel_bridge.consent_site_text',
     )
@@ -433,11 +433,11 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.window_last_call_hours_before_close',
         default=2.0,
     )
-    omnichannel_window_last_call_text = fields.Text(
+    omnichannel_window_last_call_text = fields.Char(
         string='Last-call reminder text',
         config_parameter='omnichannel_bridge.window_last_call_text',
     )
-    omnichannel_window_reminder_text = fields.Text(
+    omnichannel_window_reminder_text = fields.Char(
         string='24h reminder text',
         config_parameter='omnichannel_bridge.window_reminder_text',
     )
@@ -482,12 +482,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='omnichannel_bridge.log_pii_masking',
         default=True,
     )
-    omnichannel_moderation_keywords = fields.Text(
+    omnichannel_moderation_keywords = fields.Char(
         string='Moderation keywords (comma-separated)',
         config_parameter='omnichannel_bridge.moderation_keywords',
         help='Additional risk keywords to trigger policy action.',
     )
-    omnichannel_vocative_map_extra = fields.Text(
+    omnichannel_vocative_map_extra = fields.Char(
         string='Vocative map extra (name:vocative, comma-separated)',
         config_parameter='omnichannel_bridge.vocative_map_extra',
         help='Example: олена:Олено, віра:Віро',

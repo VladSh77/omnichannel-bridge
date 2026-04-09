@@ -86,10 +86,10 @@
                             <field name="omnichannel_window_last_call_hours_before_close"/>
                         </setting>
                         <setting string="Reminder text" invisible="not omnichannel_window_reminder_enabled">
-                            <field name="omnichannel_window_reminder_text" placeholder="Підкажіть, будь ласка, чи встигли обрати програму табору?..."/>
+                            <field name="omnichannel_window_reminder_text" widget="text" placeholder="Підкажіть, будь ласка, чи встигли обрати програму табору?..."/>
                         </setting>
                         <setting string="Last-call text" invisible="not omnichannel_window_reminder_enabled">
-                            <field name="omnichannel_window_last_call_text" placeholder="Вікно повідомлень скоро закриється — якщо зручно, залиште короткий апдейт і я підключу менеджера."/>
+                            <field name="omnichannel_window_last_call_text" widget="text" placeholder="Вікно повідомлень скоро закриється — якщо зручно, залиште короткий апдейт і я підключу менеджера."/>
                         </setting>
                         <setting string="Cooldown reminder (minutes)">
                             <field name="omnichannel_cooldown_reminder_minutes"/>
@@ -217,7 +217,7 @@
                             <field name="omnichannel_openai_enabled"/>
                         </setting>
                         <setting string="Базовий системний промпт">
-                            <field name="omnichannel_openai_system_prompt" placeholder="Тон, емпатія, сценарій продажу — без вигаданих цифр (їх дає блок фактів)."/>
+                            <field name="omnichannel_openai_system_prompt" widget="text" placeholder="Тон, емпатія, сценарій продажу — без вигаданих цифр (їх дає блок фактів)."/>
                         </setting>
                         <setting string="Prompt version tag">
                             <field name="omnichannel_llm_prompt_version"/>
@@ -229,13 +229,13 @@
                             <field name="omnichannel_llm_assistant_profile"/>
                         </setting>
                         <setting string="Moderation keywords">
-                            <field name="omnichannel_moderation_keywords"/>
+                            <field name="omnichannel_moderation_keywords" widget="text"/>
                         </setting>
                         <setting string="Moderation action">
                             <field name="omnichannel_moderation_action"/>
                         </setting>
                         <setting string="Vocative map extra">
-                            <field name="omnichannel_vocative_map_extra" placeholder="олена:Олено, віра:Віро, павел:Pawle"/>
+                            <field name="omnichannel_vocative_map_extra" widget="text" placeholder="олена:Олено, віра:Віро, павел:Pawle"/>
                         </setting>
                     </block>
                     <block title="Legal Pack (approved snippets)" name="omnichannel_block_legal_pack">
@@ -252,28 +252,28 @@
                             <field name="omnichannel_legal_child_protection_url"/>
                         </setting>
                         <setting string="Approved short offer wording">
-                            <field name="omnichannel_legal_short_offer_text" placeholder="Коротке узгоджене формулювання для оферти."/>
+                            <field name="omnichannel_legal_short_offer_text" widget="text" placeholder="Коротке узгоджене формулювання для оферти."/>
                         </setting>
                         <setting string="Approved short RODO wording">
-                            <field name="omnichannel_legal_short_rodo_text" placeholder="Коротке узгоджене формулювання по обробці даних."/>
+                            <field name="omnichannel_legal_short_rodo_text" widget="text" placeholder="Коротке узгоджене формулювання по обробці даних."/>
                         </setting>
                         <setting string="Approved short child-data wording">
-                            <field name="omnichannel_legal_short_child_text" placeholder="Коротке узгоджене формулювання щодо мінімізації даних дітей."/>
+                            <field name="omnichannel_legal_short_child_text" widget="text" placeholder="Коротке узгоджене формулювання щодо мінімізації даних дітей."/>
                         </setting>
                         <setting string="Legal approvals owner">
                             <field name="omnichannel_legal_approved_owner"/>
                         </setting>
                         <setting string="Consent text for Meta/Instagram">
-                            <field name="omnichannel_consent_meta_text"/>
+                            <field name="omnichannel_consent_meta_text" widget="text"/>
                         </setting>
                         <setting string="Consent text for Telegram">
-                            <field name="omnichannel_consent_telegram_text"/>
+                            <field name="omnichannel_consent_telegram_text" widget="text"/>
                         </setting>
                         <setting string="Consent text for WhatsApp">
-                            <field name="omnichannel_consent_whatsapp_text"/>
+                            <field name="omnichannel_consent_whatsapp_text" widget="text"/>
                         </setting>
                         <setting string="Consent text for website livechat">
-                            <field name="omnichannel_consent_site_text"/>
+                            <field name="omnichannel_consent_site_text" widget="text"/>
                         </setting>
                     </block>
                     <block title="Release &amp; Token Rotation" name="omnichannel_block_release_token">
@@ -295,31 +295,31 @@
                     </block>
                     <block title="Sales objections playbook" name="omnichannel_block_objections">
                         <setting string="Price objection">
-                            <field name="omnichannel_objection_playbook_price" placeholder="Empathize, use ORM facts only, ask one budget-calibration question."/>
+                            <field name="omnichannel_objection_playbook_price" widget="text" placeholder="Empathize, use ORM facts only, ask one budget-calibration question."/>
                         </setting>
                         <setting string="Timing objection">
-                            <field name="omnichannel_objection_playbook_timing" placeholder="Respect timing, suggest low-friction next step, no pressure."/>
+                            <field name="omnichannel_objection_playbook_timing" widget="text" placeholder="Respect timing, suggest low-friction next step, no pressure."/>
                         </setting>
                         <setting string="Trust objection">
-                            <field name="omnichannel_objection_playbook_trust" placeholder="Use only verifiable links/facts, offer manager handoff."/>
+                            <field name="omnichannel_objection_playbook_trust" widget="text" placeholder="Use only verifiable links/facts, offer manager handoff."/>
                         </setting>
                         <setting string="Need to think">
-                            <field name="omnichannel_objection_playbook_need_to_think" placeholder="Clarify blocker and answer one concrete concern with facts."/>
+                            <field name="omnichannel_objection_playbook_need_to_think" widget="text" placeholder="Clarify blocker and answer one concrete concern with facts."/>
                         </setting>
                         <setting string="Competitor objection">
-                            <field name="omnichannel_objection_playbook_competitor" placeholder="Do not attack competitors; compare only own offer from ORM/legal links."/>
+                            <field name="omnichannel_objection_playbook_competitor" widget="text" placeholder="Do not attack competitors; compare only own offer from ORM/legal links."/>
                         </setting>
                         <setting string="Not decision maker">
-                            <field name="omnichannel_objection_playbook_not_decision_maker" placeholder="Ask who decides and suggest a convenient handoff/call slot."/>
+                            <field name="omnichannel_objection_playbook_not_decision_maker" widget="text" placeholder="Ask who decides and suggest a convenient handoff/call slot."/>
                         </setting>
                         <setting string="Pain discovery script">
-                            <field name="omnichannel_pain_script" placeholder="Short script to discover blockers and pains in consultative style."/>
+                            <field name="omnichannel_pain_script" widget="text" placeholder="Short script to discover blockers and pains in consultative style."/>
                         </setting>
                         <setting string="Upsell script">
-                            <field name="omnichannel_upsell_script" placeholder="Short script with non-aggressive upsell/cross-sell hints based on ORM facts."/>
+                            <field name="omnichannel_upsell_script" widget="text" placeholder="Short script with non-aggressive upsell/cross-sell hints based on ORM facts."/>
                         </setting>
                         <setting string="Warm style policy">
-                            <field name="omnichannel_style_warm_policy" placeholder="Warm, respectful, premium tone; no pressure or aggressive urgency."/>
+                            <field name="omnichannel_style_warm_policy" widget="text" placeholder="Warm, respectful, premium tone; no pressure or aggressive urgency."/>
                         </setting>
                         <setting string="FOMO manager internal notify">
                             <field name="omnichannel_fomo_internal_notify"/>

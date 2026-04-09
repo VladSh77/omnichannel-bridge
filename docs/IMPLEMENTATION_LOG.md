@@ -1,5 +1,19 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Fix `res.config.settings`: `config_parameter` fields must be `Char`, not `Text`
+
+### Scope
+
+- Replaced all `fields.Text` + `config_parameter` on `res.config.settings` with `fields.Char` (Odoo `default_get` / classified fields restriction).
+- Form view: `widget="text"` on long omnichannel settings fields for multiline UX.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `docs/OPERATIONS_RUNBOOK.md`
+- `tests/test_contract_regressions.py`
+
 ## 2026-04-09 — ACL: CRM analytics wizard lines — create for Sales Manager + Settings
 
 ### Scope

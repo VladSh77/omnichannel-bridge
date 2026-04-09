@@ -248,6 +248,12 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('msgstr "Операції"', po)
         self.assertIn('model:ir.ui.menu,name:omnichannel_bridge.menu_omni_ops_root', po)
 
+    def test_res_config_settings_uses_char_not_text_for_config_parameter_fields(self):
+        """Odoo res.config.settings only allows boolean/int/float/char/selection/many2one/datetime for ICP-backed fields."""
+        py = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
+        self.assertNotIn('fields.Text(', py)
+        self.assertIn('omnichannel_window_reminder_text = fields.Char(', py)
+
     def test_res_config_settings_fields_referenced_in_settings_xml_exist_in_python(self):
         """Avoid upgrade ParseError: field X does not exist on res.config.settings (XML ahead of models)."""
         py = (ROOT / 'addons/omnichannel_bridge/models/res_config_settings.py').read_text()
