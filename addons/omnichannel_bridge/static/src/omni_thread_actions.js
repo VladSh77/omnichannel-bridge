@@ -9,7 +9,8 @@ threadActionsRegistry.add("omni-client-info", {
     component: OmniClientInfoPanel,
     condition(component) {
         const thread = component.thread;
-        return thread?.model === "discuss.channel" && !!thread?.omniProvider;
+        // Always expose the action in Discuss channels; panel decides if data is available.
+        return thread?.model === "discuss.channel";
     },
     componentProps(_action, component) {
         return { thread: component.thread };
