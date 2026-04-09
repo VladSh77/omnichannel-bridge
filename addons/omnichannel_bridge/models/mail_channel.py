@@ -467,13 +467,18 @@ class MailChannel(models.Model):
             text_has_contact_intent = any(k in (body or '').lower() for k in ('mail', '@', 'пошта', 'email', 'телефон', 'phone'))
             if attempts >= 2 or text_has_contact_intent:
                 prompt = self._omni_livechat_contact_invalid_text(is_pl=is_pl)
-            self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
-                body=prompt,
-                message_type='comment',
-                subtype_xmlid='mail.mt_comment',
-                author_id=odoobot.id,
-            )
-            return True
+            # Avoid "bot monologue": after the first failed contact attempt,
+            # continue normal AI dialog and keep contact as soft requirement.
+            if attempts <= 1:
+                self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
+                    body=prompt,
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                    author_id=odoobot.id,
+                )
+                return True
+            self.sudo().write({'omni_livechat_entry_state': 'ready'})
+            return False
         return False
 
     @api.model
