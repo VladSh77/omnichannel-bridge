@@ -414,8 +414,14 @@ class OmniAi(models.AbstractModel):
     def _omni_send_fallback(self, channel, partner, icp):
         """LLM недоступний — надсилаємо шаблонне повідомлення і сповіщаємо менеджера."""
         channel = channel.sudo()
-        # Anti-flood: do not repeat the same fallback in tight loops.
-        if channel.omni_last_bot_reply_at and Datetime.now() <= channel.omni_last_bot_reply_at + timedelta(seconds=90):
+        # Anti-flood: fallback should be sent at most once per cooldown window.
+        # Default is 15 minutes to avoid repeated "assistant unavailable" spam.
+        raw_cd = (icp.get_param('omnichannel_bridge.fallback_cooldown_seconds') or '').strip()
+        try:
+            cooldown_sec = max(60, int(raw_cd or 900))
+        except Exception:
+            cooldown_sec = 900
+        if channel.omni_last_bot_reply_at and Datetime.now() <= channel.omni_last_bot_reply_at + timedelta(seconds=cooldown_sec):
             return
         msg = (icp.get_param('omnichannel_bridge.fallback_message') or '').strip()
         if not msg:
