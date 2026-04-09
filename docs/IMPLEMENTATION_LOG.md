@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Migration go-live playbook for SendPulse/channel cutover
+
+### Scope
+
+- Added operational migration playbook for phased cutover from SendPulse to Odoo omnichannel runtime.
+- Defined readiness gates, per-channel migration waves, overlap policy, day-0 checklist, and rollback steps.
+
+### Artifacts
+
+- `docs/MIGRATION_GO_LIVE_PLAYBOOK.md` (new)
+- `README.md` (docs index row)
+
 ## 2026-04-09 — Launch readiness pack: UX, language, manager presence, knowledge sync
 
 ### Scope
