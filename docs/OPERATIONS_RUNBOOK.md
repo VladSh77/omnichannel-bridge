@@ -29,6 +29,21 @@
 - `omnichannel_bridge.webhook_max_body_bytes`: reject oversized POST to `/omni/webhook/*` (default 1 MiB).
 - Outbound Meta/Telegram: transient HTTP failures retry with exponential backoff in code.
 
+## KeyError on `request.env['omni.*']` (model missing in registry)
+
+Symptoms: RPC error when opening a menu or calling a method; traceback shows `KeyError: 'omni.legal.document'` (or another `omni.*` model) in `registry[model_name]`.
+
+Meaning: the database still has menus/actions (or code paths) that reference the model, but the running Odoo process did not register that model — usually stale addon code, wrong addons path, or the module was not upgraded after pulling new Python models.
+
+Recovery:
+
+1. Confirm the server’s addons path includes the same `omnichannel_bridge` revision that defines the model (e.g. `omni_legal_document.py` with `_name = 'omni.legal.document'`).
+2. Restart Odoo and read startup logs for `ImportError` / traceback in `omnichannel_bridge` (a failed import prevents models from loading).
+3. Upgrade the module on that database: `-u omnichannel_bridge` (or Apps → Omnichannel Bridge → Upgrade).
+4. Optional: in `odoo shell`, run `scripts/odoo_runtime_smoke.py` `run(env)` — it asserts `omni.legal.document` is present when the module is installed.
+
+If the DB was restored from another environment with newer data but older code, align code first, then upgrade; do not delete production data without a plan.
+
 ## Known High-Risk Areas
 
 - Duplicate webhook delivery without idempotency guard.

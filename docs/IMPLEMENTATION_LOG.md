@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Runbook: KeyError for `omni.legal.document` + smoke assert
+
+### Scope
+
+- Documented recovery when menus/actions reference a model that is not in the registry (stale code, failed import, or missing module upgrade).
+- Extended `scripts/odoo_runtime_smoke.py` to assert `omni.legal.document` is registered when the module is installed.
+
+### Artifacts
+
+- `docs/OPERATIONS_RUNBOOK.md`
+- `scripts/odoo_runtime_smoke.py`
+
 ## 2026-04-09 — TZ stakeholder sections synced to checklist closure
 
 ### Scope

@@ -9,6 +9,7 @@ copy/paste the `run(env)` body or import from custom tooling.
 def run(env):
     mod = env['ir.module.module'].search([('name', '=', 'omnichannel_bridge')], limit=1)
     assert mod and mod.state == 'installed', 'Module not installed'
+    assert 'omni.legal.document' in env, 'Legal document model missing (upgrade omnichannel_bridge)'
     assert 'omni.knowledge.article' in env, 'Knowledge model missing'
     assert 'omni.stage.transition' in env, 'Stage transition model missing'
     assert 'omni.payment.event' in env, 'Payment event model missing'
