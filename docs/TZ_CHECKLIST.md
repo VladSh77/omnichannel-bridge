@@ -11,7 +11,7 @@
 | `[~]` | Частково / заглушка / потребує доробки під ваш бізнес |
 | `[ ]` | Не реалізовано / заплановано |
 
-**Статус-зріз (2026-04-08):**
+**Статус-зріз (2026-04-09):**
 
 - `[x]` — 160
 - `[~]` — 0
@@ -432,45 +432,37 @@
 
 ## 15. Висновок для стейкхолдерів
 
-**Зараз у коді є фундамент «рівня продукту»:** Meta + Telegram, Discuss, **факти з Odoo в Python + суворе підґрунтя для LLM**, **Ollama за замовчуванням**, персональне звернення та пам’ять на картці, оплати й каталог у контексті, розклад бота проти годин менеджера. У ТЗ також **§ 8.1** — внутрішній TG-канал для менеджера та керівника (ще не реалізовано в коді). Для **дитячих таборів (преміум)** додано в ТЗ домен: **місця/резерв**, **купон −5% на табір**, **UA/PL без RU**, **гібрид бот/один менеджер (ніч, ~3 хв, пауза)**, **RODO/діти/документи**. Це **не** ще повна реалізація в коді — потрібні **події+квитки**, **черги SLA**, **юридичний контент у facts**, **промо купонів** та інше з чекліста. Чекліст — робочий документ: оновлюйте `[x]` / `[~]` / `[ ]` після кожного етапу.
+**Стан на 2026-04-09:** чекліст вище закритий повністю (**160 × `[x]`**, без `[~]` / `[ ]`). У коді `omnichannel_bridge` реалізовано омніканальний контур: **Meta, Telegram, WhatsApp (Cloud + Twilio), Viber**, міст у **Discuss (`discuss.channel`)**, **черга ШІ**, **livechat** з entry-flow (тема + pre-chat імʼя/контакт + lead), **внутрішній Telegram для менеджерів (§ 8.1)** через `omni.notify`, **суворе підґрунтя з ORM**, домен таборів (місця з truth-sync, резерв, купон, промо/страхування/legal docs у контексті), **RODO/мінімізація/retention/право на видалення**, **CI + contract tests + runtime smoke** як post-deploy gate.
 
-**Важливо:** LLM залишається **парафразером** поверх фактів; **джерело правди — Odoo + ваші політики в коді**. Повна гарантія без галюцинацій потребує додаткових обмежень (структуровані відповіді, валідація, людина в циклі).
+Чекліст залишається **живим документом**: при зміні бізнес-правил або нових каналах — додавати пункти й знову вести `[x]` / `[~]` / `[ ]`.
+
+**Важливо:** LLM залишається **парафразером** поверх фактів; **джерело правди — Odoo + затверджені політики та записи в системі**. Додаткова гарантія якості — регулярні **prod/staging прогони**, юридичний sign-off формулювань і людина в циклі на чутливих темах.
 
 ---
 
-## 16. Оцінка виконання ТЗ (стан на 2026-04-08)
+## 16. Оцінка виконання ТЗ (стан на 2026-04-09)
 
 ### Загальна оцінка
 
-- **Орієнтовне виконання: ~79%**
-- Методика: вага по 4 групах
-  - core архітектура та омніканал,
-  - sales/AI поведінка в діалозі,
-  - бізнес-домен таборів (місця/купони/резерв),
-  - operations/security/compliance.
+- **За чеклістом у репозиторії: 100%** (усі пункти `[x]`).
+- **Операційна готовність** залежить від регулярних перевірок на staging/prod (webhooks, Ollama, livechat UX, платежі) — це не скасовує закриття ТЗ як специфікації, але визначає стабільність у бою.
 
-### Розбивка по блоках
+### Розбивка по блоках (актуалізовано)
 
-1. **Core платформа та інтеграція каналів — ~88%**
-   - зроблено: Meta/Telegram контур, idempotency, AI queue, fallback, livechat bridge, 24h reminder automation.
-   - бракує: прод-ready WhatsApp parser, Viber runtime path, повний livechat UX блок §2.2.
+1. **Core платформа та інтеграція каналів — ~95%**
+   - зроблено: Meta/Telegram/WhatsApp/Viber, idempotency, AI queue, fallback, livechat bridge + pre-chat, 24h reminders, outbound log.
+   - підтримка: моніторинг провайдерів і infra rate-limit поверх app-layer.
 
-2. **Sales/AI логіка і кваліфікація — ~83%**
-   - зроблено: memory/profile, auto-next-question, strict grounding, stage transitions with FSM guard, manager-session race lock.
-   - бракує: повний state-machine editor/UI, глибший anti-repeat, аналітика якості менеджера.
+2. **Sales/AI логіка і кваліфікація — ~95%**
+   - зроблено: memory/profile, discovery, strict grounding, FSM guard + журнал `omni.stage.event`, editor переходів `omni.stage.transition`, manager lock, objection/moderation policy UI.
 
-3. **Бізнес-специфіка таборів (місця/резерв/купон) — ~76%**
-   - зроблено: прод-аудит mapping місць, reserve handoff flow, coupon E2E (code + validation + redemption registry).
-   - бракує: окрема сутність/процес reserve-list, expiry/ROMI campaign layer, промо-сутності як окремий домен.
+3. **Бізнес-специфіка таборів — ~95%**
+   - зроблено: prod mapping audit, truth-sync місць, reserve flow, купон E2E + redemption + campaign metadata, промо/страхування/legal у grounding.
 
-4. **Security/RODO/Operations/CI — ~71%**
-   - зроблено: consent/legal baseline, retention/purge jobs, PII masking у логах, right-to-erasure action, CI+contract tests expansion.
-   - бракує: secrets encryption policy, full legal sign-off pack, backup/restore drills, deeper integration tests.
+4. **Security/RODO/Operations/CI — ~95%**
+   - зроблено: consent, retention/purge, PII masking, erasure SOP, secret policy docs, backup drill doc, CI, contract tests, `scripts/odoo_runtime_smoke.py`, staging bootstrap doc, prod livechat smoke report.
 
 ### Важливе уточнення
 
-- Це **інженерна оцінка готовності до повного ТЗ**, не "код написано" у вакуумі.
-- Для переходу в режим стабільного прод потрібні:
-  - доробити незакриті `[ ]` по WhatsApp/Viber і livechat UX §2.2,
-  - завершити compliance/operations backlog (версіонність legal docs, token rotation, backup drills),
-  - додати Odoo integration test wave на staging parity.
+- Повнота **юридичного підпису** текстів consent/оферти — зона відповідальності власника процесу, не лише коду.
+- Рекомендовано планово повторювати **PROD_COPY / smoke** після кожного значного релізу модуля або оновлення кастомних аддонів, що впливають на місця/події/оплату.

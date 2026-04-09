@@ -1,5 +1,16 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — TZ stakeholder sections synced to checklist closure
+
+### Scope
+
+- Updated `docs/TZ_CHECKLIST.md` §15–§16 and status snapshot date to match **160 × `[x]`** and current module capabilities (channels, livechat, internal TG, compliance, smoke gates).
+- Clarified distinction between **checklist completeness** and ongoing **operational verification**.
+
+### Artifacts
+
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-08 — FSM v2: stage transition events and unified writes
 
 ### Scope
