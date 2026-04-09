@@ -2,6 +2,22 @@
 import { Component, onWillStart, onWillUpdateProps, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
+function ensureActWindowViews(action) {
+    if (!action || action.type !== "ir.actions.act_window") {
+        return action;
+    }
+    if (Array.isArray(action.views) && action.views.length) {
+        return action;
+    }
+    const vm = (action.view_mode || "form").toString();
+    const modes = vm
+        .split(",")
+        .map((m) => m.trim())
+        .filter(Boolean)
+        .map((m) => (m === "tree" ? "list" : m));
+    return { ...action, views: modes.map((mode) => [false, mode]) };
+}
+
 export class OmniClientInfoPanel extends Component {
     static template = "omnichannel_bridge.OmniClientInfoPanel";
     static props = {
@@ -78,7 +94,7 @@ export class OmniClientInfoPanel extends Component {
             [this.props.thread.id],
         );
         if (action) {
-            await this.action.doAction(action);
+            await this.action.doAction(ensureActWindowViews(action));
         }
     }
 }

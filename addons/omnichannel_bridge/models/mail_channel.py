@@ -11,6 +11,8 @@ import requests
 from odoo import _, api, fields, models
 from odoo.fields import Datetime
 
+from .omni_action_utils import ensure_act_window_views
+
 _logger = logging.getLogger(__name__)
 
 
@@ -714,9 +716,10 @@ class MailChannel(models.Model):
         channel = self.sudo().browse(int(channel_id or 0))
         if not channel or not channel.exists():
             return False
-        return self.env['ir.actions.act_window'].with_context(
+        raw = self.env['ir.actions.act_window'].with_context(
             default_channel_id=channel.id,
         )._for_xml_id('omnichannel_bridge.action_omni_partner_bind_wizard')
+        return ensure_act_window_views(raw)
 
     @api.model
     def omni_get_or_create_thread(self, provider, external_thread_id, partner, label):
