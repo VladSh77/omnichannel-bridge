@@ -167,17 +167,27 @@ class MailChannel(models.Model):
         return self._omni_livechat_contact_prompt_text_lang(is_pl=False)
 
     def _omni_livechat_contact_prompt_text_lang(self, is_pl=False):
+        privacy_url = (
+            self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.legal_privacy_url')
+            or ''
+        ).strip()
         if is_pl:
-            return (
+            base = (
                 'Aby manager mógł się z Tobą skontaktować, zostaw proszę telefon lub email.\n'
                 'Przykład: +48 500 600 700 lub rodzic@email.com\n'
                 'Wysyłając kontakt, zgadzasz się na przetwarzanie danych w celu doboru obozu.'
             )
-        return (
+            if privacy_url:
+                base += '\nRODO / Polityka prywatności: %s' % privacy_url
+            return base
+        base = (
             'Щоб менеджер міг звʼязатися з вами, залиште, будь ласка, телефон або email.\n'
             'Приклад: +380 67 123 45 67 або parent@email.com\n'
             'Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
         )
+        if privacy_url:
+            base += '\nRODO / Політика приватності: %s' % privacy_url
+        return base
 
     def _omni_livechat_name_prompt_text_lang(self, is_pl=False):
         if is_pl:
@@ -232,6 +242,18 @@ class MailChannel(models.Model):
         txt = (name or '').strip().lower()
         return bool(re.match(r'^(visitor|відвідувач)\s*#\d+', txt))
 
+    def _omni_livechat_name_needs_clarification(self, author):
+        name = (author.name or '').strip()
+        if not name:
+            return True
+        if self._omni_is_visitor_name(name):
+            return True
+        # One-letter aliases like "B" look robotic in chat;
+        # ask how to address the person before contact handoff flow.
+        if len(name) < 2:
+            return True
+        return False
+
     def _omni_refresh_livechat_contact_identity(self, author):
         author = author.sudo()
         if not self._omni_is_visitor_name(author.name):
@@ -266,7 +288,7 @@ class MailChannel(models.Model):
         manager_hours_now = self.env['omni.ai'].sudo()._omni_manager_hours_active_now()
         if state == 'new':
             vals = {'omni_livechat_entry_topic': topic}
-            if self._omni_is_visitor_name(author.name):
+            if self._omni_livechat_name_needs_clarification(author):
                 self.with_context(omni_skip_livechat_inbound=True).message_post(
                     body=self._omni_livechat_name_prompt_text_lang(is_pl=is_pl),
                     message_type='comment',
