@@ -16,4 +16,12 @@
             </form>
         </field>
     </record>
+
+    <record id="action_omni_partner_bind_wizard" model="ir.actions.act_window">
+        <field name="name">Прив'язати контакт</field>
+        <field name="res_model">omni.partner.bind.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_omni_partner_bind_wizard_form"/>
+        <field name="target">new</field>
+    </record>
 </odoo>
