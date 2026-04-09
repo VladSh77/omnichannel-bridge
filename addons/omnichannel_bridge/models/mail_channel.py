@@ -145,11 +145,11 @@ class MailChannel(models.Model):
     def _omni_livechat_entry_menu_text_lang(self, is_pl=False):
         if is_pl:
             return (
-                'Jak mogę pomóc na start?\n'
+                '👋 Jak mogę pomóc na start?\n'
                 'Napisz jednym zdaniem, co jest teraz najważniejsze: program, cena, terminy, dojazd czy bezpieczeństwo.'
             )
         return (
-            'Як можу допомогти на старті?\n'
+            '👋 Як можу допомогти на старті?\n'
             'Напишіть одним реченням, що для вас зараз головне: програма, ціна, дати, доїзд чи безпека.'
         )
 
@@ -167,36 +167,36 @@ class MailChannel(models.Model):
                 privacy_url = '%s/privacy-policy' % base_url
         if is_pl:
             base = (
-                'Aby manager mógł się z Tobą skontaktować, zostaw proszę telefon lub email.\n'
-                'Przykład: +48 500 600 700 lub rodzic@email.com\n'
-                'Wysyłając kontakt, zgadzasz się na przetwarzanie danych w celu doboru obozu.'
+                '📞 Aby manager mógł się z Tobą skontaktować, zostaw proszę telefon lub email.\n'
+                '✉️ Przykład: +48 500 600 700 lub rodzic@email.com\n'
+                '🛡️ Wysyłając kontakt, zgadzasz się na przetwarzanie danych w celu doboru obozu.'
             )
             if privacy_url:
-                base += '\nRODO / Polityka prywatności: %s' % privacy_url
+                base += '\n🔐 RODO / Polityka prywatności: %s' % privacy_url
             return base
         base = (
-            'Щоб менеджер міг звʼязатися з вами, залиште, будь ласка, телефон або email.\n'
-            'Приклад: +380 67 123 45 67 або parent@email.com\n'
-            'Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
+            '📞 Щоб менеджер міг звʼязатися з вами, залиште, будь ласка, телефон або email.\n'
+            '✉️ Приклад: +380 67 123 45 67 або parent@email.com\n'
+            '🛡️ Надсилаючи контакт, ви погоджуєтесь на обробку даних для підбору табору.'
         )
         if privacy_url:
-            base += '\nRODO / Політика приватності: %s' % privacy_url
+            base += '\n🔐 RODO / Політика приватності: %s' % privacy_url
         return base
 
     def _omni_livechat_name_prompt_text_lang(self, is_pl=False):
         if is_pl:
-            return 'Na start napisz proszę, jak mamy się do Ciebie zwracać (imię).'
-        return 'Для початку підкажіть, будь ласка, як до вас звертатися (імʼя).'
+            return '🙂 Na start napisz proszę, jak mamy się do Ciebie zwracać (imię).'
+        return '🙂 Для початку підкажіть, будь ласка, як до вас звертатися (імʼя).'
 
     def _omni_livechat_contact_invalid_text(self, is_pl=False):
         if is_pl:
             return (
-                'Поки не бачу коректного контакту. Щоб продовжити, надішліть телефон або email у форматі прикладу:\n'
+                '⚠️ Nie widzę jeszcze poprawnego kontaktu. Aby kontynuować, wyślij telefon lub email w formacie:\n'
                 '• +48 500 600 700\n'
                 '• rodzic@email.com'
             )
         return (
-            'Поки не бачу коректного контакту. Щоб продовжити, надішліть телефон або email у форматі прикладу:\n'
+            '⚠️ Поки не бачу коректного контакту. Щоб продовжити, надішліть телефон або email у форматі прикладу:\n'
             '• +380 67 123 45 67\n'
             '• parent@email.com'
         )
