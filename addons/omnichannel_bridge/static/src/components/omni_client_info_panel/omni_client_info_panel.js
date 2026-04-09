@@ -72,19 +72,8 @@ export class OmniClientInfoPanel extends Component {
     }
 
     async onOpenPartnerClick() {
-        const partner = this.state.card?.partner || {};
-        if (partner.id) {
-            await this.action.doAction({
-                type: "ir.actions.act_window",
-                res_model: "res.partner",
-                res_id: partner.id,
-                views: [[false, "form"]],
-                target: "current",
-            });
-            return;
-        }
         this.dialog.add(SelectCreateDialog, {
-            title: _t("Прив'язати існуючий контакт"),
+            title: _t("Знайти/прив'язати контакт"),
             resModel: "res.partner",
             noCreate: false,
             multiSelect: false,
@@ -103,6 +92,13 @@ export class OmniClientInfoPanel extends Component {
                     [this.props.thread.id, partnerId],
                 );
                 await this._load(this.props.thread.id);
+                await this.action.doAction({
+                    type: "ir.actions.act_window",
+                    res_model: "res.partner",
+                    res_id: partnerId,
+                    views: [[false, "form"]],
+                    target: "current",
+                });
             },
         });
     }
