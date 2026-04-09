@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Smoke: assert `omni.insurance.package`; runbook examples
+
+### Scope
+
+- Extended `scripts/odoo_runtime_smoke.py` with `omni.insurance.package` (same registry class of errors as `omni.legal.document` on stale deploys).
+- Runbook examples updated to mention insurance package alongside legal document.
+
+### Artifacts
+
+- `docs/OPERATIONS_RUNBOOK.md`
+- `scripts/odoo_runtime_smoke.py`
+
 ## 2026-04-09 — Runbook: KeyError for `omni.legal.document` + smoke assert
 
 ### Scope
