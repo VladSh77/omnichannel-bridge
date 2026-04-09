@@ -533,6 +533,10 @@ class MailChannel(models.Model):
     def _omni_partner_avatar_url(self, partner):
         if not partner:
             return ''
+        # No image_1920 → skip URL so the panel shows our fa-user tile instead of
+        # Odoo /web/image default "camera" placeholder. Telegram photo loads on refresh.
+        if not partner.image_1920:
+            return ''
         return '/web/image/res.partner/%s/image_128' % partner.id
 
     @api.model
@@ -578,11 +582,99 @@ class MailChannel(models.Model):
         meta = self._omni_parse_identity_metadata(identity)
         tgm = meta.get('telegram') if isinstance(meta.get('telegram'), dict) else {}
         chat = meta.get('chat') if isinstance(meta.get('chat'), dict) else {}
+        tg_gc = meta.get('tg_getchat') if isinstance(meta.get('tg_getchat'), dict) else {}
+        tg_ct = meta.get('telegram_contact') if isinstance(meta.get('telegram_contact'), dict) else {}
         label = dict(self.env['omni.integration']._selection_providers()).get(channel.omni_provider, channel.omni_provider)
-        return {
+        provider_emoji_map = {
+            'telegram': '✈️',
+            'meta': '📸',
+            'whatsapp': '💬',
+            'viber': '📳',
+            'site_livechat': '🌐',
+        }
+        provider_emoji = provider_emoji_map.get(channel.omni_provider, '💬')
+
+        # Telegram only: avoid sending `{}` to JS (truthy) for other providers.
+        telegram_panel = None
+        if channel.omni_provider == 'telegram':
+            tid = tgm.get('id')
+            if tid is None and identity and identity.external_id:
+                try:
+                    tid = int(str(identity.external_id).strip())
+                except (TypeError, ValueError):
+                    tid = None
+            uname = (tgm.get('username') or '').strip()
+            chat_type = (chat.get('type') or '').strip()
+            chat_type_labels = {
+                'private': 'Приватний чат',
+                'group': 'Група',
+                'supergroup': 'Супергрупа',
+                'channel': 'Канал',
+            }
+            birth_raw = tg_gc.get('birthdate')
+            birth_s = ''
+            if isinstance(birth_raw, dict):
+                birth_s = '-'.join(
+                    str(x) for x in (birth_raw.get('year'), birth_raw.get('month'), birth_raw.get('day')) if x
+                )
+            elif birth_raw:
+                birth_s = str(birth_raw)
+            au = tg_gc.get('active_usernames')
+            au_s = ', '.join(au) if isinstance(au, list) else ''
+            telegram_panel = {
+                'numeric_id': str(tid) if tid is not None else '',
+                'first_name': (tgm.get('first_name') or '').strip(),
+                'last_name': (tgm.get('last_name') or '').strip(),
+                'profile_url': ('https://t.me/%s' % uname) if uname else '',
+                'is_premium': bool(tgm.get('is_premium')),
+                'is_bot': bool(tgm.get('is_bot')),
+                'status_badge_label': '' if tgm.get('is_bot') else 'Активний',
+                'status_badge_class': 'badge rounded-pill text-bg-success',
+                'premium_badge_label': 'Telegram Premium' if tgm.get('is_premium') else '',
+                'premium_badge_class': 'badge rounded-pill text-bg-warning text-dark',
+                'chat_type_label': chat_type_labels.get(chat_type, chat_type or ''),
+                'bio': (tg_gc.get('bio') or '').strip(),
+                'active_usernames_str': au_s,
+                'birthdate_str': birth_s,
+                'emoji_status_id': str(tg_gc.get('emoji_status_custom_emoji_id') or ''),
+                'profile_bg_emoji_id': str(tg_gc.get('profile_background_custom_emoji_id') or ''),
+                'header_emoji_id': str(tg_gc.get('background_custom_emoji_id') or ''),
+                'shared_phone': (tg_ct.get('phone_number') or '').strip(),
+                'has_vcard': bool(tg_ct.get('vcard')),
+            }
+
+        pname = (partner.name or '').strip() if partner else ''
+        pl = pname.lower()
+        guest_odoo = bool(
+            partner
+            and (
+                not pname
+                or pl.startswith('telegram:')
+                or pl.startswith('meta:')
+                or pl.startswith('whatsapp:')
+                or pl.startswith('viber:')
+            )
+            and not (partner.email or partner.phone or partner.mobile)
+        )
+
+        odoo_client = None
+        if partner:
+            odoo_client = {
+                'name': pname,
+                'email': (partner.email or '').strip(),
+                'phone': (partner.phone or partner.mobile or '').strip(),
+                'guest_stub': guest_odoo,
+                'marketing_opt_in': bool(partner.omni_tg_marketing_opt_in)
+                if channel.omni_provider == 'telegram'
+                else False,
+            }
+
+        payload = {
             'channel_id': channel.id,
             'provider': channel.omni_provider,
             'provider_label': label,
+            'provider_emoji': provider_emoji,
+            'odoo_client': odoo_client,
             'external_thread_id': channel.omni_external_thread_id or '',
             'thread_name': channel.name or '',
             'partner': {
@@ -605,6 +697,9 @@ class MailChannel(models.Model):
                 ),
             },
         }
+        if telegram_panel is not None:
+            payload['telegram'] = telegram_panel
+        return payload
 
     @api.model
     def _omni_refresh_telegram_avatar(self, partner, identity):
@@ -683,6 +778,11 @@ class MailChannel(models.Model):
                 if raw:
                     updates['phone'] = raw
                     break
+        if not (partner.phone or partner.mobile):
+            ct = meta.get('telegram_contact') if isinstance(meta.get('telegram_contact'), dict) else {}
+            ctp = (ct.get('phone_number') or '').strip()
+            if ctp:
+                updates['phone'] = ctp
         placeholder = (partner.name or '').strip().lower()
         is_placeholder = (
             not placeholder
@@ -703,6 +803,21 @@ class MailChannel(models.Model):
             partner.sudo().write(updates)
         if channel.omni_provider == 'telegram':
             self._omni_refresh_telegram_avatar(partner, identity)
+            if identity:
+                try:
+                    cid = int(str(channel.omni_external_thread_id or '0').strip() or '0')
+                except (TypeError, ValueError):
+                    cid = None
+                if cid:
+                    snap = self.env['omni.bridge'].sudo()._omni_telegram_getchat_snapshot(cid)
+                    if snap:
+                        Partner = self.env['res.partner'].sudo()
+                        merged = Partner._omni_merge_telegram_identity_metadata(
+                            identity.metadata_json,
+                            json.dumps({'tg_getchat': snap}),
+                        )
+                        if merged != (identity.metadata_json or ''):
+                            identity.sudo().write({'metadata_json': merged})
         return self.omni_get_client_info_for_channel(channel_id)
 
     @api.model

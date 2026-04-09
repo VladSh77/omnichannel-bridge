@@ -304,7 +304,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('omni-client-info', action_js)
         self.assertIn('OmniClientInfoPanel', panel_js)
         self.assertIn('Оновити профіль', panel_xml)
+        self.assertIn('getChat', panel_xml)
         self.assertIn('omniProvider', thread_patch)
+
+    def test_telegram_getchat_ingest_marker_present(self):
+        bridge = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
+        self.assertIn('def _omni_telegram_getchat_snapshot', bridge)
+        self.assertIn('def _omni_merge_telegram_identity_metadata', (ROOT / 'addons/omnichannel_bridge/models/res_partner.py').read_text())
 
     def test_omni_get_client_info_identity_fallback_when_partner_unlinked(self):
         """Guest / not-yet-bound threads: identity is keyed by external_id, not partner_id."""

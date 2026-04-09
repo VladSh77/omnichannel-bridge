@@ -251,7 +251,7 @@ class OmniBridge(models.AbstractModel):
         # Manager session lock: do not race bot against active manager.
         if channel.omni_bot_paused and channel.omni_bot_pause_reason == 'manager_session_active':
             if channel.omni_manager_session_active_now():
-                return
+                return partner
             channel.sudo().write({
                 'omni_bot_paused': False,
                 'omni_bot_pause_reason': False,
@@ -275,6 +275,7 @@ class OmniBridge(models.AbstractModel):
                 job.sudo()._omni_run_single()
             except Exception:
                 _logger.exception('Immediate Telegram AI run failed, cron fallback will retry')
+        return partner
 
     def _omni_maybe_create_crm_lead(self, partner, provider):
         """Новий клієнт → CRM нагода (якщо увімкнено в налаштуваннях)."""
@@ -375,6 +376,80 @@ class OmniBridge(models.AbstractModel):
             .strip()
         )
 
+    @api.model
+    def _omni_telegram_getchat_snapshot(self, chat_id):
+        """
+        Telegram Bot API getChat — відкриті поля профілю приватного чату (bio, emoji status, …).
+        Не містить: IP, країну, email; телефон лише якщо користувач окремо поділився contact.
+        Док: https://core.telegram.org/bots/api#getchat , ChatFullInfo
+        """
+        token = (self._omni_telegram_token() or '').strip()
+        if not token or chat_id is None:
+            return {}
+        try:
+            cid = int(chat_id)
+        except (TypeError, ValueError):
+            return {}
+        try:
+            resp = requests.get(
+                'https://api.telegram.org/bot%s/getChat' % token,
+                params={'chat_id': cid},
+                timeout=10,
+            )
+        except Exception:
+            _logger.debug('Telegram getChat failed (network) chat_id=%s', cid, exc_info=True)
+            return {}
+        try:
+            data = resp.json() if resp.content else {}
+        except Exception:
+            return {}
+        if not data.get('ok'):
+            _logger.debug('Telegram getChat not ok: %s', data.get('description'))
+            return {}
+        res = data.get('result') or {}
+        keep = (
+            'id',
+            'type',
+            'title',
+            'username',
+            'first_name',
+            'last_name',
+            'is_forum',
+            'bio',
+            'accent_color_id',
+            'profile_accent_color_id',
+            'background_custom_emoji_id',
+            'profile_background_custom_emoji_id',
+            'emoji_status_custom_emoji_id',
+            'emoji_status_expiration_date',
+            'active_usernames',
+            'birthdate',
+            'photo',
+        )
+        snap = {}
+        for k in keep:
+            if k not in res:
+                continue
+            v = res[k]
+            if k == 'photo' and isinstance(v, dict):
+                snap[k] = {x: v[x] for x in ('small_file_id', 'big_file_id') if x in v}
+            else:
+                snap[k] = v
+        return snap
+
+    @api.model
+    def _omni_telegram_build_inbound_metadata(self, from_user, chat, contact, getchat_snapshot):
+        """Зліпити metadata_json для identity: update User + chat + getChat + optional contact message."""
+        meta = {
+            'telegram': dict(from_user) if isinstance(from_user, dict) else {},
+            'chat': dict(chat) if isinstance(chat, dict) else {},
+        }
+        if getchat_snapshot:
+            meta['tg_getchat'] = getchat_snapshot
+        if contact:
+            meta['telegram_contact'] = contact
+        return meta
+
     def _omni_process_telegram(self, payload, headers):
         if not self._omni_verify_telegram_secret(headers):
             return {'ok': False, 'error': 'invalid_secret'}
@@ -403,10 +478,13 @@ class OmniBridge(models.AbstractModel):
                 text = '[video]'
             elif message.get('document'):
                 text = '[document]'
+            elif message.get('contact'):
+                text = '[contact]'
             else:
                 text = '[non-text]'
         from_user = message.get('from') or {}
         chat = message.get('chat') or {}
+        contact = message.get('contact') if isinstance(message.get('contact'), dict) else {}
 
         # --- Kill switch / bot commands (від адміна) ---
         if text.startswith('/') and self._omni_is_admin_telegram_user(from_user):
@@ -424,25 +502,35 @@ class OmniBridge(models.AbstractModel):
                 [from_user.get('first_name'), from_user.get('last_name')],
             )
         ).strip() or from_user.get('username') or thread_id
-        self._omni_deliver_inbound(
+        if contact.get('first_name') or contact.get('last_name'):
+            cn = ' '.join(
+                filter(None, [contact.get('first_name'), contact.get('last_name')]),
+            ).strip()
+            if cn:
+                display_name = cn
+        getchat_snap = {}
+        chat_id_raw = chat.get('id')
+        if chat_id_raw is not None:
+            getchat_snap = self._omni_telegram_getchat_snapshot(chat_id_raw)
+        metadata_obj = self._omni_telegram_build_inbound_metadata(
+            from_user,
+            chat,
+            contact if contact else None,
+            getchat_snap,
+        )
+        phone_in = (
+            (from_user.get('phone_number') or contact.get('phone_number') or '') or ''
+        ).strip() or False
+        partner = self._omni_deliver_inbound(
             'telegram',
             thread_id=thread_id,
             external_user_id=external_user_id,
             display_name=display_name,
             text=text,
-            phone=from_user.get('phone_number'),
+            phone=phone_in,
             email='',
-            metadata_obj={'telegram': from_user, 'chat': chat},
+            metadata_obj=metadata_obj,
         )
-        partner = self.env['res.partner'].sudo().omni_find_or_create_customer({
-            'provider': 'telegram',
-            'external_id': external_user_id,
-            'name': display_name,
-            'display_name': display_name,
-            'phone': from_user.get('phone_number') or False,
-            'email': False,
-            'metadata_json': json.dumps({'telegram': from_user, 'chat': chat}),
-        })
         if self._omni_is_tg_marketing_subscribe(text):
             partner.sudo().write({
                 'omni_tg_marketing_opt_in': True,

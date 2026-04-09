@@ -152,6 +152,34 @@ class ResPartner(models.Model):
         return self.browse()
 
     @api.model
+    def _omni_merge_telegram_identity_metadata(self, old_json, new_json):
+        """Deep-merge inbound Telegram snapshots into identity.metadata_json (tg_getchat, contact, user, chat)."""
+        try:
+            old = json.loads(old_json or '{}') or {}
+        except Exception:
+            old = {}
+        try:
+            new = json.loads(new_json or '{}') or {}
+        except Exception:
+            new = {}
+        for key in ('telegram', 'chat'):
+            if key not in new or not new[key]:
+                continue
+            if not isinstance(new[key], dict):
+                old[key] = new[key]
+                continue
+            if key not in old or not isinstance(old.get(key), dict):
+                old[key] = dict(new[key])
+            else:
+                old[key] = {**old[key], **new[key]}
+        if new.get('tg_getchat') and isinstance(new['tg_getchat'], dict):
+            prev = old.get('tg_getchat') if isinstance(old.get('tg_getchat'), dict) else {}
+            old['tg_getchat'] = {**prev, **new['tg_getchat']}
+        if new.get('telegram_contact'):
+            old['telegram_contact'] = new['telegram_contact']
+        return json.dumps(old, ensure_ascii=False)
+
+    @api.model
     def omni_find_or_create_customer(self, vals):
         """vals: name, phone, email, provider, external_id, display_name, metadata_json"""
         Identity = self.env['omni.partner.identity'].sudo()
@@ -183,6 +211,13 @@ class ResPartner(models.Model):
         ], limit=1)
         if existing:
             partner = existing.partner_id.sudo()
+            if vals.get('metadata_json') and provider == 'telegram':
+                merged_meta = self._omni_merge_telegram_identity_metadata(
+                    existing.metadata_json,
+                    vals['metadata_json'],
+                )
+                if merged_meta != (existing.metadata_json or ''):
+                    existing.sudo().write({'metadata_json': merged_meta})
             patch_vals = {}
             # Keep customer card enriched even when identity already exists.
             current_name = (partner.name or '').strip()
