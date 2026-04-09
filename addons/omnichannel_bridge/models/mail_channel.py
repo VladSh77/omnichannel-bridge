@@ -571,6 +571,220 @@ class MailChannel(models.Model):
         return Identity.browse()
 
     @api.model
+    def _omni_meta_messaging_event_from_identity_meta(self, meta):
+        if not isinstance(meta, dict):
+            return {}
+        wrapped = meta.get('meta_messaging_event')
+        if isinstance(wrapped, dict) and wrapped:
+            return wrapped
+        if isinstance(meta.get('sender'), dict) and 'message' in meta:
+            return meta
+        return {}
+
+    @api.model
+    def _omni_wa_me_href(self, wa_id):
+        digits = re.sub(r'\D', '', wa_id or '')
+        return ('https://wa.me/%s' % digits) if len(digits) >= 8 else ''
+
+    @api.model
+    def _omni_build_channel_profile_payload(
+        self, channel, provider, meta, identity, telegram_panel
+    ):
+        """Unified Discuss side-panel profile: badges, optional detail section, thread id caption."""
+        badges = []
+        section_title = ''
+        rows = []
+        thread_user_caption = _('ID у месенджері')
+        ext = (
+            channel.omni_external_thread_id or (identity.external_id if identity else '') or ''
+        ).strip()
+        thread_user_id = ext
+
+        if provider == 'telegram' and telegram_panel:
+            if telegram_panel.get('status_badge_label'):
+                badges.append(
+                    {
+                        'label': telegram_panel['status_badge_label'],
+                        'class': telegram_panel['status_badge_class'],
+                    }
+                )
+            if telegram_panel.get('premium_badge_label'):
+                badges.append(
+                    {
+                        'label': telegram_panel['premium_badge_label'],
+                        'class': telegram_panel['premium_badge_class'],
+                    }
+                )
+            section_title = _('Профіль Telegram (getChat)')
+            bio = (telegram_panel.get('bio') or '').strip()
+            if bio:
+                rows.append({'kind': 'text', 'text': bio})
+            au_list = telegram_panel.get('active_usernames_list') or []
+            if isinstance(au_list, (list, tuple)) and au_list:
+                for nick in au_list:
+                    n = str(nick).strip().lstrip('@')
+                    if n:
+                        rows.append(
+                            {
+                                'kind': 'link',
+                                'text': n,
+                                'href': 'https://t.me/%s' % n,
+                            }
+                        )
+            bds = (telegram_panel.get('birthdate_str') or '').strip()
+            if bds:
+                rows.append({'kind': 'text', 'text': _('%s: %s') % (_('Дата народження'), bds)})
+            thread_user_caption = _('User id (Telegram)')
+            thread_user_id = (telegram_panel.get('numeric_id') or ext or '').strip()
+        elif provider == 'meta':
+            badges.append(
+                {
+                    'label': _('Активний'),
+                    'class': 'badge rounded-pill text-bg-success',
+                }
+            )
+            event = self._omni_meta_messaging_event_from_identity_meta(meta)
+            mobj = (meta.get('meta_webhook_object') or '').strip() if isinstance(meta, dict) else ''
+            if not mobj and channel.name:
+                low = (channel.name or '').lower()
+                if 'instagram' in low:
+                    mobj = 'instagram'
+                elif 'meta' in low or 'facebook' in low or 'messenger' in low:
+                    mobj = 'page'
+            sub = _('Instagram Direct') if mobj == 'instagram' else _('Messenger / Facebook')
+            section_title = _('Профіль Meta (%s)') % sub
+            psid = str((event.get('sender') or {}).get('id') or ext or '').strip()
+            if psid:
+                rows.append({'kind': 'text', 'text': _('PSID: %s') % psid})
+                mlink = 'https://m.me/%s' % psid
+                rows.append({'kind': 'link', 'text': _('Відкрити в Messenger'), 'href': mlink})
+            thread_user_caption = _('PSID (Meta)')
+            thread_user_id = psid or ext
+        elif provider == 'whatsapp':
+            badges.append(
+                {
+                    'label': _('Активний'),
+                    'class': 'badge rounded-pill text-bg-success',
+                }
+            )
+            section_title = _('Профіль WhatsApp (Cloud API)')
+            wa_id = ''
+            if isinstance(meta, dict):
+                wa_id = str(meta.get('from') or '').strip()
+            wa_id = wa_id or ext
+            if wa_id:
+                rows.append({'kind': 'text', 'text': _('WhatsApp id: %s') % wa_id})
+                href = self._omni_wa_me_href(wa_id)
+                if href:
+                    rows.append({'kind': 'link', 'text': _('Написати в WhatsApp'), 'href': href})
+            thread_user_caption = _('WhatsApp id')
+            thread_user_id = wa_id or ext
+        elif provider == 'twilio_whatsapp':
+            badges.append(
+                {
+                    'label': _('Активний'),
+                    'class': 'badge rounded-pill text-bg-success',
+                }
+            )
+            section_title = _('Профіль WhatsApp (Twilio)')
+            raw_from = ''
+            if isinstance(meta, dict):
+                raw_from = (meta.get('From') or meta.get('from') or '').strip()
+            sender = raw_from.replace('whatsapp:', '').strip() or ext
+            pname = ''
+            if isinstance(meta, dict):
+                pname = (meta.get('ProfileName') or meta.get('profile_name') or '').strip()
+            if pname:
+                rows.append({'kind': 'text', 'text': _('Ім’я в Twilio: %s') % pname})
+            if sender:
+                rows.append({'kind': 'text', 'text': _('WhatsApp id: %s') % sender})
+                href = self._omni_wa_me_href(sender)
+                if href:
+                    rows.append({'kind': 'link', 'text': _('Написати в WhatsApp'), 'href': href})
+            thread_user_caption = _('WhatsApp id')
+            thread_user_id = sender or ext
+        elif provider == 'viber':
+            badges.append(
+                {
+                    'label': _('Активний'),
+                    'class': 'badge rounded-pill text-bg-success',
+                }
+            )
+            section_title = _('Профіль Viber')
+            vid, vname = '', ''
+            if isinstance(meta, dict) and isinstance(meta.get('sender'), dict):
+                s = meta['sender']
+                vid = str(s.get('id') or '').strip()
+                vname = (s.get('name') or '').strip()
+            vid = vid or ext
+            if vname:
+                rows.append({'kind': 'text', 'text': _('Ім’я у Viber: %s') % vname})
+            if vid:
+                rows.append({'kind': 'text', 'text': _('Viber id: %s') % vid})
+            thread_user_caption = _('Viber id')
+            thread_user_id = vid or ext
+        elif provider == 'site_livechat':
+            badges.append(
+                {
+                    'label': _('Активний'),
+                    'class': 'badge rounded-pill text-bg-success',
+                }
+            )
+            section_title = _('Живий чат на сайті')
+            rows.append(
+                {
+                    'kind': 'text',
+                    'text': _('Діалог через віджет на сайті; контакт уточнюється в розмові.'),
+                }
+            )
+            if ext:
+                rows.append({'kind': 'text', 'text': _('Ключ треду: %s') % ext})
+            thread_user_caption = _('Відвідувач')
+            thread_user_id = ext
+        else:
+            # Future providers (TikTok, extra messengers): same shell as Meta/WhatsApp.
+            badges.append(
+                {
+                    'label': _('Активний'),
+                    'class': 'badge rounded-pill text-bg-success',
+                }
+            )
+            prov_label = dict(self.env['omni.integration']._selection_providers()).get(
+                provider, provider or ''
+            )
+            section_title = _('Канал: %s') % (prov_label or provider)
+            if ext:
+                rows.append({'kind': 'text', 'text': _('Зовнішній id: %s') % ext})
+            thread_user_id = ext
+
+        section = None
+        if section_title and rows:
+            section = {'title': section_title, 'rows': rows}
+        elif section_title:
+            section = {'title': section_title, 'rows': []}
+
+        ext_cmp = (channel.omni_external_thread_id or '').strip()
+        tid = (thread_user_id or '').strip()
+        if (
+            tid
+            and ext_cmp
+            and tid == ext_cmp
+            and provider
+            not in (
+                'telegram',
+            )
+        ):
+            thread_user_id = ''
+            thread_user_caption = ''
+
+        return {
+            'badges': badges,
+            'section': section,
+            'thread_user_caption': thread_user_caption,
+            'thread_user_id': thread_user_id,
+        }
+
+    @api.model
     def omni_get_client_info_for_channel(self, channel_id):
         channel = self.sudo().browse(int(channel_id or 0))
         if not channel or not channel.exists():
@@ -589,6 +803,7 @@ class MailChannel(models.Model):
             'telegram': '✈️',
             'meta': '📸',
             'whatsapp': '💬',
+            'twilio_whatsapp': '💬',
             'viber': '📳',
             'site_livechat': '🌐',
         }
@@ -654,6 +869,59 @@ class MailChannel(models.Model):
                 'has_vcard': bool(tg_ct.get('vcard')),
             }
 
+        contact_username = ''
+        contact_profile_url = ''
+        contact_icon = 'fa fa-at'
+        prov = channel.omni_provider
+        if prov == 'telegram':
+            contact_username = (tgm.get('username') or chat.get('username') or '').strip()
+            contact_profile_url = (
+                ('https://t.me/%s' % contact_username) if contact_username else ''
+            )
+        elif prov == 'whatsapp':
+            wa_id = ''
+            if isinstance(meta, dict):
+                wa_id = str(meta.get('from') or '').strip()
+            wa_id = wa_id or (channel.omni_external_thread_id or '').strip()
+            if wa_id:
+                contact_username = wa_id
+                contact_profile_url = self._omni_wa_me_href(wa_id)
+                contact_icon = 'fa fa-whatsapp'
+        elif prov == 'twilio_whatsapp':
+            raw_from = ''
+            if isinstance(meta, dict):
+                raw_from = (meta.get('From') or meta.get('from') or '').strip()
+            sender = raw_from.replace('whatsapp:', '').strip()
+            sender = sender or (channel.omni_external_thread_id or '').strip()
+            if sender:
+                contact_username = sender
+                contact_profile_url = self._omni_wa_me_href(sender)
+                contact_icon = 'fa fa-whatsapp'
+        elif prov == 'meta':
+            ev = self._omni_meta_messaging_event_from_identity_meta(meta)
+            psid = str((ev.get('sender') or {}).get('id') or '').strip()
+            psid = psid or (channel.omni_external_thread_id or '').strip()
+            if psid:
+                contact_username = psid
+                contact_profile_url = 'https://m.me/%s' % psid
+                contact_icon = 'fa fa-comment'
+        elif prov == 'viber':
+            vid, vname = '', ''
+            if isinstance(meta, dict) and isinstance(meta.get('sender'), dict):
+                s = meta['sender']
+                vid = str(s.get('id') or '').strip()
+                vname = (s.get('name') or '').strip()
+            vid = vid or (channel.omni_external_thread_id or '').strip()
+            if vname or vid:
+                contact_username = (vname or vid).strip()
+                contact_icon = 'fa fa-mobile'
+        elif prov == 'site_livechat':
+            contact_icon = 'fa fa-globe'
+
+        channel_profile = self._omni_build_channel_profile_payload(
+            channel, prov, meta, identity, telegram_panel
+        )
+
         pname = (partner.name or '').strip() if partner else ''
         pl = pname.lower()
         guest_odoo = bool(
@@ -699,7 +967,9 @@ class MailChannel(models.Model):
                 'id': identity.id if identity else False,
                 'display_name': (identity.display_name or '') if identity else '',
                 'external_id': (identity.external_id or '') if identity else '',
-                'username': (tgm.get('username') or chat.get('username') or ''),
+                'username': contact_username,
+                'profile_url': contact_profile_url,
+                'contact_icon': contact_icon,
                 'language_code': (tgm.get('language_code') or ''),
                 'booking_email': (
                     meta.get('booking_email')
@@ -707,6 +977,7 @@ class MailChannel(models.Model):
                     or ''
                 ),
             },
+            'channel_profile': channel_profile,
         }
         if telegram_panel is not None:
             payload['telegram'] = telegram_panel

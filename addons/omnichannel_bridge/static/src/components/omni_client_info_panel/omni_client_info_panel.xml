@@ -7,7 +7,7 @@
                 <span class="fw-semibold text-muted small text-uppercase">Omnichannel</span>
                 <div class="d-flex gap-1">
                     <button class="btn btn-sm btn-link p-0 text-muted"
-                            title="Оновити профіль (Odoo + Telegram getChat)"
+                            title="Оновити профіль (Odoo; для Telegram — також getChat у metadata)"
                             t-on-click="onRefreshClick">
                         <i class="fa fa-refresh"/>
                     </button>
@@ -51,15 +51,12 @@
                         <t t-if="state.card.provider_emoji"><span t-esc="state.card.provider_emoji"/> </t>
                         <span t-esc="state.card.provider_label"/>
                     </div>
-                    <t t-if="state.card.telegram and state.card.telegram.status_badge_label">
-                        <span t-att-class="state.card.telegram.status_badge_class" class="mt-1 small">
-                            <t t-esc="state.card.telegram.status_badge_label"/>
-                        </span>
-                    </t>
-                    <t t-if="state.card.telegram and state.card.telegram.premium_badge_label">
-                        <span t-att-class="state.card.telegram.premium_badge_class" class="mt-1 small ms-1">
-                            <t t-esc="state.card.telegram.premium_badge_label"/>
-                        </span>
+                    <t t-if="state.card.channel_profile and state.card.channel_profile.badges">
+                        <div class="d-flex flex-wrap justify-content-center gap-1 mt-1">
+                            <t t-foreach="state.card.channel_profile.badges" t-as="bd" t-key="bd_index">
+                                <span t-att-class="bd.class" class="small" t-esc="bd.label"/>
+                            </t>
+                        </div>
                     </t>
                 </div>
 
@@ -67,9 +64,9 @@
                     <div class="text-muted small text-uppercase fw-semibold mb-2">Контакт</div>
                     <t t-if="state.card.identity.username">
                         <div class="d-flex gap-2 mb-1 small">
-                            <i class="fa fa-at text-muted mt-1" style="width:14px;"/>
-                            <t t-if="state.card.telegram and state.card.telegram.profile_url">
-                                <a t-att-href="state.card.telegram.profile_url" target="_blank" rel="noopener noreferrer"
+                            <i t-att-class="(state.card.identity.contact_icon || 'fa fa-at') + ' text-muted mt-1'" style="width:14px;"/>
+                            <t t-if="state.card.identity.profile_url">
+                                <a t-att-href="state.card.identity.profile_url" target="_blank" rel="noopener noreferrer"
                                    t-esc="state.card.identity.username"/>
                             </t>
                             <t t-else="">
@@ -104,37 +101,21 @@
                     </t>
                 </div>
 
-                <t t-if="state.card.telegram and (state.card.telegram.bio || (state.card.telegram.active_usernames_list and state.card.telegram.active_usernames_list.length) || state.card.telegram.birthdate_str || state.card.telegram.emoji_status_id)">
+                <t t-if="state.card.channel_profile and state.card.channel_profile.section and state.card.channel_profile.section.rows and state.card.channel_profile.section.rows.length">
                     <div class="px-3 py-2 border-bottom">
-                        <div class="text-muted small text-uppercase fw-semibold mb-2">Профіль Telegram (getChat)</div>
-                        <t t-if="state.card.telegram.bio">
-                            <div class="small mb-2" t-esc="state.card.telegram.bio"/>
-                        </t>
-                        <t t-if="state.card.telegram.active_usernames_list and state.card.telegram.active_usernames_list.length">
-                            <div class="d-flex gap-2 mb-1 small flex-wrap align-items-start">
-                                <i class="fa fa-link text-muted mt-1" style="width:14px; flex-shrink:0;"/>
-                                <span class="d-flex flex-wrap gap-2 align-items-center">
-                                    <t t-foreach="state.card.telegram.active_usernames_list" t-as="tu" t-key="tu_index">
-                                        <a t-att-href="'https://t.me/' + tu"
-                                           target="_blank"
-                                           rel="noopener noreferrer"
-                                           class="text-reset"
-                                           t-esc="tu"/>
-                                    </t>
-                                </span>
-                            </div>
-                        </t>
-                        <t t-if="state.card.telegram.birthdate_str">
-                            <div class="d-flex gap-2 mb-1 small">
-                                <i class="fa fa-birthday-cake text-muted mt-1" style="width:14px;"/>
-                                <span t-esc="state.card.telegram.birthdate_str"/>
-                            </div>
-                        </t>
-                        <t t-if="state.card.telegram.emoji_status_id">
-                            <div class="d-flex gap-2 mb-1 small text-muted font-monospace" style="font-size:11px;">
-                                <span>emoji status:</span>
-                                <span t-esc="state.card.telegram.emoji_status_id"/>
-                            </div>
+                        <div class="text-muted small text-uppercase fw-semibold mb-2"
+                             t-esc="state.card.channel_profile.section.title"/>
+                        <t t-foreach="state.card.channel_profile.section.rows" t-as="row" t-key="row_index">
+                            <t t-if="row.kind === 'text'">
+                                <div class="small mb-2" t-esc="row.text"/>
+                            </t>
+                            <t t-if="row.kind === 'link'">
+                                <div class="d-flex gap-2 mb-1 small">
+                                    <i class="fa fa-link text-muted mt-1" style="width:14px; flex-shrink:0;"/>
+                                    <a t-att-href="row.href" target="_blank" rel="noopener noreferrer"
+                                       class="text-reset" t-esc="row.text"/>
+                                </div>
+                            </t>
                         </t>
                     </div>
                 </t>
@@ -188,8 +169,10 @@
                     <div class="text-muted small text-uppercase fw-semibold mb-2">Тред</div>
                     <div class="small text-muted" t-esc="state.card.thread_name"/>
                     <div class="small text-muted font-monospace" t-esc="state.card.external_thread_id"/>
-                    <t t-if="state.card.telegram and state.card.telegram.numeric_id">
-                        <div class="small text-muted mt-1">User id: <span class="font-monospace" t-esc="state.card.telegram.numeric_id"/></div>
+                    <t t-if="state.card.channel_profile and state.card.channel_profile.thread_user_id">
+                        <div class="small text-muted mt-1">
+                            <span t-esc="state.card.channel_profile.thread_user_caption"/>: <span class="font-monospace" t-esc="state.card.channel_profile.thread_user_id"/>
+                        </div>
                     </t>
                 </div>
             </t>

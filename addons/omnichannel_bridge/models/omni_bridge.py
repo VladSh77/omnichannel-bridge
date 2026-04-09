@@ -334,7 +334,10 @@ class OmniBridge(models.AbstractModel):
                     text=text,
                     phone='',
                     email='',
-                    metadata_obj=event,
+                    metadata_obj={
+                        'meta_messaging_event': event,
+                        'meta_webhook_object': data.get('object'),
+                    },
                 )
         webhook_event.sudo().write({
             'state': 'processed',

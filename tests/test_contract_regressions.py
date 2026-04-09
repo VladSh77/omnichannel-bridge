@@ -304,7 +304,9 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('omni-client-info', action_js)
         self.assertIn('OmniClientInfoPanel', panel_js)
         self.assertIn('Оновити профіль', panel_xml)
-        self.assertIn('getChat', panel_xml)
+        self.assertIn('state.card.channel_profile', panel_xml)
+        self.assertIn('getChat', channel)
+        self.assertIn('channel_profile', channel)
         self.assertIn('omniProvider', thread_patch)
 
     def test_telegram_getchat_ingest_marker_present(self):
