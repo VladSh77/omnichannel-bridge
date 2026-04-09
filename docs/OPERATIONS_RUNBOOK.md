@@ -31,16 +31,16 @@
 
 ## KeyError on `request.env['omni.*']` (model missing in registry)
 
-Symptoms: RPC error when opening a menu or calling a method; traceback shows `KeyError: 'omni.legal.document'`, `KeyError: 'omni.insurance.package'`, or another `omni.*` model in `registry[model_name]`.
+Symptoms: RPC error when opening a menu or calling a method; traceback shows `KeyError` for `omni.legal.document`, `omni.insurance.package`, `omni.prompt.audit`, or another `omni.*` model in `registry[model_name]`.
 
 Meaning: the database still has menus/actions (or code paths) that reference the model, but the running Odoo process did not register that model — usually stale addon code, wrong addons path, or the module was not upgraded after pulling new Python models.
 
 Recovery:
 
-1. Confirm the server’s addons path includes the same `omnichannel_bridge` revision that defines the model (e.g. `omni_legal_document.py` → `omni.legal.document`, `omni_insurance_package.py` → `omni.insurance.package`).
+1. Confirm the server’s addons path includes the same `omnichannel_bridge` revision that defines the model (e.g. `omni_legal_document.py`, `omni_insurance_package.py`, `omni_prompt_audit.py` and matching `_name` values).
 2. Restart Odoo and read startup logs for `ImportError` / traceback in `omnichannel_bridge` (a failed import prevents models from loading).
 3. Upgrade the module on that database: `-u omnichannel_bridge` (or Apps → Omnichannel Bridge → Upgrade).
-4. Optional: in `odoo shell`, run `scripts/odoo_runtime_smoke.py` `run(env)` — it asserts core `omni.*` models (including legal document and insurance package) are present when the module is installed.
+4. Optional: in `odoo shell`, run `scripts/odoo_runtime_smoke.py` `run(env)` — it asserts core `omni.*` models (including legal document, insurance package, prompt audit) are present when the module is installed.
 
 If the DB was restored from another environment with newer data but older code, align code first, then upgrade; do not delete production data without a plan.
 

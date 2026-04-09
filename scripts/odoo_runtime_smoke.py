@@ -11,6 +11,7 @@ def run(env):
     assert mod and mod.state == 'installed', 'Module not installed'
     assert 'omni.legal.document' in env, 'Legal document model missing (upgrade omnichannel_bridge)'
     assert 'omni.insurance.package' in env, 'Insurance package model missing (upgrade omnichannel_bridge)'
+    assert 'omni.prompt.audit' in env, 'Prompt audit model missing (upgrade omnichannel_bridge)'
     assert 'omni.knowledge.article' in env, 'Knowledge model missing'
     assert 'omni.stage.transition' in env, 'Stage transition model missing'
     assert 'omni.payment.event' in env, 'Payment event model missing'

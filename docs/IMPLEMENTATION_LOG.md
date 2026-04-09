@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Smoke: assert `omni.prompt.audit`; runbook KeyError examples
+
+### Scope
+
+- Extended `scripts/odoo_runtime_smoke.py` with `omni.prompt.audit`.
+- Runbook KeyError examples mention prompt audit.
+
+### Artifacts
+
+- `docs/OPERATIONS_RUNBOOK.md`
+- `scripts/odoo_runtime_smoke.py`
+
 ## 2026-04-09 — Smoke: assert `omni.insurance.package`; runbook examples
 
 ### Scope
