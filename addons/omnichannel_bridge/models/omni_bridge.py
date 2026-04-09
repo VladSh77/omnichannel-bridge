@@ -258,6 +258,9 @@ class OmniBridge(models.AbstractModel):
             })
         self.env['omni.memory'].sudo().omni_apply_inbound_learning(partner, text)
         delay = self.env['omni.ai'].sudo().omni_autoreply_delay_seconds_for_inbound()
+        # Telegram test/live dialogs should not feel silent while waiting for SLA window.
+        if provider == 'telegram':
+            delay = 0
         self.env['omni.ai.job'].sudo().omni_enqueue_autoreply(
             channel=channel,
             partner=partner,
