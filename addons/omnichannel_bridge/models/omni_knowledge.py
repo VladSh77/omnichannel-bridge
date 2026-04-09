@@ -27,6 +27,19 @@ class OmniKnowledge(models.AbstractModel):
         return str(val).lower() in ('1', 'true', 'yes')
 
     @api.model
+    def _omni_pricelist_for_catalog(self, partner):
+        """Company pricelist field name differs across sale/website stacks; avoid AttributeError."""
+        if partner:
+            return partner.property_product_pricelist
+        company = self.env.company
+        if 'property_product_pricelist_id' in company._fields:
+            return company.property_product_pricelist_id
+        c_partner = company.partner_id.sudo()
+        if c_partner and 'property_product_pricelist' in c_partner._fields:
+            return c_partner.property_product_pricelist
+        return False
+
+    @api.model
     def omni_partner_payment_summary(self, partner):
         if not partner:
             return _('No partner linked yet.')
@@ -77,10 +90,7 @@ class OmniKnowledge(models.AbstractModel):
         order = 'website_sequence, name' if 'website_sequence' in Product._fields else 'name'
         products = Product.search(domain, order=order, limit=max(limit * 3, 40))
         chunks = []
-        if partner:
-            pricelist = partner.property_product_pricelist
-        else:
-            pricelist = self.env.company.property_product_pricelist_id
+        pricelist = self._omni_pricelist_for_catalog(partner)
         camp_products = [p for p in products if self._omni_is_camp_product(p)]
         for tmpl in camp_products[:limit]:
             variant = tmpl.product_variant_id
@@ -146,10 +156,7 @@ class OmniKnowledge(models.AbstractModel):
         period = ((partner.omni_preferred_period or '').strip().lower() if partner else '')
         budget = float(partner.omni_budget_amount or 0.0) if partner else 0.0
 
-        if partner:
-            pricelist = partner.property_product_pricelist
-        else:
-            pricelist = self.env.company.property_product_pricelist_id
+        pricelist = self._omni_pricelist_for_catalog(partner)
 
         ranked = []
         for tmpl in products:

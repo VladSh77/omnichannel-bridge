@@ -1,5 +1,11 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — Fix `omni_catalog_context_for_llm` pricelist when `res.company` has no `property_product_pricelist_id`
+
+### Scope
+
+- Added `_omni_pricelist_for_catalog` fallback to `company.partner_id.property_product_pricelist` so catalog lines for LLM do not crash on some DB stacks.
+
 ## 2026-04-09 — Camp product detection: `CS-*` default_code + POSHUMIMO; `odoo_probe_camp_places`
 
 ### Scope

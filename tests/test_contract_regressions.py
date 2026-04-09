@@ -220,6 +220,7 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn("code.startswith('CS-')", knowledge)
         self.assertIn("'poszum'", knowledge)
         self.assertIn("'пошум'", knowledge)
+        self.assertIn('_omni_pricelist_for_catalog', knowledge)
 
     def test_camp_knowledge_seed_data_linked_in_manifest(self):
         manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
