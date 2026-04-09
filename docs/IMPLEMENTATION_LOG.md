@@ -1,5 +1,25 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — **CRITICAL INCIDENT** — SendPulse scope violation (process failure, goal not met)
+
+<div style="color:#b00020; border:2px solid #b00020; padding:12px 16px; margin:8px 0; background:#fff8f8;">
+
+**Severity:** critical (red). **Type:** wrong-repository / wrong-module changes despite explicit instruction **not** to modify the production SendPulse addon (`sendpulse-odoo`, deployed as `odoo_chatwoot_connector`).
+
+**Failure mode:** the Discuss error `TypeError: action.views.map` was addressed by editing SendPulse instead of confining fixes to `omnichannel_bridge`. That is a **critical process incident**: **goal not achieved** (preserve SendPulse stability) and **unnecessary production risk**.
+
+**Remediation:** SendPulse `main` reset to commit **`6905fa7`** and **force-pushed**; commits `9317e1c` and `2775941` removed from branch history.
+
+**Cross-links:** `sendpulse-odoo/docs/TZ.md`, `sendpulse-odoo/CHANGELOG.md`, `sendpulse-odoo/TECHNICAL_DOCS.md`, `docs/TZ_CHECKLIST.md` (operational incidents), `DevJournal/sessions/2026-04-09-sendpulse-critical-scope-violation.md`.
+
+**Rule:** no SendPulse code changes for omnichannel/Discuss UX without a **separate, explicit** change request and sign-off.
+
+</div>
+
+### Scope (this log entry)
+
+- Documentation and audit trail only; omnichannel code changes remain separate and must not be used as justification to touch SendPulse for the same class of issue.
+
 ## 2026-04-09 — SendPulse parity: Discuss mini client card in omnichannel
 
 ### Scope
