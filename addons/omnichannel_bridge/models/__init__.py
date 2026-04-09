@@ -3,6 +3,7 @@ from . import omni_partner_identity
 from . import omni_partner_bind_wizard
 from . import omni_webhook_event
 from . import omni_integration
+from . import omni_inbox_thread
 from . import omni_stage_event
 from . import omni_stage_transition
 from . import omni_prompt_audit

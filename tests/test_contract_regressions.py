@@ -303,6 +303,20 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('base.view_company_form', v)
         self.assertIn('Додати всі канали з реєстру', v)
 
+    def test_omni_inbox_thread_operator_dashboard_markers_present(self):
+        inbox = (ROOT / 'addons/omnichannel_bridge/models/omni_inbox_thread.py').read_text()
+        ch = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()
+        v = (ROOT / 'addons/omnichannel_bridge/views/omni_inbox_thread_views.xml').read_text()
+        menu = (ROOT / 'addons/omnichannel_bridge/views/omni_integration_views.xml').read_text()
+        self.assertIn("_name = 'omni.inbox.thread'", inbox)
+        self.assertIn('def _sync_from_discuss_channels', inbox)
+        self.assertIn('def action_open_in_discuss', inbox)
+        self.assertNotIn('omni_dashboard_last_message_preview', ch)
+        self.assertIn('def _omni_sync_inbox_rows', ch)
+        self.assertIn('action_omni_inbox_thread', v)
+        self.assertIn('action_omni_inbox_thread', menu)
+        self.assertIn('menu_omni_open_discuss', menu)
+
     def test_discuss_client_card_parity_markers_present(self):
         manifest = (ROOT / 'addons/omnichannel_bridge/__manifest__.py').read_text()
         channel = (ROOT / 'addons/omnichannel_bridge/models/mail_channel.py').read_text()

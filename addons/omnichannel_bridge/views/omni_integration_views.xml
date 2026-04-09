@@ -40,14 +40,21 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Root opens Discuss (message dashboard); credentials are on res.company. -->
+    <!-- Root: operator inbox (omni.inbox.thread); Discuss окремим пунктом. -->
     <menuitem
         id="menu_omni_root"
         name="Чати CampScout"
-        action="mail.action_discuss"
+        action="action_omni_inbox_thread"
         sequence="45"
     />
     <record id="menu_omni_root" model="ir.ui.menu">
         <field name="web_icon">omnichannel_bridge,static/description/icon.svg</field>
     </record>
+    <menuitem
+        id="menu_omni_open_discuss"
+        name="Discuss"
+        parent="menu_omni_root"
+        action="mail.action_discuss"
+        sequence="20"
+    />
 </odoo>

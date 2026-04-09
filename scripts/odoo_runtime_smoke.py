@@ -16,6 +16,7 @@ _REQUIRED_OMNI_MODELS = (
     'omni.crm.analytics.wizard.line',
     'omni.insurance.package',
     'omni.integration',
+    'omni.inbox.thread',
     'omni.knowledge',
     'omni.knowledge.article',
     'omni.legal.document',

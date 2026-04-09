@@ -108,6 +108,30 @@ class MailChannel(models.Model):
         })
         return True
 
+    def _omni_sync_inbox_rows(self):
+        """Mirror omnichannel threads into omni.inbox.thread (operator dashboard)."""
+        if not self:
+            return
+        self.env['omni.inbox.thread'].sudo()._sync_from_discuss_channels(
+            self.filtered('omni_provider')
+        )
+
+    def write(self, vals):
+        res = super().write(vals)
+        _inbox_watch = {
+            'name',
+            'omni_provider',
+            'omni_external_thread_id',
+            'omni_customer_partner_id',
+            'omni_bot_paused',
+            'omni_last_customer_inbound_at',
+            'omni_last_bot_reply_at',
+            'omni_last_human_reply_at',
+        }
+        if _inbox_watch & vals.keys():
+            self.filtered('omni_provider').sudo()._omni_sync_inbox_rows()
+        return res
+
     def _omni_thread_key_parts(self):
         self.ensure_one()
         return self.omni_provider, self.omni_external_thread_id
@@ -1260,6 +1284,7 @@ class MailChannel(models.Model):
         ], limit=1)
         if existing:
             existing.sudo().omni_thread_align_customer(partner)
+            existing.sudo()._omni_sync_inbox_rows()
             return existing, False
         # Fallback: if identity/thread id changed upstream, reuse latest channel
         # of the same customer/provider instead of creating duplicates.
@@ -1271,6 +1296,7 @@ class MailChannel(models.Model):
             if existing:
                 existing.sudo().write({'omni_external_thread_id': str(external_thread_id)})
                 existing.sudo().omni_thread_align_customer(partner)
+                existing.sudo()._omni_sync_inbox_rows()
                 return existing, False
         odoobot = self.env.ref('base.partner_root')
         operator_partner_ids = self._omni_operator_partner_ids()
@@ -1288,6 +1314,7 @@ class MailChannel(models.Model):
         # Use direct M2M write to avoid discuss "invited to channel"
         # service notifications being posted into the customer thread.
         channel.sudo().write({'channel_partner_ids': [(6, 0, member_ids)]})
+        channel.sudo()._omni_sync_inbox_rows()
         return channel, True
 
     def omni_thread_align_customer(self, partner):
@@ -1301,6 +1328,8 @@ class MailChannel(models.Model):
         if missing:
             # Use direct M2M write to keep membership updates silent.
             self.sudo().write({'channel_partner_ids': [(4, pid) for pid in missing]})
+            if self.omni_provider:
+                self.sudo()._omni_sync_inbox_rows()
 
     def message_post(self, **kwargs):
         message = super().message_post(**kwargs)
@@ -1325,6 +1354,7 @@ class MailChannel(models.Model):
             if not skip_livechat_inbound:
                 channel._omni_handle_website_livechat_inbound(message)
             channel._omni_route_operator_reply_to_messenger(message)
+        self.filtered('omni_provider').sudo()._omni_sync_inbox_rows()
         return message
 
     def omni_manager_session_active_now(self):

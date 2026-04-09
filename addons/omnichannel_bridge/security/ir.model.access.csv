@@ -1,5 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_omni_integration_user,omni.integration.user,model_omni_integration,base.group_user,1,1,1,0
+access_omni_inbox_thread_user,omni.inbox.thread.user,model_omni_inbox_thread,base.group_user,1,0,0,0
+access_omni_inbox_thread_manager,omni.inbox.thread.manager,model_omni_inbox_thread,sales_team.group_sale_manager,1,1,1,1
 access_omni_integration_manager,omni.integration.manager,model_omni_integration,sales_team.group_sale_manager,1,1,1,1
 access_omni_partner_identity_user,omni.partner.identity.user,model_omni_partner_identity,base.group_user,1,0,0,0
 access_omni_partner_identity_manager,omni.partner.identity.manager,model_omni_partner_identity,sales_team.group_sale_manager,1,1,1,1
