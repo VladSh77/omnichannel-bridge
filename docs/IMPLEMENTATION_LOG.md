@@ -1,5 +1,16 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-09 — ACL: CRM analytics wizard lines — create for Sales Manager + Settings
+
+### Scope
+
+- `omni.crm.analytics.wizard.line` had read-only ACL for `sales_team.group_sale_manager`, so opening the wizard failed with “cannot create … wizard.line”. Granted read/write/create/unlink on lines for Sales Manager; added parallel rules for `base.group_system`.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `tests/test_contract_regressions.py`
+
 ## 2026-04-09 — Fix `omni_catalog_context_for_llm` pricelist when `res.company` has no `property_product_pricelist_id`
 
 ### Scope

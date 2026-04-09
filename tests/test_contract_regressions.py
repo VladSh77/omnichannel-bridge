@@ -93,6 +93,15 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('retention_child_data_days', settings)
         self.assertIn('RIGHT_TO_ERASURE_SOP.md', runbook)
 
+    def test_crm_analytics_wizard_line_acl_allows_create_for_managers(self):
+        csv_text = (ROOT / 'addons/omnichannel_bridge/security/ir.model.access.csv').read_text()
+        for line in csv_text.splitlines():
+            if line.startswith('access_omni_crm_analytics_wizard_line_manager,'):
+                self.assertTrue(line.endswith(',1,1,1,1'), 'wizard.line needs create/write for CRM analytics')
+                break
+        else:
+            self.fail('missing access_omni_crm_analytics_wizard_line_manager row')
+
     def test_crm_analytics_markers_present(self):
         analytics = (ROOT / 'addons/omnichannel_bridge/models/omni_crm_analytics.py').read_text()
         ops_views = (ROOT / 'addons/omnichannel_bridge/views/omni_ops_views.xml').read_text()
