@@ -46,6 +46,12 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('extract_whatsapp_message_id', parsers)
         self.assertIn('extract_twilio_whatsapp_message_id', parsers)
 
+    def test_omni_integration_ensure_all_providers_marker(self):
+        content = (ROOT / 'addons/omnichannel_bridge/models/omni_integration.py').read_text()
+        defaults = (ROOT / 'addons/omnichannel_bridge/data/omni_defaults.xml').read_text()
+        self.assertIn('def omni_ensure_all_provider_integration_rows', content)
+        self.assertIn('omni_ensure_all_provider_integration_rows', defaults)
+
     def test_viber_runtime_markers_present(self):
         content = (ROOT / 'addons/omnichannel_bridge/models/omni_bridge.py').read_text()
         parsers = (ROOT / 'addons/omnichannel_bridge/utils/webhook_parsers.py').read_text()

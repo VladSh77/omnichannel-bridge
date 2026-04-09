@@ -47,25 +47,43 @@ class OmniIntegration(models.Model):
         ]
 
     @api.model
-    def omni_ensure_site_livechat_defaults(self):
-        """Ensure website live chat is the default enabled channel."""
+    def omni_ensure_all_provider_integration_rows(self):
+        """
+        One row per (company, provider) so the integrations list shows every channel.
+
+        New rows are inactive except ``site_livechat`` (on by default). Operators
+        enable a row and fill tokens when connecting that messenger; credentials
+        code only uses rows with ``active=True``.
+        """
         companies = self.env['res.company'].sudo().search([])
+        providers = [key for key, _label in self._selection_providers()]
+        Integration = self.sudo()
         for company in companies:
-            integration = self.sudo().search([
-                ('company_id', '=', company.id),
-                ('provider', '=', 'site_livechat'),
-            ], limit=1)
-            if not integration:
-                self.sudo().create({
-                    'company_id': company.id,
-                    'provider': 'site_livechat',
-                    'active': True,
-                })
-            elif not integration.active:
-                integration.sudo().write({'active': True})
+            for provider in providers:
+                integration = Integration.search(
+                    [
+                        ('company_id', '=', company.id),
+                        ('provider', '=', provider),
+                    ],
+                    limit=1,
+                )
+                if integration:
+                    if provider == 'site_livechat' and not integration.active:
+                        integration.write({'active': True})
+                    continue
+                Integration.create(
+                    {
+                        'company_id': company.id,
+                        'provider': provider,
+                        'active': provider == 'site_livechat',
+                    }
+                )
 
         icp_model = self.env['ir.config_parameter'].sudo()
-        key = 'omnichannel_bridge.site_livechat_enabled'
-        # Live chat is the mandatory first testing channel.
-        icp_model.set_param(key, 'True')
+        icp_model.set_param('omnichannel_bridge.site_livechat_enabled', 'True')
         return True
+
+    @api.model
+    def omni_ensure_site_livechat_defaults(self):
+        """Backward-compatible entry point (install / legacy calls)."""
+        return self.omni_ensure_all_provider_integration_rows()
