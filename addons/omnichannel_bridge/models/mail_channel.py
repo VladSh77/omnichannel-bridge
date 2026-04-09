@@ -142,15 +142,39 @@ class MailChannel(models.Model):
     def _omni_livechat_entry_menu_text(self):
         return self._omni_livechat_entry_menu_text_lang(is_pl=False)
 
-    def _omni_livechat_online_manager_name(self):
+    def _omni_livechat_online_manager_name(self, is_pl=False):
         manager = self.env['omni.notify'].sudo()._peek_online_manager_user()
         if not manager:
             return ''
         name = (manager.name or '').strip()
-        return name[:60] if name else ''
+        if not name:
+            return ''
+        # For UA prompts prefer natural addressing (vocative/known transliteration);
+        # for PL keep manager-entered display name.
+        if is_pl:
+            return name[:60]
+        words = name.split()
+        first = words[0]
+        first_key = first.lower()
+        voc = self.env['omni.memory'].sudo().omni_suggest_vocative_from_name(first)
+        if not voc:
+            translit_hint = {
+                'volodymyr': 'Володимире',
+                'vladimir': 'Володимире',
+                'oleksandr': 'Олександре',
+                'andrii': 'Андрію',
+                'andriy': 'Андрію',
+                'serhii': 'Сергію',
+                'sergey': 'Сергію',
+                'yevhen': 'Євгене',
+            }
+            voc = translit_hint.get(first_key, '')
+        if voc:
+            name = ' '.join([voc] + words[1:]).strip()
+        return name[:60]
 
     def _omni_livechat_entry_menu_text_lang(self, is_pl=False):
-        manager_name = self._omni_livechat_online_manager_name()
+        manager_name = self._omni_livechat_online_manager_name(is_pl=is_pl)
         if is_pl:
             intro = (
                 '🟢 Na czacie jest dostępny manager: %s.\n' % manager_name
@@ -175,7 +199,7 @@ class MailChannel(models.Model):
         return self._omni_livechat_contact_prompt_text_lang(is_pl=False)
 
     def _omni_livechat_contact_prompt_text_lang(self, is_pl=False):
-        manager_name = self._omni_livechat_online_manager_name()
+        manager_name = self._omni_livechat_online_manager_name(is_pl=is_pl)
         privacy_url = (
             self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.legal_privacy_url')
             or ''
@@ -545,8 +569,9 @@ class MailChannel(models.Model):
             return
         plain = re.sub(r'<[^>]+>', ' ', body)
         plain = re.sub(r'\s+', ' ', plain).strip()
-        # Ignore single-symbol pings that create noise and overload LLM queue.
-        if len(re.sub(r'[\W_]+', '', plain, flags=re.UNICODE)) < 2:
+        # Ignore only fully empty/non-word noise; single-letter words like "я"/"I"
+        # are valid in real chats and must still trigger bot processing.
+        if len(re.sub(r'[\W_]+', '', plain, flags=re.UNICODE)) < 1:
             return
         if getattr(message, 'message_type', '') == 'notification':
             # Ignore service/feedback notifications posted by livechat internals.
