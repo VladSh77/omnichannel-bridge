@@ -171,6 +171,10 @@ class MailChannel(models.Model):
             self.env['ir.config_parameter'].sudo().get_param('omnichannel_bridge.legal_privacy_url')
             or ''
         ).strip()
+        if not privacy_url:
+            base_url = (self.env['ir.config_parameter'].sudo().get_param('web.base.url') or '').strip().rstrip('/')
+            if base_url:
+                privacy_url = '%s/privacy-policy' % base_url
         if is_pl:
             base = (
                 'Aby manager mógł się z Tobą skontaktować, zostaw proszę telefon lub email.\n'
@@ -366,6 +370,26 @@ class MailChannel(models.Model):
             )
             return True
         if state == 'awaiting_contact':
+            if self._omni_livechat_name_needs_clarification(author):
+                guessed_name = self._omni_extract_name_from_text(body)
+                if guessed_name:
+                    author.write({'name': guessed_name})
+                    self._omni_refresh_livechat_channel_label(author)
+                    self.with_context(omni_skip_livechat_inbound=True).message_post(
+                        body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_comment',
+                        author_id=odoobot.id,
+                    )
+                    return True
+                self.with_context(omni_skip_livechat_inbound=True).message_post(
+                    body=self._omni_livechat_name_prompt_text_lang(is_pl=is_pl),
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_comment',
+                    author_id=odoobot.id,
+                )
+                self.sudo().write({'omni_livechat_entry_state': 'awaiting_name'})
+                return True
             if email or phone or author.email or author.phone or author.mobile:
                 upd = {}
                 if email and not author.email:
