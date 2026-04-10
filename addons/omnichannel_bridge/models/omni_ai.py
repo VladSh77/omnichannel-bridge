@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, time as time_cls
 
 import pytz
 import requests
+from requests import exceptions as req_exc
 
 from odoo import api, models
 from odoo.fields import Datetime
@@ -264,8 +265,10 @@ class OmniAi(models.AbstractModel):
         system_parts.append(self._omni_reply_language_instruction(normalized, channel=channel))
         system_parts.append(facts)
         system = '\n\n'.join(system_parts)
+        system = self._omni_compact_system_prompt(system, ICP)
+        user_prompt = self._omni_compact_user_text(text, ICP)
 
-        reply = self._llm_complete(backend, ICP, system, text)
+        reply = self._llm_complete(backend, ICP, system, user_prompt)
         if not reply:
             self._omni_send_fallback(channel, partner, ICP)
             return
@@ -421,7 +424,15 @@ class OmniAi(models.AbstractModel):
             cooldown_sec = max(60, int(raw_cd or 900))
         except Exception:
             cooldown_sec = 900
-        if channel.omni_last_bot_reply_at and Datetime.now() <= channel.omni_last_bot_reply_at + timedelta(seconds=cooldown_sec):
+        # Row-level lock removes concurrent duplicate fallbacks when two webhooks
+        # are processed in parallel for the same thread.
+        self.env.cr.execute(
+            "SELECT omni_last_bot_reply_at FROM discuss_channel WHERE id=%s FOR UPDATE",
+            [channel.id],
+        )
+        row = self.env.cr.fetchone() or [False]
+        last_bot_reply_at = row[0]
+        if last_bot_reply_at and Datetime.now() <= last_bot_reply_at + timedelta(seconds=cooldown_sec):
             return
         msg = (icp.get_param('omnichannel_bridge.fallback_message') or '').strip()
         if not msg:
@@ -882,9 +893,24 @@ class OmniAi(models.AbstractModel):
                 user_text,
             )
         if backend == 'ollama':
+            if not self._omni_ollama_cb_allows(icp):
+                _logger.warning('Ollama circuit breaker open: skipping LLM call')
+                return ''
             base = (icp.get_param('omnichannel_bridge.ollama_base_url') or 'http://127.0.0.1:11434').strip()
             model = (icp.get_param('omnichannel_bridge.ollama_model') or 'llama3.2').strip()
-            return self._ollama_chat_completion(base, model, system_prompt, user_text)
+            try:
+                text = self._ollama_chat_completion(base, model, system_prompt, user_text)
+            except req_exc.Timeout:
+                self._omni_ollama_cb_mark_failure(icp, 'timeout')
+                return ''
+            except Exception:
+                self._omni_ollama_cb_mark_failure(icp, 'error')
+                return ''
+            if text:
+                self._omni_ollama_cb_mark_success(icp)
+                return text
+            self._omni_ollama_cb_mark_failure(icp, 'empty')
+            return ''
         return ''
 
     def _openai_chat_completion(self, api_key, model, system_prompt, user_text):
@@ -916,6 +942,20 @@ class OmniAi(models.AbstractModel):
 
     def _ollama_chat_completion(self, base_url, model, system_prompt, user_text):
         base = base_url.rstrip('/')
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            connect_timeout = max(2, int(icp.get_param('omnichannel_bridge.ollama_connect_timeout_seconds', '5')))
+        except Exception:
+            connect_timeout = 5
+        try:
+            read_timeout = max(15, int(icp.get_param('omnichannel_bridge.ollama_read_timeout_seconds', '60')))
+        except Exception:
+            read_timeout = 60
+        try:
+            num_predict = int(icp.get_param('omnichannel_bridge.ollama_num_predict', '160'))
+        except Exception:
+            num_predict = 160
+        num_predict = max(64, min(400, num_predict))
         openai_url = '%s/v1/chat/completions' % base
         payload_oa = {
             'model': model,
@@ -925,12 +965,16 @@ class OmniAi(models.AbstractModel):
             ],
             'temperature': 0.15,
             'stream': False,
+            'max_tokens': num_predict,
         }
         try:
-            resp = requests.post(openai_url, json=payload_oa, timeout=(5, 60))
+            resp = requests.post(openai_url, json=payload_oa, timeout=(connect_timeout, read_timeout))
             if resp.ok:
                 data = resp.json()
                 return (data.get('choices') or [{}])[0].get('message', {}).get('content', '').strip()
+        except req_exc.Timeout:
+            _logger.warning('Ollama /v1/chat/completions timeout')
+            raise
         except Exception:
             _logger.debug('Ollama OpenAI-compatible endpoint failed, trying /api/chat', exc_info=True)
         native_url = '%s/api/chat' % base
@@ -941,18 +985,82 @@ class OmniAi(models.AbstractModel):
                 {'role': 'user', 'content': user_text},
             ],
             'stream': False,
-            'options': {'temperature': 0.15},
+            'options': {'temperature': 0.15, 'num_predict': num_predict},
         }
         try:
-            resp = requests.post(native_url, json=payload_native, timeout=(5, 60))
+            resp = requests.post(native_url, json=payload_native, timeout=(connect_timeout, read_timeout))
             if not resp.ok:
                 _logger.error('Ollama error %s: %s', resp.status_code, resp.text)
                 return ''
             data = resp.json()
             return (data.get('message') or {}).get('content', '').strip()
+        except req_exc.Timeout:
+            _logger.warning('Ollama /api/chat timeout')
+            raise
         except Exception:
             _logger.exception('Ollama request failed')
-            return ''
+            raise
+
+    def _omni_compact_system_prompt(self, text, icp):
+        txt = (text or '').strip()
+        try:
+            max_chars = int(icp.get_param('omnichannel_bridge.ollama_max_system_chars', '9000'))
+        except Exception:
+            max_chars = 9000
+        max_chars = max(2000, min(20000, max_chars))
+        return txt if len(txt) <= max_chars else txt[:max_chars]
+
+    def _omni_compact_user_text(self, text, icp):
+        txt = re.sub(r'\s+', ' ', (text or '').strip())
+        try:
+            max_chars = int(icp.get_param('omnichannel_bridge.ollama_max_user_chars', '1200'))
+        except Exception:
+            max_chars = 1200
+        max_chars = max(200, min(4000, max_chars))
+        return txt if len(txt) <= max_chars else txt[:max_chars]
+
+    def _omni_ollama_cb_allows(self, icp):
+        open_until_raw = (icp.get_param('omnichannel_bridge.ollama_cb_open_until') or '').strip()
+        if not open_until_raw:
+            return True
+        try:
+            open_until = Datetime.from_string(open_until_raw)
+        except Exception:
+            icp.set_param('omnichannel_bridge.ollama_cb_open_until', '')
+            return True
+        return Datetime.now() >= open_until
+
+    def _omni_ollama_cb_mark_success(self, icp):
+        icp.set_param('omnichannel_bridge.ollama_cb_fail_count', '0')
+        icp.set_param('omnichannel_bridge.ollama_cb_open_until', '')
+
+    def _omni_ollama_cb_mark_failure(self, icp, reason):
+        try:
+            threshold = int(icp.get_param('omnichannel_bridge.ollama_cb_fail_threshold', '3'))
+        except Exception:
+            threshold = 3
+        try:
+            cooldown_seconds = int(icp.get_param('omnichannel_bridge.ollama_cb_cooldown_seconds', '180'))
+        except Exception:
+            cooldown_seconds = 180
+        threshold = max(1, min(20, threshold))
+        cooldown_seconds = max(30, min(3600, cooldown_seconds))
+        try:
+            fail_count = int(icp.get_param('omnichannel_bridge.ollama_cb_fail_count', '0'))
+        except Exception:
+            fail_count = 0
+        fail_count += 1
+        if fail_count >= threshold:
+            open_until = Datetime.now() + timedelta(seconds=cooldown_seconds)
+            icp.set_param('omnichannel_bridge.ollama_cb_open_until', Datetime.to_string(open_until))
+            icp.set_param('omnichannel_bridge.ollama_cb_fail_count', '0')
+            _logger.warning(
+                'Ollama circuit breaker opened for %ss (reason=%s)',
+                cooldown_seconds,
+                reason,
+            )
+            return
+        icp.set_param('omnichannel_bridge.ollama_cb_fail_count', str(fail_count))
 
     def _omni_route_manager_mention_if_needed(self, channel, partner, user_text, bot_reply):
         lowered = (user_text or '').lower()
