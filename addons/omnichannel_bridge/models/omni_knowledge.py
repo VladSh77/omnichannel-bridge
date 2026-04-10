@@ -117,6 +117,17 @@ class OmniKnowledge(models.AbstractModel):
         else:
             Article.create(vals)
 
+        # Internal manager alert for low-seat camps.
+        threshold_raw = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.camp_low_availability_threshold',
+            '5',
+        )
+        try:
+            threshold = max(1, int(threshold_raw))
+        except Exception:
+            threshold = 5
+        self.env['omni.notify'].sudo().notify_low_availability(camp_rows, threshold=threshold)
+
     @api.model
     def _omni_debug_sources_enabled(self):
         val = self.env['ir.config_parameter'].sudo().get_param(

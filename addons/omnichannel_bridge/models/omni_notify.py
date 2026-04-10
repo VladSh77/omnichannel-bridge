@@ -216,6 +216,37 @@ class OmniNotify(models.AbstractModel):
             'omni_purchase_confirmed_at': Datetime.now(),
         })
 
+    @api.model
+    def notify_low_availability(self, rows, threshold=5):
+        """
+        Daily manager alert for camps with low free seats.
+        `rows` item: {'name': str, 'location': str, 'seats_available': int, 'seats_max': int}
+        """
+        if not rows:
+            return
+        filtered = [r for r in rows if int(r.get('seats_available', 0)) < int(threshold)]
+        if not filtered:
+            return
+        lines = []
+        for row in filtered[:20]:
+            lines.append(
+                '• %s | %s | %s/%s'
+                % (
+                    self._escape(row.get('name') or 'camp'),
+                    self._escape(row.get('location') or '-'),
+                    int(row.get('seats_available', 0)),
+                    int(row.get('seats_max', 0)),
+                )
+            )
+        text = '\n'.join(
+            [
+                '🚨 *LOW AVAILABILITY ALERT*',
+                'Табори з низькою наявністю місць (<%s):' % int(threshold),
+                '\n'.join(lines),
+            ]
+        )
+        self._send(text, parse_mode='Markdown', priority=True)
+
     # ------------------------------------------------------------------
     # Внутрішнє
     # ------------------------------------------------------------------
