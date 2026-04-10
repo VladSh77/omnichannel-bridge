@@ -1,5 +1,36 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-10 — Closure pack for TZ 20.4–20.10 (UX parity + AI-only gate tooling)
+
+### Scope
+
+- Upgraded conversation-card dialog UX (`omni.inbox.thread`) from generic ERP-form layout to parity-style sectioned card:
+  - Header
+  - Contact
+  - Channel profile
+  - Odoo client
+  - Thread
+- Kept operator actions and identification flow in the same dialog (`identify`, `open chat`, `open partner`, close/reopen).
+- Added launch-gate evaluator for AI-only mode KPI checks and per-channel gating:
+  - `scripts/ai_launch_gate_eval.py`
+- Added formal per-camp QA regression dataset definition (15 prompts per camp, pass thresholds):
+  - `docs/CAMP_QA_ACCEPTANCE_DATASET_2026-04.md`
+- Updated TZ checklist statuses for delivered technical artifacts.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_inbox_thread.py`
+- `addons/omnichannel_bridge/views/omni_inbox_thread_views.xml`
+- `scripts/ai_launch_gate_eval.py` (new)
+- `docs/CAMP_QA_ACCEPTANCE_DATASET_2026-04.md` (new)
+- `docs/TZ_CHECKLIST.md`
+
+### Acceptance boundary
+
+- Manual instance acceptance remains mandatory:
+  - click external-link from Discuss panel must open dialog titled `Картка розмови`,
+  - smoke runs per camp/per channel must be executed and recorded with real runtime evidence.
+
 ## 2026-04-09 — Reference doc: SendPulse conversation card (etalon for § 20.8)
 
 - Added **`docs/SENDPULSE_CONVERSATION_CARD_REFERENCE.md`**: повний розбір моделі `sendpulse.connect`, форми `view_sendpulse_connect_form`, панелі Discuss (`SendpulseInfoPanel`), розмірів, RPC, мапінгу на `omnichannel_bridge`.

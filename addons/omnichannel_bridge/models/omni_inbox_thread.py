@@ -158,6 +158,31 @@ class OmniInboxThread(models.Model):
         compute='_compute_operator_user_ids',
         inverse='_inverse_operator_user_ids',
     )
+    card_header_html = fields.Html(
+        string='Header card',
+        compute='_compute_conversation_card_html',
+        sanitize=False,
+    )
+    card_contact_html = fields.Html(
+        string='Contact card',
+        compute='_compute_conversation_card_html',
+        sanitize=False,
+    )
+    card_channel_profile_html = fields.Html(
+        string='Channel profile card',
+        compute='_compute_conversation_card_html',
+        sanitize=False,
+    )
+    card_odoo_client_html = fields.Html(
+        string='Odoo client card',
+        compute='_compute_conversation_card_html',
+        sanitize=False,
+    )
+    card_thread_html = fields.Html(
+        string='Thread card',
+        compute='_compute_conversation_card_html',
+        sanitize=False,
+    )
 
     _sql_constraints = [
         ('omni_inbox_thread_channel_unique', 'unique(channel_id)', 'One inbox row per Discuss thread.'),
@@ -273,6 +298,136 @@ class OmniInboxThread(models.Model):
             )
             rec.partner_email = (partner.get('email') or '').strip()
             rec.partner_phone = (partner.get('phone') or '').strip()
+
+    @api.depends(
+        'channel_id',
+        'partner_id',
+        'provider',
+        'social_username',
+        'social_profile_url',
+        'bot_name',
+        'language_code',
+        'external_thread_id',
+        'thread_name',
+    )
+    def _compute_conversation_card_html(self):
+        Channel = self.env['discuss.channel'].sudo()
+        provider_emoji_map = {
+            'telegram': '✈️',
+            'meta': '📘',
+            'whatsapp': '🟢',
+            'twilio_whatsapp': '🟢',
+            'viber': '💜',
+            'site_livechat': '🌐',
+        }
+        for rec in self:
+            rec.card_header_html = ''
+            rec.card_contact_html = ''
+            rec.card_channel_profile_html = ''
+            rec.card_odoo_client_html = ''
+            rec.card_thread_html = ''
+            channel = rec.channel_id
+            if not channel:
+                continue
+            card = Channel.omni_get_client_info_for_channel(channel.id) or {}
+            ident = card.get('identity') or {}
+            partner = card.get('partner') or {}
+            profile = card.get('channel_profile') or {}
+            telegram = card.get('telegram') or {}
+            badges = profile.get('badges') if isinstance(profile.get('badges'), list) else []
+            badge_labels = [
+                (b.get('label') or '').strip()
+                for b in badges
+                if isinstance(b, dict) and b.get('label')
+            ]
+            provider = rec.provider or ''
+            provider_emoji = provider_emoji_map.get(provider, '')
+            provider_label = card.get('provider_label') or provider or 'Omnichannel'
+            display_name = (
+                (partner.get('name') or '').strip()
+                or (ident.get('display_name') or '').strip()
+                or 'Клієнт'
+            )
+            username = (
+                (ident.get('username') or '').strip()
+                or (ident.get('external_id') or '').strip()
+            )
+            profile_url = (ident.get('profile_url') or '').strip()
+            language_code = (ident.get('language_code') or rec.language_code or '').strip()
+            booking_email = (
+                (ident.get('booking_email') or '').strip()
+                or (telegram.get('booking_email') or '').strip()
+            )
+            header_lines = [
+                "<div class='oe_title'>",
+                f"<h2>{display_name}</h2>",
+                f"<div>{provider_emoji} {provider_label}</div>",
+            ]
+            if badge_labels:
+                header_lines.append(
+                    "<div>%s</div>" % " | ".join(badge_labels[:4])
+                )
+            header_lines.append("</div>")
+            rec.card_header_html = "".join(header_lines)
+
+            contact_lines = ["<div><strong>Контакт</strong></div>"]
+            if username and profile_url:
+                contact_lines.append(
+                    "<div><a href='%s' target='_blank'>%s</a></div>"
+                    % (profile_url, username)
+                )
+            elif username:
+                contact_lines.append("<div>%s</div>" % username)
+            if partner.get('email'):
+                contact_lines.append("<div>Email: %s</div>" % partner.get('email'))
+            if partner.get('phone'):
+                contact_lines.append("<div>Телефон: %s</div>" % partner.get('phone'))
+            if language_code:
+                contact_lines.append("<div>Мова: %s</div>" % language_code)
+            rec.card_contact_html = "".join(contact_lines)
+
+            section = profile.get('section') if isinstance(profile.get('section'), dict) else {}
+            section_title = (section.get('title') or 'Профіль каналу').strip()
+            section_rows = section.get('rows') if isinstance(section.get('rows'), list) else []
+            profile_lines = ["<div><strong>%s</strong></div>" % section_title]
+            for row in section_rows[:8]:
+                if not isinstance(row, dict):
+                    continue
+                if row.get('kind') == 'link' and row.get('href') and row.get('text'):
+                    profile_lines.append(
+                        "<div><a href='%s' target='_blank'>%s</a></div>"
+                        % (row['href'], row['text'])
+                    )
+                elif row.get('text'):
+                    profile_lines.append("<div>%s</div>" % row['text'])
+            if rec.bot_name:
+                profile_lines.append("<div>Бот: %s</div>" % rec.bot_name)
+            if booking_email:
+                profile_lines.append("<div>Email бронювання: %s</div>" % booking_email)
+            rec.card_channel_profile_html = "".join(profile_lines)
+
+            odoo_lines = ["<div><strong>Клієнт Odoo</strong></div>"]
+            if rec.partner_id:
+                odoo_lines.append("<div>%s</div>" % (rec.partner_id.display_name or '—'))
+                if rec.partner_email:
+                    odoo_lines.append("<div>Email: %s</div>" % rec.partner_email)
+                if rec.partner_phone:
+                    odoo_lines.append("<div>Телефон: %s</div>" % rec.partner_phone)
+            else:
+                odoo_lines.append("<div>Не ідентифіковано</div>")
+            rec.card_odoo_client_html = "".join(odoo_lines)
+
+            thread_lines = [
+                "<div><strong>Тред</strong></div>",
+                "<div>%s</div>" % ((rec.thread_name or '').strip() or '—'),
+                "<div><code>%s</code></div>" % ((rec.external_thread_id or '').strip() or '—'),
+            ]
+            if profile.get('thread_user_id'):
+                caption = profile.get('thread_user_caption') or 'Messenger user id'
+                thread_lines.append(
+                    "<div>%s: <code>%s</code></div>" % (caption, profile.get('thread_user_id'))
+                )
+            rec.card_thread_html = "".join(thread_lines)
 
     @api.depends('channel_id')
     def _compute_operator_user_ids(self):
