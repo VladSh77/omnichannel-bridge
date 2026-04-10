@@ -380,6 +380,7 @@ class OmniAi(models.AbstractModel):
         if not is_profile_ready and not self._omni_user_asks_price(user_text):
             out = self._omni_strip_price_lines(out) or out
         out = self._omni_cleanup_reply_structure(out)
+        out = self._omni_grammar_polish_reply(out)
         return out
 
     def _omni_humanize_sales_tone(self, text):
@@ -429,6 +430,30 @@ class OmniAi(models.AbstractModel):
         out = self._omni_enforce_single_question(out)
         out = self._omni_enforce_reply_size(out)
         return out
+
+    def _omni_grammar_polish_reply(self, text):
+        out = (text or '').strip()
+        if not out:
+            return out
+        # Common typo/wording fixes seen in production dialogs.
+        replacements = {
+            'Звісно, розумію.': 'Звісно, розумію ваш запит.',
+            'Можливо ви': 'Можливо, ви',
+            'Якщо потрібно факту': 'Якщо потрібного факту',
+            'в нашій системі': 'у нашій системі',
+            'для бі': '',
+            '  ': ' ',
+        }
+        for src, dst in replacements.items():
+            out = out.replace(src, dst)
+        # Normalize punctuation/spacing.
+        out = re.sub(r'\s+([,.;:!?])', r'\1', out)
+        out = re.sub(r'([,.;:!?])([^\s])', r'\1 \2', out)
+        out = re.sub(r'[ \t]{2,}', ' ', out)
+        out = re.sub(r'\n{3,}', '\n\n', out).strip()
+        # Remove duplicated neighboring words.
+        out = re.sub(r'\b([А-Яа-яA-Za-zІіЇїЄєŁłŚśŻżŹźĆćŃńÓóĘęĄą]{2,})\s+\1\b', r'\1', out, flags=re.IGNORECASE)
+        return out.strip()
 
     def _omni_enforce_single_question(self, text):
         out = (text or '').strip()
