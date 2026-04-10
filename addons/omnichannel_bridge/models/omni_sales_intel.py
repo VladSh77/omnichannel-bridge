@@ -350,11 +350,6 @@ class OmniSalesIntel(models.AbstractModel):
             memory = self.env['omni.memory'].sudo()
             memory._omni_append_chat_memory(partner, 'objection:%s' % objection_type)
         if channel:
-            channel.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
-                body='[auto] objection_detected: %s' % objection_type,
-                message_type='comment',
-                subtype_xmlid='mail.mt_note',
-            )
             self._omni_tag_latest_customer_message(
                 channel,
                 ['omni:objection', 'objection:%s' % objection_type],
