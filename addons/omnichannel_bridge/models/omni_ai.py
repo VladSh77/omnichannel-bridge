@@ -275,6 +275,7 @@ class OmniAi(models.AbstractModel):
         reply = self._omni_sales_guard_reply(reply, partner, normalized)
         reply = self._omni_append_next_question(reply, partner, normalized)
         reply = self._omni_apply_reserve_flow(channel, partner, normalized, facts, reply)
+        reply = self._omni_finalize_client_reply(reply)
         self._omni_post_bot_message(channel, reply)
         self._omni_update_sales_stage_after_reply(partner, channel=channel)
         self._omni_route_manager_mention_if_needed(channel, partner, text, reply)
@@ -442,6 +443,11 @@ class OmniAi(models.AbstractModel):
             'Якщо потрібно факту': 'Якщо потрібного факту',
             'в нашій системі': 'у нашій системі',
             'для бі': '',
+            'Понякь': 'Підкажіть',
+            'понякь': 'підкажіть',
+            'іншее': 'інше',
+            'логистику': 'логістику',
+            'табор': 'табір',
             '  ': ' ',
         }
         for src, dst in replacements.items():
@@ -453,6 +459,20 @@ class OmniAi(models.AbstractModel):
         out = re.sub(r'\n{3,}', '\n\n', out).strip()
         # Remove duplicated neighboring words.
         out = re.sub(r'\b([А-Яа-яA-Za-zІіЇїЄєŁłŚśŻżŹźĆćŃńÓóĘęĄą]{2,})\s+\1\b', r'\1', out, flags=re.IGNORECASE)
+        return out.strip()
+
+    def _omni_finalize_client_reply(self, text):
+        out = (text or '').strip()
+        if not out:
+            return out
+        out = self._omni_cleanup_reply_structure(out)
+        out = self._omni_grammar_polish_reply(out)
+        # Keep max 2 short sentences in final client-facing message.
+        parts = [p.strip() for p in re.split(r'(?<=[.!?])\s+', out) if p.strip()]
+        if len(parts) > 2:
+            out = ' '.join(parts[:2]).strip()
+        out = self._omni_enforce_single_question(out)
+        out = self._omni_enforce_reply_size(out)
         return out.strip()
 
     def _omni_enforce_single_question(self, text):
