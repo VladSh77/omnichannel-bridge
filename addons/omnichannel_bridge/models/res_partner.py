@@ -60,6 +60,8 @@ class ResPartner(models.Model):
     omni_departure_city = fields.Char(string='Місто виїзду')
     omni_budget_amount = fields.Float(string='Орієнтовний бюджет')
     omni_budget_currency = fields.Char(string='Валюта бюджету')
+    omni_social_username = fields.Char(string='Нік/username з чату')
+    omni_social_profile_url = fields.Char(string='Профіль соцмережі (URL)')
     omni_sales_stage = fields.Selection(
         selection=[
             ('new', 'Новий запит'),

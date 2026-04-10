@@ -34,6 +34,12 @@ _UA_VOCATIVE_MAP = {
     'владислав': 'Владиславе',
 }
 
+_SOCIAL_URL_RE = re.compile(
+    r'https?://(?:www\.)?(?:t\.me|instagram\.com|facebook\.com|m\.me)/[^\s]+',
+    re.IGNORECASE,
+)
+_SOCIAL_HANDLE_RE = re.compile(r'@([A-Za-z0-9_.]{3,40})')
+
 
 class OmniMemory(models.AbstractModel):
     _name = 'omni.memory'
@@ -138,6 +144,14 @@ class OmniMemory(models.AbstractModel):
             clues.append('age:%s' % age)
             if 5 <= age <= 18:
                 updates['omni_child_age'] = age
+        else:
+            # Accept bare age answers like "9" after qualification prompts.
+            bare_m = re.fullmatch(r'\s*(\d{1,2})\s*', txt)
+            if bare_m:
+                age = int(bare_m.group(1))
+                if 5 <= age <= 18 and not partner.omni_child_age:
+                    clues.append('age:%s' % age)
+                    updates['omni_child_age'] = age
         budget_m = re.search(
             r'(\d{3,6})\s*(грн|uah|zl|pln|zł|€|eur)',
             txt,
@@ -167,6 +181,16 @@ class OmniMemory(models.AbstractModel):
             city = city_m.group(1)
             clues.append('city:%s' % city)
             updates['omni_departure_city'] = city
+        url_m = _SOCIAL_URL_RE.search(txt)
+        if url_m and not partner.omni_social_profile_url:
+            social_url = url_m.group(0).strip().rstrip(').,!?')
+            clues.append('social_url:%s' % social_url)
+            updates['omni_social_profile_url'] = social_url
+        handle_m = _SOCIAL_HANDLE_RE.search(txt)
+        if handle_m and not partner.omni_social_username:
+            username = handle_m.group(1).strip()
+            clues.append('social_username:%s' % username)
+            updates['omni_social_username'] = username
         if updates:
             partner.write(updates)
             partner.omni_set_sales_stage(

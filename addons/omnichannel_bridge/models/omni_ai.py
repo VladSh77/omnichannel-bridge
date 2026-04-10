@@ -209,6 +209,12 @@ class OmniAi(models.AbstractModel):
             self._omni_post_bot_message(channel, self._omni_clarify_vague_followup(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
+        if self._omni_is_short_affirmation(normalized):
+            follow = self._omni_next_step_after_affirmation(partner, normalized)
+            if follow:
+                self._omni_post_bot_message(channel, follow)
+                self._omni_update_sales_stage_after_reply(partner, channel=channel)
+                return
         if not self._omni_is_camp_scope_message(normalized):
             self._omni_send_out_of_scope_reply(channel)
             self._omni_set_sales_stage(partner, 'handoff', channel, 'out_of_scope')
@@ -422,6 +428,10 @@ class OmniAi(models.AbstractModel):
             'Я консультант CampScout.': '',
             'Я допомагаю клієнтам знайти': 'Допоможу підібрати',
             'Я допомагаю знайти': 'Допоможу підібрати',
+            'Щоб я могла': 'Щоб підібрати',
+            'щоб я могла': 'щоб підібрати',
+            'Щоб я міг': 'Щоб підібрати',
+            'щоб я міг': 'щоб підібрати',
             'Звертаюся до вас з емпатією': 'Розумію ваш запит',
             'звертаюся до вас з емпатією': 'розумію ваш запит',
             'У нашій системі немає конкретних гарантій, які можна надати безпосередньо.': (
@@ -483,6 +493,11 @@ class OmniAi(models.AbstractModel):
             'Подобрать': 'Підібрати',
             'кліент': 'клієнт',
             'Кліент': 'Клієнт',
+            'щоб я могла': 'щоб підібрати',
+            'Щоб я могла': 'Щоб підібрати',
+            'щоб я міг': 'щоб підібрати',
+            'Щоб я міг': 'Щоб підібрати',
+            'мені потрібно уточнити': 'уточніть, будь ласка',
             'для бі': '',
             'Понякь': 'Підкажіть',
             'понякь': 'підкажіть',
@@ -493,6 +508,13 @@ class OmniAi(models.AbstractModel):
         }
         for src, dst in replacements.items():
             out = out.replace(src, dst)
+        # Collapse verbose office-style phrasing into short sales-dialog wording.
+        out = re.sub(
+            r'щоб підібрати[^.!?]{0,120}мені потрібно уточнити',
+            'щоб підібрати релевантний варіант, уточніть, будь ласка',
+            out,
+            flags=re.IGNORECASE,
+        )
         # Normalize punctuation/spacing.
         out = re.sub(r'\s+([,.;:!?])', r'\1', out)
         out = re.sub(r'([,.;:!?])([^\s])', r'\1 \2', out)
@@ -1129,6 +1151,32 @@ class OmniAi(models.AbstractModel):
         if self._omni_is_polish_message(user_text or ''):
             return 'Co dokładnie jest dla Państwa najważniejsze: program, terminy, dojazd czy bezpieczeństwo?'
         return 'Що саме для вас важливіше зараз: програма, дати, доїзд чи безпека?'
+
+    def _omni_is_short_affirmation(self, user_text):
+        txt = re.sub(r'\s+', ' ', (user_text or '').strip().lower())
+        if not txt:
+            return False
+        return txt in (
+            'так', 'так.', 'ок', 'ок.', 'добре', 'ага', 'yes', 'ok', 'yep',
+            'tak', 'tak.', 'dobrze',
+        )
+
+    def _omni_next_step_after_affirmation(self, partner, user_text):
+        if not partner:
+            return ''
+        is_pl = self._omni_is_polish_message(user_text or '')
+        next_q = self._omni_pick_next_question(partner, user_text)
+        if next_q:
+            return (
+                'Дякую, рухаємось далі. %s' % next_q
+                if not is_pl else
+                'Dziękuję, idziemy dalej. %s' % next_q
+            )
+        return (
+            'Дякую. Уже маю базові дані, тож підберу 1-2 найрелевантніші варіанти табору.'
+            if not is_pl else
+            'Dziękuję. Mam już podstawowe dane, więc dobiorę 1-2 najbardziej trafne obozy.'
+        )
 
     def _omni_moderation_policy_hit(self, user_text):
         txt = (user_text or '').lower().strip()
