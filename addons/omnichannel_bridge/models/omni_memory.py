@@ -76,6 +76,7 @@ class OmniMemory(models.AbstractModel):
         if changed:
             self._omni_append_chat_memory(partner, '; '.join(changed))
         self._omni_capture_sales_clues(partner, text)
+        self._omni_attach_paid_booking_facts(partner, text)
 
     def _omni_vocative_map(self):
         mapping = dict(_UA_VOCATIVE_MAP)
@@ -200,3 +201,76 @@ class OmniMemory(models.AbstractModel):
             )
         if clues:
             self._omni_append_chat_memory(partner, '; '.join(clues))
+
+    @api.model
+    def _omni_is_paid_or_booked_message(self, text):
+        txt = (text or '').strip().lower()
+        if not txt:
+            return False
+        keys = (
+            'вже оплат', 'оплатив', 'оплатила', 'оплачено', 'сплатив', 'сплатила',
+            'вже заброн', 'забронював', 'забронювала', 'бронь зробив', 'бронь зробила',
+            'already paid', 'i paid', 'already booked', 'i booked',
+            'już opłaci', 'opłacone', 'już zarezerw', 'zarezerwowa',
+            'faktura', 'invoice',
+        )
+        return any(k in txt for k in keys)
+
+    @api.model
+    def _omni_extract_camp_from_order(self, order):
+        if not order:
+            return ''
+        order = order.sudo()
+        for line in order.order_line:
+            product = line.product_id
+            if not product:
+                continue
+            event = getattr(product, 'bs_event_id', False) or getattr(product.product_tmpl_id, 'bs_event_id', False)
+            if event:
+                return (event.display_name or event.name or '').strip()
+            name = (product.display_name or product.name or '').strip()
+            if name:
+                return name
+        return ''
+
+    @api.model
+    def _omni_attach_paid_booking_facts(self, partner, text):
+        if not partner or not self._omni_is_paid_or_booked_message(text):
+            return
+        partner = partner.sudo()
+        details = []
+        Order = self.env['sale.order'].sudo() if 'sale.order' in self.env else self.env['res.partner']
+        Move = self.env['account.move'].sudo() if 'account.move' in self.env else self.env['res.partner']
+
+        order = Order.search(
+            [('partner_id', '=', partner.id)],
+            order='write_date desc, id desc',
+            limit=1,
+        ) if 'sale.order' in self.env else False
+        if order:
+            if order.name:
+                details.append('booking_ref:%s' % order.name)
+            camp_name = self._omni_extract_camp_from_order(order)
+            if camp_name:
+                details.append('camp:%s' % camp_name)
+
+        if 'account.move' in self.env:
+            inv_domain = [
+                ('partner_id', '=', partner.id),
+                ('move_type', 'in', ('out_invoice', 'out_refund')),
+                ('state', '=', 'posted'),
+            ]
+            invoice = Move.search(inv_domain, order='invoice_date desc, id desc', limit=1)
+            if invoice and invoice.name:
+                details.append('invoice:%s' % invoice.name)
+                if invoice.payment_state:
+                    details.append('invoice_state:%s' % invoice.payment_state)
+
+        if 'event.registration' in self.env:
+            Reg = self.env['event.registration'].sudo()
+            reg = Reg.search([('partner_id', '=', partner.id)], order='write_date desc, id desc', limit=1)
+            if reg and reg.event_id:
+                details.append('event:%s' % (reg.event_id.display_name or reg.event_id.name or ''))
+
+        if details:
+            self._omni_append_chat_memory(partner, '; '.join(details))
