@@ -24,7 +24,7 @@ docker exec campscout_web odoo -c /etc/odoo/odoo.conf -d campscout \
   -u omnichannel_bridge --stop-after-init --no-http --without-demo=all
 ```
 
-- Підтверджено користувачем після попереднього push коду legal-priority; хвиля **0.48** додає KB XML + документацію — повторний **`-u`** після pull коміту з цим файлом.
+- Підтверджено користувачем; на **CampScout** виконано **pull** до **`601666f`** і **`-u omnichannel_bridge`** з **`--no-http`** — **успішно** (у лозі завантаження **`omni_kb_ai_source_hierarchy.xml`**).
 
 ### DevJournal (Obsidian)
 
