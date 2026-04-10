@@ -319,6 +319,7 @@ class OmniAi(models.AbstractModel):
             self._omni_send_fallback(channel, partner, ICP)
             return
         reply = self._omni_sales_guard_reply(reply, partner, normalized)
+        reply = self._omni_prevent_qualification_loop(reply, partner, normalized)
         reply = self._omni_append_next_question(reply, partner, normalized)
         reply = self._omni_apply_reserve_flow(channel, partner, normalized, facts, reply)
         reply = self._omni_finalize_client_reply(reply)
@@ -1577,6 +1578,31 @@ class OmniAi(models.AbstractModel):
                 'Proszę zostawić kontakt (telefon lub email), a przekażę dobór menedżerowi.'
             )
         return ''
+
+    def _omni_prevent_qualification_loop(self, reply, partner, user_text):
+        import re
+        if not partner:
+            return reply
+        txt = (reply or '').strip()
+        if not txt:
+            return txt
+        mem = (partner.omni_chat_memory or '').lower()
+        has_age = bool(partner.omni_child_age) or ('age:' in mem)
+        asks_age = bool(
+            re.search(
+                r'(скільки\s+.*рок|якого\s+віку|wiek\s+dziecka|ile\s+lat)',
+                txt.lower(),
+                re.IGNORECASE,
+            )
+        )
+        if not (has_age and asks_age):
+            return txt
+        next_q = self._omni_pick_next_question(partner, user_text or '')
+        if not next_q:
+            return txt
+        if re.search(r'(скільки\s+.*рок|якого\s+віку|wiek\s+dziecka|ile\s+lat)', next_q.lower(), re.IGNORECASE):
+            return txt
+        return next_q
 
     def _omni_prefill_partner_from_inbound_text(self, partner, user_text, channel=None):
         if not partner or not user_text:
