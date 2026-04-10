@@ -6,6 +6,7 @@
 - **Descriptive camp cards** (dates, duration, program text) are synced into **`omni.knowledge.article`** via generated data:
   - Source: sibling repo `camp/knowledge-base` (markdown).
   - Regenerate: `python3 scripts/generate_camp_knowledge_data.py` (optional `CAMP_KNOWLEDGE_BASE=...`), then commit `data/omni_camp_knowledge_articles.xml` and bump module upgrade.
+- **Marketing brochure OCR (Offer 2026):** PNG slides in `~/Developer/Offer2026_unpacked` → `python3 scripts/ocr_offer2026_to_markdown.py` (macOS Vision) writes `camp/knowledge-base/00_offer2026_brochure_part*.md`; optional `scripts/split_offer2026_markdown.py` if you only need to re-chunk an existing monolithic `00_offer2026_brochure.md`. Re-run the generator and `-u omnichannel_bridge`.
 - **Probe free places** for a camp product (e.g. POSHUMIMO): in `odoo shell`, run `scripts/odoo_probe_camp_places.py` → `run(env)` (see file docstring).
 
 ## Deployment Guardrail

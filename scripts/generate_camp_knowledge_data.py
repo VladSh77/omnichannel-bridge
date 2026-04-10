@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CAMP_KB = REPO_ROOT.parent / 'camp' / 'knowledge-base'
 OUT_PATH = REPO_ROOT / 'addons' / 'omnichannel_bridge' / 'data' / 'omni_camp_knowledge_articles.xml'
 
-MAX_BODY = 12000  # keep XML manageable; RAG still matches on name + start of body
+MAX_BODY = 40000  # large OCR brochure parts; RAG matches on name + body chunks
 
 
 def _strip_md_fences(text: str) -> str:
@@ -187,6 +187,20 @@ def main() -> None:
                 category='policy',
             )
         )
+
+    offer_parts = sorted(kb.glob('00_offer2026_brochure_part*.md'))
+    if offer_parts:
+        tot = len(offer_parts)
+        for idx, path in enumerate(offer_parts, start=1):
+            blocks.append(
+                _record(
+                    _xml_id_from_stem(path.stem),
+                    f'CampScout: оферта 2026 — брошура OCR ({idx}/{tot})',
+                    path.read_text(encoding='utf-8'),
+                    priority=16,
+                    category='faq',
+                )
+            )
 
     camps_dir = kb / 'camps'
     if camps_dir.is_dir():
