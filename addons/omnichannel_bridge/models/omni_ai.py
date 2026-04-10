@@ -272,6 +272,7 @@ class OmniAi(models.AbstractModel):
         if not reply:
             self._omni_send_fallback(channel, partner, ICP)
             return
+        reply = self._omni_sales_guard_reply(reply, partner, normalized)
         reply = self._omni_append_next_question(reply, partner, normalized)
         reply = self._omni_apply_reserve_flow(channel, partner, normalized, facts, reply)
         self._omni_post_bot_message(channel, reply)
@@ -300,10 +301,81 @@ class OmniAi(models.AbstractModel):
             '- Warm, respectful, premium communication for parents.\n'
             '- No aggressive urgency, no pressure tactics.\n'
             '- Keep concise, helpful, and factual.\n'
+            '- No russian words/lexemes; use clean Ukrainian or Polish only.\n'
             '- Mobile-first: one short paragraph, no long walls of text.\n'
+            '- Sales mode: discover client needs first, not "catalog dump".\n'
+            '- Do NOT lead with price in first replies unless client explicitly asks about price.\n'
+            '- Present max 1-2 relevant camp options, each with value first, then practical details.\n'
+            '- Use clear structure: short intro + bullets + one next-step question.\n'
             '- Ask at most one question per reply.\n'
             '- If more details are needed, continue step-by-step in next turns.'
         )
+
+    def _omni_user_asks_price(self, user_text):
+        txt = (user_text or '').lower()
+        keys = (
+            'ціна', 'ціни', 'скільки', 'вартість', 'коштує',
+            'cena', 'koszt', 'ile kosztuje',
+            'price', 'cost', 'how much',
+        )
+        return any(k in txt for k in keys)
+
+    def _omni_contains_ru_lexemes(self, text):
+        txt = (' %s ' % ((text or '').lower(),))
+        # Frequent ru-only or ru-heavy words we never want in UA/PL replies.
+        bad_words = (
+            ' спасибо ', ' пожалуйста ', ' ребён', ' ребенок', ' конечно ',
+            ' обращени', ' ближайш', ' подключит', ' сейчас у нас ',
+        )
+        return any(w in txt for w in bad_words)
+
+    def _omni_cleanup_ru_lexemes(self, text):
+        out = text or ''
+        replacements = {
+            'Спасибо': 'Дякуємо',
+            'спасибо': 'дякуємо',
+            'пожалуйста': 'будь ласка',
+            'Пожалуйста': 'Будь ласка',
+            'обращение': 'звернення',
+            'Обращение': 'Звернення',
+            'ребенок': 'дитина',
+            'Ребенок': 'Дитина',
+            'ребёнок': 'дитина',
+            'Ребёнок': 'Дитина',
+            'ближайшим': 'найближчим',
+            'подключится': 'підключиться',
+        }
+        for src, dst in replacements.items():
+            out = out.replace(src, dst)
+        return out
+
+    def _omni_strip_price_lines(self, text):
+        lines = (text or '').splitlines()
+        kept = []
+        price_pattern = re.compile(
+            r'(\b\d[\d\s]{1,8}\s?(?:pln|uah|eur|€|usd|zł|грн)\b|'
+            r'\b(?:ціна|вартість|cena|koszt|price|cost)\b)',
+            re.IGNORECASE,
+        )
+        for ln in lines:
+            if price_pattern.search(ln):
+                continue
+            kept.append(ln)
+        return '\n'.join(kept).strip()
+
+    def _omni_sales_guard_reply(self, reply, partner, user_text):
+        out = (reply or '').strip()
+        if not out:
+            return out
+        if self._omni_contains_ru_lexemes(out):
+            out = self._omni_cleanup_ru_lexemes(out)
+        # Premium sales flow: price only after qualification or direct price request.
+        is_profile_ready = bool(
+            partner and partner.omni_child_age and partner.omni_preferred_period
+        )
+        if not is_profile_ready and not self._omni_user_asks_price(user_text):
+            out = self._omni_strip_price_lines(out) or out
+        return out
 
     def _omni_coupon_meta_offer_text(self):
         icp = self.env['ir.config_parameter'].sudo()
