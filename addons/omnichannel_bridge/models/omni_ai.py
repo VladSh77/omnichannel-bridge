@@ -352,10 +352,35 @@ class OmniAi(models.AbstractModel):
             'Ребёнок': 'Дитина',
             'ближайшим': 'найближчим',
             'подключится': 'підключиться',
+            'подскажите': 'підкажіть',
+            'Подскажите': 'Підкажіть',
+            'что': 'що',
+            'Что': 'Що',
+            'это': 'це',
+            'Это': 'Це',
+            'если': 'якщо',
+            'Если': 'Якщо',
+            'ваш': 'ваш',
+            'Ваш': 'Ваш',
+            'Понята': 'Зрозуміло',
+            'понята': 'зрозуміло',
+            'Начина': 'Почина',
+            'начина': 'почина',
         }
         for src, dst in replacements.items():
             out = out.replace(src, dst)
         return out
+
+    def _omni_has_ru_markers(self, text):
+        txt = (' %s ' % ((text or '').lower(),))
+        markers = (
+            ' спасибо ', ' пожалуйста ', ' обращени', ' ребён', ' ребенок',
+            ' ближайш', ' подключит', ' подскаж', ' пожалуйста', ' конечно ',
+            ' понята ', ' понятно ', ' понимаю, что вы ',
+            ' уточните ', ' это ', ' если ', ' чтобы ', ' который ', ' какая ',
+            ' какие ', ' вас интересует ', ' могу предложить ',
+        )
+        return any(m in txt for m in markers)
 
     def _omni_strip_price_lines(self, text):
         lines = (text or '').splitlines()
@@ -391,6 +416,12 @@ class OmniAi(models.AbstractModel):
     def _omni_humanize_sales_tone(self, text):
         out = text or ''
         replacements = {
+            'Я адміністратор та консультант для CampScout.': '',
+            'Я адміністратор і консультант для CampScout.': '',
+            'Я консультант для CampScout.': '',
+            'Я консультант CampScout.': '',
+            'Я допомагаю клієнтам знайти': 'Допоможу підібрати',
+            'Я допомагаю знайти': 'Допоможу підібрати',
             'Звертаюся до вас з емпатією': 'Розумію ваш запит',
             'звертаюся до вас з емпатією': 'розумію ваш запит',
             'У нашій системі немає конкретних гарантій, які можна надати безпосередньо.': (
@@ -446,6 +477,12 @@ class OmniAi(models.AbstractModel):
             'Можливо ви': 'Можливо, ви',
             'Якщо потрібно факту': 'Якщо потрібного факту',
             'в нашій системі': 'у нашій системі',
+            'ізбране': 'найкраще',
+            'Избране': 'Найкраще',
+            'подобрать': 'підібрати',
+            'Подобрать': 'Підібрати',
+            'кліент': 'клієнт',
+            'Кліент': 'Клієнт',
             'для бі': '',
             'Понякь': 'Підкажіть',
             'понякь': 'підкажіть',
@@ -461,6 +498,13 @@ class OmniAi(models.AbstractModel):
         out = re.sub(r'([,.;:!?])([^\s])', r'\1 \2', out)
         out = re.sub(r'[ \t]{2,}', ' ', out)
         out = re.sub(r'\n{3,}', '\n\n', out).strip()
+        # Remove role self-intros that make replies robotic or off-brand.
+        out = re.sub(
+            r'^\s*я\s+(?:адміністратор(?:ка)?\s+та\s+)?консультант(?:ка)?[^.!?]*[.!?]\s*',
+            '',
+            out,
+            flags=re.IGNORECASE,
+        )
         # Remove duplicated neighboring words.
         out = re.sub(r'\b([А-Яа-яA-Za-zІіЇїЄєŁłŚśŻżŹźĆćŃńÓóĘęĄą]{2,})\s+\1\b', r'\1', out, flags=re.IGNORECASE)
         return out.strip()
@@ -471,6 +515,10 @@ class OmniAi(models.AbstractModel):
             return out
         out = self._omni_cleanup_reply_structure(out)
         out = self._omni_grammar_polish_reply(out)
+        out = self._omni_cleanup_ru_lexemes(out)
+        if self._omni_has_ru_markers(out):
+            # Deterministic hard-stop: never send mixed/ru-looking phrasing to client.
+            out = 'Підкажіть, що для вас зараз найважливіше: програма, дати, доїзд чи безпека?'
         # Keep max 2 short sentences in final client-facing message.
         parts = [p.strip() for p in re.split(r'(?<=[.!?])\s+', out) if p.strip()]
         if len(parts) > 2:
@@ -721,18 +769,12 @@ class OmniAi(models.AbstractModel):
             'для підбору табору та звʼязку з менеджером.'
         )
         if channel._omni_is_website_livechat_channel():
-            # Plain URLs render reliably in website chat bubbles and avoid broken HTML when chunked.
+            # Compact legal block for livechat to avoid multi-bubble URL fragmentation.
             return (
                 '%(consent)s\n'
-                'Відповідає юридична особа: %(legal_name)s.\n'
-                'Політики:\n'
-                'Privacy: %(privacy)s\n'
-                'Terms: %(terms)s\n'
-                'Cookies: %(cookie)s\n'
-                'Child protection: %(child)s'
+                'Політики: %(privacy)s | %(terms)s | %(cookie)s | %(child)s'
             ) % {
                 'consent': consent_line,
-                'legal_name': legal_name,
                 'privacy': privacy_url,
                 'terms': terms_url,
                 'cookie': cookie_url,
@@ -798,7 +840,9 @@ class OmniAi(models.AbstractModel):
         channel = channel.sudo()
         bot_partner = self._omni_resolve_bot_partner()
         legal = self._omni_legal_notice_block(channel)
-        final_body = (body or '').strip()
+        final_body = self._omni_finalize_client_reply((body or '').strip())
+        if not final_body:
+            final_body = 'Підкажіть, що для вас зараз найважливіше: програма, дати, доїзд чи безпека?'
         if channel._omni_is_website_livechat_channel() and not final_body.startswith('🤖'):
             final_body = '🤖 %s' % final_body
         if legal and not channel.omni_legal_notice_sent_at:
@@ -1138,8 +1182,10 @@ class OmniAi(models.AbstractModel):
             return self._openai_chat_completion(
                 icp.get_param('omnichannel_bridge.openai_api_key'),
                 icp.get_param('omnichannel_bridge.openai_model') or 'gpt-4o-mini',
+                (icp.get_param('omnichannel_bridge.openai_base_url') or 'https://api.openai.com/v1').strip(),
                 system_prompt,
                 user_text,
+                icp=icp,
             )
         if backend == 'ollama':
             if not self._omni_ollama_cb_allows(icp):
@@ -1162,10 +1208,20 @@ class OmniAi(models.AbstractModel):
             return ''
         return ''
 
-    def _openai_chat_completion(self, api_key, model, system_prompt, user_text):
+    def _openai_chat_completion(self, api_key, model, base_url, system_prompt, user_text, icp=None):
         if not api_key:
             return ''
-        url = 'https://api.openai.com/v1/chat/completions'
+        base = (base_url or 'https://api.openai.com/v1').strip().rstrip('/')
+        url = '%s/chat/completions' % base
+        icp = icp or self.env['ir.config_parameter'].sudo()
+        try:
+            connect_timeout = max(2, int(icp.get_param('omnichannel_bridge.openai_connect_timeout_seconds', '5')))
+        except Exception:
+            connect_timeout = 5
+        try:
+            read_timeout = max(10, int(icp.get_param('omnichannel_bridge.openai_read_timeout_seconds', '30')))
+        except Exception:
+            read_timeout = 30
         headers = {
             'Authorization': 'Bearer %s' % api_key,
             'Content-Type': 'application/json',
@@ -1179,7 +1235,7 @@ class OmniAi(models.AbstractModel):
             'temperature': 0.15,
         }
         try:
-            resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=(5, 30))
+            resp = requests.post(url, headers=headers, data=json.dumps(payload), timeout=(connect_timeout, read_timeout))
             if not resp.ok:
                 _logger.error('OpenAI error %s: %s', resp.status_code, resp.text)
                 return ''
