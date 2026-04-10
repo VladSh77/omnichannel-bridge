@@ -54,6 +54,11 @@
 - Compact mode check: transcript and FAQ snippets are shortened (token-saving mode).
 - Auto-next-question: if reply has no question mark and qualifiers are missing, bot appends exactly one next-step qualifier question.
 - Debug mode check: when enabled, catalog/recommendation lines include source markers for program and places fields.
+- History continuity check: after pause/reopen, bot uses prior conversation-card facts and does not restart from age if age was already provided in same thread.
+- Standalone age answer check: numeric-only reply (`12`) must move to next slot (period/city/budget), no confirmation loop (`Це вік дитини?`).
+- Continue-command check: short commands (`шукайте`, `підберіть`) continue qualification stage and must not trigger fresh greeting/reset.
+- Binary availability check: short ping (`маєте чи ні`) returns direct yes/no-oriented sales answer, not generic clarification fallback.
+- False denial check: for camp catalog questions bot must not claim “немає інформації/доступу” to camp data.
 
 ### D. Human Handoff
 
@@ -66,6 +71,9 @@
 
 - Duplicate webhook replay behavior (to be implemented).
 - Long LLM latency behavior (to be implemented async path).
+- Production log hygiene check:
+  - no repeated 429/Traceback noise from disabled cron `SendPulse Odo: Pull Missing Contacts`,
+  - Telegram webhook continues stable 200 delivery under same traffic window.
 
 ## Exit Criteria for Wave 1
 

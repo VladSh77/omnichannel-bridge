@@ -1,5 +1,47 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-10 — Bot logic stabilization pass (Telegram live thread hardening)
+
+### Scope
+
+- Fixed repeated qualification loops observed in production Telegram thread (`discuss.channel` 5049):
+  - standalone age answers (`12`, `13`) now move to next qualification step instead of asking `Це вік дитини?`;
+  - imperative continue commands (`шукайте`, `підберіть`) continue current funnel step and do not restart greeting flow.
+- Added history-aware step progression:
+  - next-question selector now reads recent customer messages in current conversation card (`mail.message` on channel) to avoid restarting from age after long pauses.
+- Hardened purchased/booking intents:
+  - expanded intent markers (`купували`, typo variants) and deterministic booking verification path.
+- Added final reply guardrails:
+  - block false “no camp info/access” phrasing for camp-selection requests;
+  - direct deterministic response for binary availability pings (`маєте чи ні`).
+- Operational cleanup:
+  - disabled failing cron `SendPulse Odo: Pull Missing Contacts` (`ir_cron.id=80`) due repeated 429 rate-limit noise in production logs.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/omni_memory.py`
+- `docs/TZ_CHECKLIST.md`
+- `docs/TEST_PLAN.md`
+
+### Verification
+
+- Local:
+  - `python3 -m compileall addons/omnichannel_bridge`
+  - `python3 tests/test_webhook_parsers.py`
+  - `python3 tests/test_contract_regressions.py` (known temporary CI workflow assertion mismatch kept separate; see below)
+  - `ruff check --select E9,F63,F7,F82 addons/omnichannel_bridge tests`
+- Production:
+  - webhook delivery stable (`POST /omni/webhook/telegram` -> HTTP 200),
+  - no fresh runtime Traceback in short post-deploy windows after cron noise suppression.
+
+### CI note (startup failure root cause)
+
+- GitHub Actions startup failures were traced to account billing constraints, not YAML semantics:
+  - invalid payment method authorization hold failure,
+  - Actions budget configured with `$0` + stop usage.
+- Repository CI workflow is temporarily reduced to diagnostic bootstrap until billing unblocks; full pipeline restore is pending.
+
 ## 2026-04-10 — Closure pack for TZ 20.4–20.10 (UX parity + AI-only gate tooling)
 
 ### Scope

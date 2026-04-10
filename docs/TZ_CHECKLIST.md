@@ -409,7 +409,7 @@
 
 ## 11. Експлуатація та якість інженерії
 
-- [x] CI: додано GitHub Actions pipeline (compile + unit tests for webhook parsers + contract regression checks) + lint/tooling expansion (`ruff check`).
+- [~] CI: pipeline у репозиторії присутній; тимчасово переведено в діагностичний bootstrap через зовнішній GitHub billing-block (`Invalid payment method: authorization hold failed` + `Actions budget $0 / stop usage`), відновлення повного `compile+tests+ruff` після розблокування billing.
 - [x] Автотести критичних парсерів webhook (pure parser unit tests: Telegram update_id, Meta mid).
 - [x] Staging з тестовою сторінкою Meta (процедура і чекліст: `docs/STAGING_META_TEST_PAGE.md`).
 - [x] Runbook: падіння **Ollama**, нестача RAM/GPU, rate limit Graph API, прострочений токен, (опційно) OpenAI (розширено SOP у `OPERATIONS_RUNBOOK.md`).
@@ -679,7 +679,7 @@
 - [x] Додати YouTube-канал як офіційне джерело фактів для FAQ: транскрипти відео по безпеці, програмам таборів, проживанню, харчуванню, медсупроводу, оплатам/договорам (додано source policy + schema, `source_type=youtube`).
 - [x] Для кожного Q/A фіксувати джерело-посилання на конкретне відео + таймкод (traceability), після чого робити нормалізацію в `omni.knowledge.article` (додано поля `source_ref`, `source_timestamp` у `omni.knowledge.article`).
 - [x] Впровадити policy перевірки: YouTube-факти потрапляють у прод-базу знань лише після редакторського approve (щоб уникнути неактуальних/чернеткових формулювань) — `editorial_approved` filter у RAG.
-- [ ] Забезпечити, що бот дає змістовну відповідь на кожну категорію питання без "порожнього" fallback; при нестачі факту — керований handoff на менеджера.
+- [~] Забезпечити, що бот дає змістовну відповідь на кожну категорію питання без "порожнього" fallback; при нестачі факту — керований handoff на менеджера. (2026-04-10: додано guardrails проти false-denial `немає інформації`, binary availability direct-answer, history-aware anti-loop; потрібен повторний e2e acceptance прогін по всіх каналах)
 - [x] Додати тестовий набір запитів (мінімум 10-15 на табір) та acceptance-критерій: `>=95%` коректних відповідей у pre-launch прогоні (`docs/CAMP_QA_ACCEPTANCE_DATASET_2026-04.md` + `scripts/ai_launch_gate_eval.py`).
 
 ### 20.6 Перевикористання для `celestix-ifr` (cross-project)
@@ -757,6 +757,18 @@
 - [x] Додати **автоматичний контроль актуальності фактів** (ціни/дати/умови): прострочені факти не використовуються у відповіді, поки не re-approved (`fact_expires_on` filter у RAG).
 - [x] Додати hard-policy відповіді: якщо факт не підтверджений у knowledge base, AI не вигадує; замість цього дає контрольовану відповідь і пропонує асинхронне уточнення (strict grounding + approved-only retrieval policy).
 - [ ] Канальний launch-гейт: AI-only режим вмикається лише після проходження однакового acceptance по кожному каналу окремо (не "в середньому").
+
+#### 20.9.1 Резервний LLM-провайдер (contingency, mandatory)
+
+- [ ] Зафіксувати **запасний варіант**: fallback `Ollama -> Gemini API` для прод-контурів, де локальна модель не проходить SLA за латентністю/якістю.
+- [ ] Умови автоперемикання на fallback:
+  - [ ] repeated timeout/read-timeout від primary LLM;
+  - [ ] відкритий circuit breaker для primary LLM;
+  - [ ] перевищення порога fallback-only/empty-answer у launch метриках.
+- [ ] Під час fallback зберігати ті самі guardrails: strict grounding (факти лише з Odoo/approved KB), no-russian policy, sales-discovery flow, anti-hallucination.
+- [ ] Безпека: API key fallback-провайдера зберігати тільки в секретах/`ir.config_parameter` (без коду, без git), з окремими лімітами витрат і rate caps.
+- [ ] Операційний контроль: логувати причину перемикання, тривалість fallback-сесії, та повернення на primary після стабілізації.
+- [ ] Приймання: fallback-вимикач у налаштуваннях + smoke-test `primary down -> fallback reply -> primary restore` обов’язковий перед AI-only sign-off.
 
 ### 20.10 Фазування запуску: спочатку 100% chat-core, потім outbound (mandatory)
 
