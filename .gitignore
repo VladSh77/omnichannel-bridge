@@ -19,6 +19,7 @@ Thumbs.db
 # Env
 .env
 *.env.local
+docs/SENDPULSE_API.local.env
 
 # IDE
 .vscode/settings.json
