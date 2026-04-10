@@ -4,31 +4,42 @@ from odoo import fields, models
 
 class OmniLegalDocument(models.Model):
     _name = 'omni.legal.document'
-    _description = 'Omnichannel legal document registry'
+    _description = 'Реєстр юридичних документів для чат-бота та контексту ШІ'
     _order = 'id desc'
 
-    active = fields.Boolean(default=True)
-    name = fields.Char(required=True)
+    active = fields.Boolean(string='Активний', default=True)
+    name = fields.Char(string='Назва', required=True)
     doc_type = fields.Selection(
         selection=[
-            ('offer', 'Offer/Terms'),
-            ('privacy', 'Privacy/RODO'),
-            ('cookies', 'Cookies'),
-            ('child_safety', 'Child safety'),
-            ('insurance', 'Insurance'),
-            ('other', 'Other'),
+            ('offer', 'Оферта / умови'),
+            ('privacy', 'Конфіденційність / RODO'),
+            ('cookies', 'Файли cookie'),
+            ('child_safety', 'Захист дітей'),
+            ('insurance', 'Страхування'),
+            ('other', 'Інше'),
         ],
+        string='Тип документа',
         required=True,
         default='other',
     )
-    url = fields.Char(required=True)
-    version_tag = fields.Char(help='Document version identifier, e.g. v2026.04.')
-    effective_from = fields.Date()
-    is_pdf = fields.Boolean(default=False)
-    allow_in_bot = fields.Boolean(
-        default=True,
-        help='If enabled, this URL can be included in bot factual context.',
+    url = fields.Char(string='Посилання (URL)', required=True)
+    version_tag = fields.Char(
+        string='Мітка версії',
+        help='Ідентифікатор версії документа, наприклад v2026.04.',
     )
-    approved_by = fields.Char(help='Legal approver name/role.')
-    approved_at = fields.Datetime()
-    short_quote = fields.Text(help='Approved short quote/snippet that bot may reuse.')
+    effective_from = fields.Date(string='Діє з')
+    is_pdf = fields.Boolean(string='Це PDF', default=False)
+    allow_in_bot = fields.Boolean(
+        string='Дозволити в боті',
+        default=True,
+        help='Якщо увімкнено, посилання потрапляє в фактичний контекст бота (блок LEGAL_DOCUMENTS).',
+    )
+    approved_by = fields.Char(
+        string='Погодив (ПІБ / роль)',
+        help='Хто затвердив документ для використання в боті.',
+    )
+    approved_at = fields.Datetime(string='Дата погодження')
+    short_quote = fields.Text(
+        string='Коротка дозволена цитата',
+        help='Схвалений короткий фрагмент тексту, який бот може повторювати дослівно.',
+    )

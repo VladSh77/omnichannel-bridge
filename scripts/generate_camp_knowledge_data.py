@@ -49,15 +49,29 @@ def _xml_id_from_stem(stem: str) -> str:
     return f'omni_kb_{s}'[:80]
 
 
-def _record(xml_id: str, name: str, body: str, priority: int, category: str = 'faq') -> str:
+def _record(
+    xml_id: str,
+    name: str,
+    body: str,
+    priority: int,
+    category: str = 'faq',
+    *,
+    source_type: str | None = None,
+    source_url: str | None = None,
+) -> str:
     body = _flatten_md(body)[:MAX_BODY]
+    extra = ''
+    if source_type:
+        extra += f'        <field name="source_type">{source_type}</field>\n'
+    if source_url:
+        extra += f'        <field name="source_url">{saxutils.escape(source_url)}</field>\n'
     return f'''    <record id="{xml_id}" model="omni.knowledge.article">
         <field name="name">{saxutils.escape(name)}</field>
         <field name="category">{category}</field>
         <field name="channel_scope">all</field>
         <field name="priority" eval="{priority}"/>
         <field name="active" eval="True"/>
-        <field name="body">{_cdata(body)}</field>
+{extra}        <field name="body">{_cdata(body)}</field>
     </record>
 '''
 
@@ -113,18 +127,30 @@ def main() -> None:
         ),
         (
             '00_cookie-policy.md',
-            'CampScout: cookies policy',
+            'CampScout: політика cookie',
             13,
             'policy',
+            'policy_doc',
+            'https://campscout.eu/cookie-policy',
         ),
         (
             '00_child-protection-policy.md',
-            'CampScout: child protection policy',
+            'CampScout: політика захисту дітей',
             14,
             'policy',
+            'policy_doc',
+            'https://campscout.eu/child-protection',
         ),
     ]
-    for rel_path, title, priority, category in static_sources:
+    for item in static_sources:
+        rel_path = item[0]
+        title = item[1]
+        priority = item[2]
+        category = item[3]
+        kw = {}
+        if len(item) >= 6:
+            kw['source_type'] = item[4]
+            kw['source_url'] = item[5]
         src = kb / rel_path
         if src.is_file():
             blocks.append(
@@ -134,6 +160,7 @@ def main() -> None:
                     src.read_text(encoding='utf-8'),
                     priority=priority,
                     category=category,
+                    **kw,
                 )
             )
 

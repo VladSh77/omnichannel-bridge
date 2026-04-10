@@ -4,30 +4,36 @@ from odoo import fields, models
 
 class OmniObjectionPolicy(models.Model):
     _name = 'omni.objection.policy'
-    _description = 'Objection policy block'
+    _description = 'Політика відповіді на заперечення клієнта (для контексту ШІ)'
     _order = 'objection_type, id desc'
 
-    active = fields.Boolean(default=True)
+    active = fields.Boolean(string='Активний', default=True)
     objection_type = fields.Selection(
         selection=[
-            ('price', 'Price'),
-            ('timing', 'Timing'),
-            ('trust', 'Trust'),
-            ('need_to_think', 'Need to think'),
-            ('competitor', 'Competitor'),
-            ('not_decision_maker', 'Not decision maker'),
+            ('price', 'Ціна / бюджет'),
+            ('timing', 'Терміни / «не зараз»'),
+            ('trust', 'Довіра / ризики'),
+            ('need_to_think', 'Потрібно подумати'),
+            ('competitor', 'Конкуренти'),
+            ('not_decision_maker', 'Не ЛПР'),
         ],
+        string='Тип заперечення',
         required=True,
         index=True,
     )
-    body = fields.Text(required=True)
+    body = fields.Text(
+        string='Текст для бота',
+        required=True,
+        help='Інструкція UA/PL для моделі; перекриває значення з налаштувань, якщо заповнено.',
+    )
     channel_scope = fields.Selection(
         selection=[
-            ('all', 'All'),
+            ('all', 'Усі канали'),
             ('meta', 'Meta'),
             ('telegram', 'Telegram'),
-            ('site', 'Website livechat'),
+            ('site', 'Чат на сайті'),
         ],
+        string='Канал',
         default='all',
         required=True,
     )

@@ -5,14 +5,14 @@
         <field name="model">omni.legal.document</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="active"/>
-                <field name="name"/>
-                <field name="doc_type"/>
-                <field name="version_tag"/>
-                <field name="effective_from"/>
-                <field name="is_pdf"/>
-                <field name="allow_in_bot"/>
-                <field name="url"/>
+                <field name="active" string="Активний"/>
+                <field name="name" string="Назва"/>
+                <field name="doc_type" string="Тип"/>
+                <field name="version_tag" string="Версія"/>
+                <field name="effective_from" string="Діє з"/>
+                <field name="is_pdf" string="PDF"/>
+                <field name="allow_in_bot" string="У боті"/>
+                <field name="url" string="URL"/>
             </tree>
         </field>
     </record>
@@ -35,7 +35,7 @@
                         <field name="approved_by"/>
                         <field name="approved_at"/>
                     </group>
-                    <group string="Approved quote">
+                    <group string="Коротка дозволена цитата">
                         <field name="short_quote"/>
                     </group>
                 </sheet>
@@ -44,14 +44,14 @@
     </record>
 
     <record id="action_omni_legal_document" model="ir.actions.act_window">
-        <field name="name">Legal Documents</field>
+        <field name="name">Юридичні документи</field>
         <field name="res_model">omni.legal.document</field>
         <field name="view_mode">list,form</field>
     </record>
 
     <menuitem
         id="menu_omni_legal_document"
-        name="Legal Documents"
+        name="Юридичні документи"
         parent="menu_omni_root"
         action="action_omni_legal_document"
         sequence="26"

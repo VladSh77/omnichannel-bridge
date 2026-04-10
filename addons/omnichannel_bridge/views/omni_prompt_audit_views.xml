@@ -5,10 +5,10 @@
         <field name="model">omni.prompt.audit</field>
         <field name="arch" type="xml">
             <tree create="false" delete="false">
-                <field name="changed_at"/>
-                <field name="changed_by"/>
-                <field name="key_name"/>
-                <field name="note"/>
+                <field name="changed_at" string="Коли змінено"/>
+                <field name="changed_by" string="Хто змінив"/>
+                <field name="key_name" string="Ключ"/>
+                <field name="note" string="Примітка"/>
             </tree>
         </field>
     </record>
@@ -19,13 +19,13 @@
         <field name="arch" type="xml">
             <form create="false" delete="false">
                 <sheet>
-                    <group>
+                    <group string="Подія">
                         <field name="changed_at"/>
                         <field name="changed_by"/>
                         <field name="key_name"/>
                         <field name="note"/>
                     </group>
-                    <group>
+                    <group string="Значення">
                         <field name="old_value"/>
                         <field name="new_value"/>
                     </group>
@@ -35,8 +35,19 @@
     </record>
 
     <record id="action_omni_prompt_audit" model="ir.actions.act_window">
-        <field name="name">Prompt Audit</field>
+        <field name="name">Аудит промптів</field>
         <field name="res_model">omni.prompt.audit</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Записів ще немає — це нормально.
+            </p>
+            <p>
+                Тут з’являються рядки лише після того, як у
+                <strong>Налаштуваннях → Omnichannel Bridge</strong> збережено зміну одного з відстежуваних параметрів:
+                версія/експеримент промпту, короткі юридичні формулювання або тексти згоди для каналів.
+                Це не база знань про табори.
+            </p>
+        </field>
     </record>
 </odoo>

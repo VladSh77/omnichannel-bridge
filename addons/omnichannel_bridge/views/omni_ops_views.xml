@@ -129,7 +129,7 @@
     />
     <menuitem
         id="menu_omni_prompt_audit"
-        name="Prompt Audit"
+        name="Аудит промптів"
         parent="menu_omni_ops_root"
         action="action_omni_prompt_audit"
         sequence="25"
@@ -143,73 +143,73 @@
     />
     <menuitem
         id="menu_omni_stage_transitions"
-        name="Stage Transitions"
+        name="Переходи між етапами"
         parent="menu_omni_ops_root"
         action="action_omni_stage_transition"
         sequence="27"
+    />
+    <menuitem
+        id="menu_omni_objection_policy"
+        name="Політики заперечень"
+        parent="menu_omni_ops_root"
+        action="action_omni_objection_policy"
+        sequence="28"
+    />
+    <menuitem
+        id="menu_omni_moderation_rules"
+        name="Правила модерації"
+        parent="menu_omni_ops_root"
+        action="action_omni_moderation_rule"
+        sequence="29"
+    />
+    <menuitem
+        id="menu_omni_knowledge_articles"
+        name="Статті бази знань"
+        parent="menu_omni_ops_root"
+        action="action_omni_knowledge_article"
+        sequence="30"
     />
     <menuitem
         id="menu_omni_manager_reply_templates"
         name="Manager Reply Templates"
         parent="menu_omni_ops_root"
         action="action_omni_manager_reply_template"
-        sequence="28"
-    />
-    <menuitem
-        id="menu_omni_objection_policy"
-        name="Objection Policies"
-        parent="menu_omni_ops_root"
-        action="action_omni_objection_policy"
-        sequence="27"
-    />
-    <menuitem
-        id="menu_omni_moderation_rules"
-        name="Moderation Rules"
-        parent="menu_omni_ops_root"
-        action="action_omni_moderation_rule"
-        sequence="27"
-    />
-    <menuitem
-        id="menu_omni_knowledge_articles"
-        name="Knowledge Articles"
-        parent="menu_omni_ops_root"
-        action="action_omni_knowledge_article"
-        sequence="28"
+        sequence="31"
     />
     <menuitem
         id="menu_omni_manager_reply_assist"
         name="Manager Reply Assist"
         parent="menu_omni_ops_root"
         action="action_omni_manager_reply_assist"
-        sequence="29"
+        sequence="32"
     />
     <menuitem
         id="menu_omni_outbound_log"
         name="Outbound Delivery Log"
         parent="menu_omni_ops_root"
         action="action_omni_outbound_log"
-        sequence="30"
+        sequence="33"
     />
     <menuitem
         id="menu_omni_llm_fallback_sessions"
         name="LLM Fallback Sessions"
         parent="menu_omni_ops_root"
         action="action_omni_llm_fallback_session"
-        sequence="31"
+        sequence="34"
     />
     <menuitem
         id="menu_omni_payment_events"
         name="Payment Events"
         parent="menu_omni_ops_root"
         action="action_omni_payment_event"
-        sequence="32"
+        sequence="35"
     />
     <menuitem
         id="menu_omni_crm_analytics"
         name="CRM Analytics"
         parent="menu_omni_ops_root"
         action="action_omni_crm_analytics_wizard"
-        sequence="30"
+        sequence="36"
     />
     <menuitem
         id="menu_omni_tg_broadcast"

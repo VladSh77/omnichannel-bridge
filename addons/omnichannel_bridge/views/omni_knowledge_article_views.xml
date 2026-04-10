@@ -5,15 +5,15 @@
         <field name="model">omni.knowledge.article</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="active"/>
-                <field name="priority"/>
-                <field name="name"/>
-                <field name="category"/>
-                <field name="channel_scope"/>
-                <field name="source_type"/>
-                <field name="editorial_approved"/>
-                <field name="fact_expires_on"/>
-                <field name="source_url"/>
+                <field name="active" string="Активна"/>
+                <field name="priority" string="Пріоритет"/>
+                <field name="name" string="Назва"/>
+                <field name="category" string="Категорія"/>
+                <field name="channel_scope" string="Канал"/>
+                <field name="source_type" string="Тип джерела"/>
+                <field name="editorial_approved" string="Схвалено"/>
+                <field name="fact_expires_on" string="Дійсна до"/>
+                <field name="source_url" string="URL джерела"/>
             </tree>
         </field>
     </record>
@@ -22,7 +22,7 @@
         <field name="name">omni.knowledge.article.form</field>
         <field name="model">omni.knowledge.article</field>
         <field name="arch" type="xml">
-            <form string="Knowledge Article">
+            <form string="Стаття бази знань">
                 <sheet>
                     <group>
                         <group>
@@ -50,8 +50,16 @@
     </record>
 
     <record id="action_omni_knowledge_article" model="ir.actions.act_window">
-        <field name="name">Knowledge Articles</field>
+        <field name="name">Статті бази знань</field>
         <field name="res_model">omni.knowledge.article</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Додайте статтю вручну або оновіть модуль — підвантажаться дані з репозиторію camp (генерований XML).
+            </p>
+            <p>
+                Повний текст таборів і політик у полі <strong>Текст</strong>; колонка URL джерела — для посилання на сайт/PDF.
+            </p>
+        </field>
     </record>
 </odoo>

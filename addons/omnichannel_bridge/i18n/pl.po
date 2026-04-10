@@ -39,3 +39,39 @@ msgstr "Data od"
 #: code:addons/omnichannel_bridge/models/omni_crm_analytics.py:0
 msgid "Дата до"
 msgstr "Data do"
+
+#. module: omnichannel_bridge
+#: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_legal_document
+#: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_legal_document
+msgid "Юридичні документи"
+msgstr "Dokumenty prawne"
+
+#. module: omnichannel_bridge
+#: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_prompt_audit
+#: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_prompt_audit
+msgid "Аудит промптів"
+msgstr "Audyt promptów"
+
+#. module: omnichannel_bridge
+#: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_objection_policy
+#: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_objection_policy
+msgid "Політики заперечень"
+msgstr "Polityki zastrzeżeń"
+
+#. module: omnichannel_bridge
+#: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_moderation_rule
+#: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_moderation_rules
+msgid "Правила модерації"
+msgstr "Reguły moderacji"
+
+#. module: omnichannel_bridge
+#: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_stage_transition
+#: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_stage_transitions
+msgid "Переходи між етапами"
+msgstr "Przejścia między etapami"
+
+#. module: omnichannel_bridge
+#: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_knowledge_article
+#: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_knowledge_articles
+msgid "Статті бази знань"
+msgstr "Artykuły bazy wiedzy"

@@ -4,10 +4,10 @@ from odoo import fields, models
 
 class OmniStageTransition(models.Model):
     _name = 'omni.stage.transition'
-    _description = 'Allowed sales stage transition'
+    _description = 'Дозволений перехід між етапами продажу'
     _order = 'id asc'
 
-    active = fields.Boolean(default=True)
+    active = fields.Boolean(string='Активний', default=True)
     from_stage = fields.Selection(
         selection=[
             ('new', 'Новий запит'),
@@ -15,6 +15,7 @@ class OmniStageTransition(models.Model):
             ('proposal', 'Підібрано варіанти'),
             ('handoff', 'Передано менеджеру'),
         ],
+        string='З етапу',
         required=True,
         index=True,
     )
@@ -25,7 +26,8 @@ class OmniStageTransition(models.Model):
             ('proposal', 'Підібрано варіанти'),
             ('handoff', 'Передано менеджеру'),
         ],
+        string='На етап',
         required=True,
         index=True,
     )
-    note = fields.Char()
+    note = fields.Char(string='Примітка')

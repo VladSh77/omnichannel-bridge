@@ -5,10 +5,10 @@
         <field name="model">omni.objection.policy</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="active"/>
-                <field name="objection_type"/>
-                <field name="channel_scope"/>
-                <field name="body"/>
+                <field name="active" string="Активний"/>
+                <field name="objection_type" string="Тип заперечення"/>
+                <field name="channel_scope" string="Канал"/>
+                <field name="body" string="Текст"/>
             </tree>
         </field>
     </record>
@@ -17,7 +17,7 @@
         <field name="name">omni.objection.policy.form</field>
         <field name="model">omni.objection.policy</field>
         <field name="arch" type="xml">
-            <form string="Objection Policy">
+            <form string="Політика заперечень">
                 <sheet>
                     <group>
                         <field name="active"/>
@@ -33,8 +33,17 @@
     </record>
 
     <record id="action_omni_objection_policy" model="ir.actions.act_window">
-        <field name="name">Objection Policies</field>
+        <field name="name">Політики заперечень</field>
         <field name="res_model">omni.objection.policy</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Тут задаються тексти відповіді на типові заперечення для ШІ.
+            </p>
+            <p>
+                Після оновлення модуля з’являються стартові рядки (за замовчуванням з коду).
+                Один активний рядок на <strong>тип заперечення</strong> перекриває шаблон з налаштувань.
+            </p>
+        </field>
     </record>
 </odoo>

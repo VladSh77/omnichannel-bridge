@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      noupdate="0": при кожному -u записи оновлюються з XML (не залишаються порожніми після деплою).
+      Реєстр для блоку LEGAL_DOCUMENTS у контексті ШІ; URL узгоджені з campscout.eu та ir.config_parameter.
+    -->
+    <data noupdate="0">
+        <record id="omni_legal_doc_terms" model="omni.legal.document">
+            <field name="name">Умови та положення (оферта)</field>
+            <field name="doc_type">offer</field>
+            <field name="url">https://campscout.eu/terms</field>
+            <field name="version_tag">v2026.04</field>
+            <field name="effective_from">2026-04-05</field>
+            <field name="is_pdf" eval="False"/>
+            <field name="allow_in_bot" eval="True"/>
+            <field name="short_quote">Офіційні умови оферти та оплати — лише посилання; не перефразовувати юридичні пункти.</field>
+        </record>
+        <record id="omni_legal_doc_privacy" model="omni.legal.document">
+            <field name="name">Політика конфіденційності / RODO</field>
+            <field name="doc_type">privacy</field>
+            <field name="url">https://campscout.eu/privacy-policy</field>
+            <field name="version_tag">v2026.04</field>
+            <field name="effective_from">2026-04-05</field>
+            <field name="is_pdf" eval="False"/>
+            <field name="allow_in_bot" eval="True"/>
+            <field name="short_quote">Обробка персональних даних — спрямовувати на цю сторінку; спірні питання — до менеджера.</field>
+        </record>
+        <record id="omni_legal_doc_cookies" model="omni.legal.document">
+            <field name="name">Політика файлів cookie</field>
+            <field name="doc_type">cookies</field>
+            <field name="url">https://campscout.eu/cookie-policy</field>
+            <field name="version_tag">v2026.04</field>
+            <field name="effective_from">2026-04-05</field>
+            <field name="is_pdf" eval="False"/>
+            <field name="allow_in_bot" eval="True"/>
+            <field name="short_quote">Cookie та трекери — лише посилання; згода через банер на сайті.</field>
+        </record>
+        <record id="omni_legal_doc_child" model="omni.legal.document">
+            <field name="name">Захист дітей (Ustawa Kamilka)</field>
+            <field name="doc_type">child_safety</field>
+            <field name="url">https://campscout.eu/child-protection</field>
+            <field name="version_tag">v1.0</field>
+            <field name="effective_from">2026-04-05</field>
+            <field name="is_pdf" eval="False"/>
+            <field name="allow_in_bot" eval="True"/>
+            <field name="short_quote">Стандарти захисту неповнолітніх — лише посилання; серйозні ситуації — передати людині.</field>
+        </record>
+        <record id="omni_legal_doc_umowa_v1_archive" model="omni.legal.document">
+            <field name="name">Договір umowa v1 (архів, до 2026-04-05)</field>
+            <field name="doc_type">offer</field>
+            <field name="url">https://campscout.eu/umowa-v1-2026</field>
+            <field name="version_tag">v1-archive</field>
+            <field name="effective_from">2026-02-26</field>
+            <field name="is_pdf" eval="False"/>
+            <field name="allow_in_bot" eval="False"/>
+            <field name="short_quote">Архівна версія договору для замовлень до 2026-04-05 — не для формулювань нових продажів.</field>
+        </record>
+    </data>
+</odoo>

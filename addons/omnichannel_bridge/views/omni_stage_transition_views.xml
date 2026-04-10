@@ -5,10 +5,10 @@
         <field name="model">omni.stage.transition</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="active"/>
-                <field name="from_stage"/>
-                <field name="to_stage"/>
-                <field name="note"/>
+                <field name="active" string="Активний"/>
+                <field name="from_stage" string="З етапу"/>
+                <field name="to_stage" string="На етап"/>
+                <field name="note" string="Примітка"/>
             </tree>
         </field>
     </record>
@@ -17,7 +17,7 @@
         <field name="name">omni.stage.transition.form</field>
         <field name="model">omni.stage.transition</field>
         <field name="arch" type="xml">
-            <form string="Stage Transition">
+            <form string="Перехід між етапами">
                 <sheet>
                     <group>
                         <field name="active"/>
@@ -31,8 +31,17 @@
     </record>
 
     <record id="action_omni_stage_transition" model="ir.actions.act_window">
-        <field name="name">Stage Transitions</field>
+        <field name="name">Переходи між етапами</field>
         <field name="res_model">omni.stage.transition</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Визначає, з якого етапу продажу на який можна перейти для партнера.
+            </p>
+            <p>
+                Якщо таблиця порожня, використовуються вбудовані переходи з коду.
+                Після завантаження даних модуля тут відображаються ті самі дозволені переходи — їх можна звузити.
+            </p>
+        </field>
     </record>
 </odoo>

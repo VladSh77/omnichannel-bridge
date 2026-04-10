@@ -43,7 +43,7 @@ msgstr "Страхові пакети"
 #. module: omnichannel_bridge
 #: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_legal_document
 #: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_legal_document
-msgid "Legal Documents"
+msgid "Юридичні документи"
 msgstr "Юридичні документи"
 
 #. module: omnichannel_bridge
@@ -68,7 +68,7 @@ msgstr "Події вебхуків"
 #. module: omnichannel_bridge
 #: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_prompt_audit
 #: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_prompt_audit
-msgid "Prompt Audit"
+msgid "Аудит промптів"
 msgstr "Аудит промптів"
 
 #. module: omnichannel_bridge
@@ -80,19 +80,19 @@ msgstr "Події етапів"
 #. module: omnichannel_bridge
 #: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_objection_policy
 #: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_objection_policy
-msgid "Objection Policies"
+msgid "Політики заперечень"
 msgstr "Політики заперечень"
 
 #. module: omnichannel_bridge
 #: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_moderation_rule
 #: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_moderation_rules
-msgid "Moderation Rules"
+msgid "Правила модерації"
 msgstr "Правила модерації"
 
 #. module: omnichannel_bridge
 #: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_stage_transition
 #: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_stage_transitions
-msgid "Stage Transitions"
+msgid "Переходи між етапами"
 msgstr "Переходи між етапами"
 
 #. module: omnichannel_bridge
@@ -104,7 +104,7 @@ msgstr "Шаблони відповідей менеджера"
 #. module: omnichannel_bridge
 #: model:ir.actions.act_window,name:omnichannel_bridge.action_omni_knowledge_article
 #: model:ir.ui.menu,name:omnichannel_bridge.menu_omni_knowledge_articles
-msgid "Knowledge Articles"
+msgid "Статті бази знань"
 msgstr "Статті бази знань"
 
 #. module: omnichannel_bridge

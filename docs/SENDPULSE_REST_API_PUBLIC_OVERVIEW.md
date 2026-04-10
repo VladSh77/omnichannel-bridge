@@ -35,6 +35,27 @@ Authorization: Bearer <token>
 
 ---
 
+## Chatbots API (список ботів, акаунт, діалоги)
+
+Окремий **base path** у документації OpenAPI: **`https://api.sendpulse.com/chatbots`**. Авторизація — **Bearer** тим самим **API key** (або токеном, який SendPulse приймає як Bearer для цього сервісу). Інтерактивна документація: [swagger chatbots](https://sendpulse.com/swagger/chatbots/?lang=en).
+
+| Що | HTTP | Повний URL |
+|----|------|------------|
+| **Список підключених ботів** | GET | `https://api.sendpulse.com/chatbots/bots` |
+| Інфо акаунта чатботів (тариф, ліміти, теги, змінні) | GET | `https://api.sendpulse.com/chatbots/account` |
+| Список діалогів (усі канали) | GET | `https://api.sendpulse.com/chatbots/dialogs?size=50&skip=0` |
+
+У відповіді **`/bots`** — масив ботів: `id`, `channel_data`, `inbox` (total/unread), `status` (`3` — active, `4` — inactive), `created_at`.
+
+Приклад після `source docs/SENDPULSE_API.local.env`:
+
+```bash
+curl -sS -H "Authorization: Bearer ${SENDPULSE_API_KEY}" "https://api.sendpulse.com/chatbots/bots"
+curl -sS -H "Authorization: Bearer ${SENDPULSE_API_KEY}" "https://api.sendpulse.com/chatbots/account"
+```
+
+---
+
 ## Ліміти
 
 Квоти **на хвилину / на день** залежать від тарифу; при перевищенні — **429 Too many requests**. Деталі — на сторінці [API](https://sendpulse.com/integrations/api).

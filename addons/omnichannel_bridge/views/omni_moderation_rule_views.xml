@@ -5,11 +5,11 @@
         <field name="model">omni.moderation.rule</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="active"/>
-                <field name="priority"/>
-                <field name="name"/>
-                <field name="keyword"/>
-                <field name="action"/>
+                <field name="active" string="Активний"/>
+                <field name="priority" string="Пріоритет"/>
+                <field name="name" string="Назва"/>
+                <field name="keyword" string="Ключ"/>
+                <field name="action" string="Дія"/>
             </tree>
         </field>
     </record>
@@ -18,7 +18,7 @@
         <field name="name">omni.moderation.rule.form</field>
         <field name="model">omni.moderation.rule</field>
         <field name="arch" type="xml">
-            <form string="Moderation Rule">
+            <form string="Правило модерації">
                 <sheet>
                     <group>
                         <field name="active"/>
@@ -35,8 +35,17 @@
     </record>
 
     <record id="action_omni_moderation_rule" model="ir.actions.act_window">
-        <field name="name">Moderation Rules</field>
+        <field name="name">Правила модерації</field>
         <field name="res_model">omni.moderation.rule</field>
         <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Якщо в тексті клієнта є підрядок з поля «Ключ», спрацьовує дія (перед менеджеру, пауза бота тощо).
+            </p>
+            <p>
+                Перевірка йде <strong>раніше</strong> за список ключів у загальних налаштуваннях.
+                За замовчуванням додано правило для кризових маркерів — за потреби змініть або вимкніть.
+            </p>
+        </field>
     </record>
 </odoo>

@@ -723,5 +723,5 @@ class ResConfigSettings(models.TransientModel):
                 'key_name': key,
                 'old_value': before.get(key, ''),
                 'new_value': after.get(key, ''),
-                'note': 'Updated via res.config.settings',
+                'note': 'Збереження налаштувань (res.config.settings)',
             })

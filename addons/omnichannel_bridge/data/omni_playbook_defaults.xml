@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      Стартові політики заперечень, модерація, переходи етапів.
+      noupdate="1": перезапис при -u не виконується — після ручного редагування зміни з XML не затруть.
+      Видаліть xml-id у БД (або змініть noupdate), якщо потрібно примусово оновити з репо.
+    -->
+    <data noupdate="1">
+        <!-- Дзвінок етапів: узгоджено з res.partner._OMNI_STAGE_TRANSITIONS -->
+        <record id="omni_stage_tr_new_qualifying" model="omni.stage.transition">
+            <field name="from_stage">new</field>
+            <field name="to_stage">qualifying</field>
+            <field name="note">Типовий старт кваліфікації</field>
+        </record>
+        <record id="omni_stage_tr_new_handoff" model="omni.stage.transition">
+            <field name="from_stage">new</field>
+            <field name="to_stage">handoff</field>
+            <field name="note">Одразу до менеджера (сильний інтент)</field>
+        </record>
+        <record id="omni_stage_tr_qual_proposal" model="omni.stage.transition">
+            <field name="from_stage">qualifying</field>
+            <field name="to_stage">proposal</field>
+            <field name="note">Підібрано варіанти з каталогу</field>
+        </record>
+        <record id="omni_stage_tr_qual_handoff" model="omni.stage.transition">
+            <field name="from_stage">qualifying</field>
+            <field name="to_stage">handoff</field>
+            <field name="note">Ескалація з кваліфікації</field>
+        </record>
+        <record id="omni_stage_tr_prop_handoff" model="omni.stage.transition">
+            <field name="from_stage">proposal</field>
+            <field name="to_stage">handoff</field>
+            <field name="note">Готовність до оплати / менеджер</field>
+        </record>
+        <record id="omni_stage_tr_prop_qual" model="omni.stage.transition">
+            <field name="from_stage">proposal</field>
+            <field name="to_stage">qualifying</field>
+            <field name="note">Повторна кваліфікація</field>
+        </record>
+        <record id="omni_stage_tr_handoff_qual" model="omni.stage.transition">
+            <field name="from_stage">handoff</field>
+            <field name="to_stage">qualifying</field>
+            <field name="note">Повернення в роботу після менеджера</field>
+        </record>
+
+        <!-- Кризовий маркер: пріоритет нижче = раніше -->
+        <record id="omni_moderation_rule_crisis" model="omni.moderation.rule">
+            <field name="name">Кризовий маркер (суїцид / самопошкодження)</field>
+            <field name="keyword">суїцид</field>
+            <field name="priority" eval="10"/>
+            <field name="action">escalate_pause</field>
+        </record>
+
+        <!-- Тексти збігаються з omni_sales_intel._omni_objection_playbook_templates defaults -->
+        <record id="omni_objection_policy_price" model="omni.objection.policy">
+            <field name="objection_type">price</field>
+            <field name="channel_scope">all</field>
+            <field name="body"><![CDATA[OBJECTION_PLAYBOOK: type=price. UA: Спочатку емпатія ("Розумію, бюджет важливий"), далі лише факти з ORM (що входить у вартість, розстрочка якщо є), потім 1 уточнення про комфортний бюджет. PL: Najpierw empatia, potem tylko fakty z ORM (co zawiera cena, raty jeśli dostępne), na końcu 1 pytanie o komfortowy budżet.]]></field>
+        </record>
+        <record id="omni_objection_policy_timing" model="omni.objection.policy">
+            <field name="objection_type">timing</field>
+            <field name="channel_scope">all</field>
+            <field name="body"><![CDATA[OBJECTION_PLAYBOOK: type=timing. UA: Повага до таймінгу, без тиску; запропонувати 1 легкий next step (коли зручно повернутись / зворотний звʼязок менеджера). PL: Uszanuj timing klienta, bez presji; zaproponuj 1 lekki kolejny krok (kiedy wrócić / kontakt managera).]]></field>
+        </record>
+        <record id="omni_objection_policy_trust" model="omni.objection.policy">
+            <field name="objection_type">trust</field>
+            <field name="channel_scope">all</field>
+            <field name="body"><![CDATA[OBJECTION_PLAYBOOK: type=trust. UA: Тільки перевірні факти й посилання (ліцензія, оферта, політики), без непідтверджених обіцянок; запропонувати підключення менеджера. PL: Tylko weryfikowalne fakty i linki (licencja, umowa/oferta, polityki), bez obietnic; zaproponuj przekazanie do managera.]]></field>
+        </record>
+        <record id="omni_objection_policy_need_think" model="omni.objection.policy">
+            <field name="objection_type">need_to_think</field>
+            <field name="channel_scope">all</field>
+            <field name="body"><![CDATA[OBJECTION_PLAYBOOK: type=need_to_think. UA: Уточнити, що саме заважає рішенню; закрити 1 конкретний сумнів фактами з ORM; за потреби передати менеджеру. PL: Doprecyzuj, co dokładnie blokuje decyzję; odpowiedz na 1 konkretną wątpliwość faktami z ORM; w razie potrzeby przekaż do managera.]]></field>
+        </record>
+        <record id="omni_objection_policy_competitor" model="omni.objection.policy">
+            <field name="objection_type">competitor</field>
+            <field name="channel_scope">all</field>
+            <field name="body"><![CDATA[OBJECTION_PLAYBOOK: type=competitor. UA: Не знецінювати конкурентів; порівнювати лише складники власної пропозиції з ORM/легальних лінків; поставити 1 кваліфікаційне запитання. PL: Nie krytykuj konkurencji; porównuj tylko elementy własnej oferty z ORM/linków prawnych; zadaj 1 pytanie kwalifikujące.]]></field>
+        </record>
+        <record id="omni_objection_policy_not_dm" model="omni.objection.policy">
+            <field name="objection_type">not_decision_maker</field>
+            <field name="channel_scope">all</field>
+            <field name="body"><![CDATA[OBJECTION_PLAYBOOK: type=not_decision_maker. UA: Уточнити, хто приймає рішення, і запропонувати зручний формат підключення (дзвінок/чат/повідомлення менеджера). PL: Ustal, kto podejmuje decyzję, i zaproponuj wygodny format kontaktu (telefon/czat/wiadomość od managera).]]></field>
+        </record>
+    </data>
+</odoo>

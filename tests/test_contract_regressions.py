@@ -320,6 +320,16 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn("menu_omni_knowledge_articles", ops)
         self.assertIn("self.env['omni.knowledge.article']", knowledge)
 
+    def test_playbook_defaults_seed_in_manifest(self):
+        manifest = (ROOT / "addons/omnichannel_bridge/__manifest__.py").read_text()
+        seed = ROOT / "addons/omnichannel_bridge/data/omni_playbook_defaults.xml"
+        self.assertTrue(seed.is_file(), "omni_playbook_defaults.xml must exist")
+        self.assertIn("omni_playbook_defaults.xml", manifest)
+        body = seed.read_text()
+        self.assertIn("omni_objection_policy_price", body)
+        self.assertIn("omni_stage_tr_new_qualifying", body)
+        self.assertIn("omni_moderation_rule_crisis", body)
+
     def test_stage_transition_and_payment_event_markers_present(self):
         partner = (ROOT / "addons/omnichannel_bridge/models/res_partner.py").read_text()
         transition_model = (
@@ -626,6 +636,13 @@ class ContractRegressionTests(unittest.TestCase):
         knowledge = (
             ROOT / "addons/omnichannel_bridge/models/omni_knowledge.py"
         ).read_text()
+        manifest = (ROOT / "addons/omnichannel_bridge/__manifest__.py").read_text()
+        seed_xml = ROOT / "addons/omnichannel_bridge/data/omni_legal_documents.xml"
+        self.assertTrue(seed_xml.is_file(), "expected omni_legal_documents.xml data seed")
+        self.assertIn("omni_legal_documents.xml", manifest)
+        seed_body = seed_xml.read_text()
+        self.assertIn("omni_legal_doc_terms", seed_body)
+        self.assertIn("https://campscout.eu/terms", seed_body)
         self.assertIn("omni.legal.document", legal_doc)
         self.assertIn("version_tag", legal_doc)
         self.assertIn("approved_by", legal_doc)
