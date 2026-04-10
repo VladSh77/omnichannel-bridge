@@ -1616,9 +1616,13 @@ class OmniAi(models.AbstractModel):
     def _omni_extract_age(self, txt):
         import re
         m = re.search(r'(\d{1,2})\s*(?:рок[аів]?|р\.|lat|lata)', txt, re.IGNORECASE)
-        if not m:
+        if m:
+            age = int(m.group(1))
+            return age if 5 <= age <= 18 else 0
+        bare = re.fullmatch(r'\s*(\d{1,2})\s*', (txt or '').strip())
+        if not bare:
             return 0
-        age = int(m.group(1))
+        age = int(bare.group(1))
         return age if 5 <= age <= 18 else 0
 
     def _omni_extract_period(self, txt):
