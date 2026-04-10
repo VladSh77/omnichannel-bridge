@@ -86,32 +86,71 @@
         <field name="arch" type="xml">
             <form string="Картка розмови" create="false" delete="false">
                 <header>
-                    <button name="action_open_identify_wizard" type="object"
-                            string="Знайти за email / телефоном" class="btn-primary"/>
-                    <button name="action_open_quick_bind_wizard" type="object"
-                            string="Прив'язати контакт вручну" class="btn-secondary"/>
-                    <button name="action_open_partner_form" type="object"
-                            string="Картка клієнта" class="btn-secondary" invisible="not partner_id"/>
                     <button name="action_open_in_discuss" type="object"
-                            string="Відкрити Discuss" class="btn-secondary"/>
+                            string="Відкрити чат" class="btn-primary"
+                            invisible="conversation_stage == 'close'"/>
+                    <button name="action_refresh_profile" type="object"
+                            string="Оновити профіль" class="btn-secondary"/>
+                    <button name="action_close_conversation" type="object"
+                            string="Закрити розмову" class="btn-secondary"
+                            invisible="conversation_stage == 'close'"/>
+                    <button name="action_reopen_conversation" type="object"
+                            string="Відновити" class="btn-secondary"
+                            invisible="conversation_stage != 'close'"/>
+                    <button name="action_open_identify_wizard" type="object"
+                            string="Ідентифікувати клієнта" class="btn-warning"
+                            invisible="partner_id != False or conversation_stage == 'close'"/>
+                    <field name="conversation_stage" widget="statusbar"
+                           statusbar_visible="new,in_progress,new_message,close"/>
                 </header>
                 <sheet>
                     <group string="Тред">
-                        <field name="thread_name" readonly="1"/>
-                        <field name="provider" readonly="1"/>
-                        <field name="external_thread_id" readonly="1"/>
+                        <group string="Клієнт">
+                            <field name="partner_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   placeholder="Не ідентифікований"/>
+                            <field name="partner_email" readonly="1" invisible="partner_id == False"/>
+                            <field name="partner_phone" readonly="1" invisible="partner_id == False"/>
+                        </group>
+                        <group string="Канал">
+                            <field name="provider" readonly="1"/>
+                            <field name="social_username" readonly="1"/>
+                            <field name="social_profile_url" readonly="1" widget="url"/>
+                            <field name="bot_name" readonly="1"/>
+                        </group>
                     </group>
-                    <group string="Клієнт Odoo">
-                        <field name="partner_id"
-                               options="{'no_create': True, 'no_create_edit': True}"
-                               placeholder="Оберіть існуючий контакт або скористайтесь кнопками вище"/>
+                    <group>
+                        <group string="Дані бота">
+                            <field name="sp_child_name" readonly="1"/>
+                            <field name="sp_booking_email" readonly="1"/>
+                        </group>
+                        <group string="Профіль каналу">
+                            <field name="language_code" readonly="1"/>
+                            <field name="subscription_status_label" readonly="1"/>
+                        </group>
                     </group>
-                    <group string="Остання активність">
-                        <field name="last_message_preview" readonly="1"/>
-                        <field name="last_message_at" readonly="1"/>
-                        <field name="operator_status" readonly="1"/>
-                        <field name="needaction_counter" readonly="1"/>
+                    <group>
+                        <group string="Оператори">
+                            <field name="operator_status" readonly="1"/>
+                        </group>
+                        <group string="Тред">
+                            <field name="external_thread_id" readonly="1"/>
+                            <field name="last_message_at" readonly="1"/>
+                            <field name="thread_name" readonly="1"/>
+                        </group>
                     </group>
+                    <notebook>
+                        <page string="Повідомлення" name="messages">
+                            <field name="message_ids" readonly="1">
+                                <tree create="false" delete="false">
+                                    <field name="date" string="Дата"/>
+                                    <field name="author_id" string="Напрямок"/>
+                                    <field name="body" string="Текст"/>
+                                    <field name="attachment_ids" string="Вкладення"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
                     <field name="channel_id" invisible="1"/>
                 </sheet>
             </form>

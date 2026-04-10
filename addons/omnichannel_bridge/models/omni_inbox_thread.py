@@ -63,6 +63,34 @@ class OmniInboxThread(models.Model):
         index=True,
     )
     needaction_counter = fields.Integer(string='Need action')
+    conversation_stage = fields.Selection(
+        selection=[
+            ('new', 'Новий'),
+            ('in_progress', 'В роботі'),
+            ('new_message', 'Нове повідомлення'),
+            ('close', 'Закрито'),
+        ],
+        string='Стадія',
+        compute='_compute_conversation_stage',
+    )
+    social_username = fields.Char(string='Username', compute='_compute_panel_profile')
+    social_profile_url = fields.Char(string='URL профілю', compute='_compute_panel_profile')
+    bot_name = fields.Char(string='Бот', compute='_compute_panel_profile')
+    sp_child_name = fields.Char(string="Ім'я дитини", compute='_compute_panel_profile')
+    sp_booking_email = fields.Char(string='Email бронювання', compute='_compute_panel_profile')
+    language_code = fields.Char(string='Мова', compute='_compute_panel_profile')
+    subscription_status_label = fields.Char(
+        string='Статус підписки',
+        compute='_compute_panel_profile',
+    )
+    partner_email = fields.Char(string='Email (клієнт)', compute='_compute_panel_profile')
+    partner_phone = fields.Char(string='Телефон (клієнт)', compute='_compute_panel_profile')
+    message_ids = fields.One2many(
+        'mail.message',
+        related='channel_id.message_ids',
+        string='Повідомлення',
+        readonly=True,
+    )
 
     _sql_constraints = [
         ('omni_inbox_thread_channel_unique', 'unique(channel_id)', 'One inbox row per Discuss thread.'),
@@ -83,6 +111,56 @@ class OmniInboxThread(models.Model):
                 else:
                     ch.write({'omni_customer_partner_id': False})
         return res
+
+    @api.depends('channel_id.active', 'partner_id', 'needaction_counter', 'operator_status')
+    def _compute_conversation_stage(self):
+        for rec in self:
+            if rec.channel_id and not rec.channel_id.active:
+                rec.conversation_stage = 'close'
+            elif rec.needaction_counter:
+                rec.conversation_stage = 'new_message'
+            elif not rec.partner_id:
+                rec.conversation_stage = 'new'
+            else:
+                rec.conversation_stage = 'in_progress'
+
+    @api.depends('channel_id', 'partner_id')
+    def _compute_panel_profile(self):
+        Channel = self.env['discuss.channel'].sudo()
+        for rec in self:
+            rec.social_username = ''
+            rec.social_profile_url = ''
+            rec.bot_name = ''
+            rec.sp_child_name = ''
+            rec.sp_booking_email = ''
+            rec.language_code = ''
+            rec.subscription_status_label = ''
+            rec.partner_email = ''
+            rec.partner_phone = ''
+            channel = rec.channel_id
+            if not channel:
+                continue
+            card = Channel.omni_get_client_info_for_channel(channel.id) or {}
+            ident = card.get('identity') or {}
+            profile = card.get('channel_profile') or {}
+            telegram = card.get('telegram') or {}
+            partner = card.get('partner') or {}
+            rec.social_username = ident.get('username') or ident.get('external_id') or ''
+            rec.social_profile_url = ident.get('profile_url') or ''
+            rec.bot_name = (profile.get('bot_name') or telegram.get('bot_name') or '').strip()
+            rec.sp_child_name = (
+                (profile.get('child_name') or telegram.get('child_name') or '').strip()
+            )
+            rec.sp_booking_email = (
+                (ident.get('booking_email') or telegram.get('booking_email') or '').strip()
+            )
+            rec.language_code = (ident.get('language_code') or '').strip()
+            badges = profile.get('badges') if isinstance(profile.get('badges'), list) else []
+            rec.subscription_status_label = ', '.join(
+                b.get('label', '').strip() for b in badges if isinstance(b, dict) and b.get('label')
+            )
+            rec.partner_email = (partner.get('email') or '').strip()
+            rec.partner_phone = (partner.get('phone') or '').strip()
 
     def action_open_identify_wizard(self):
         self.ensure_one()
@@ -193,6 +271,32 @@ class OmniInboxThread(models.Model):
             % (base, channel.id),
             'target': 'self',
         }
+
+    def action_refresh_profile(self):
+        self.ensure_one()
+        if self.channel_id:
+            self.env['discuss.channel'].sudo().omni_refresh_client_info_for_channel(self.channel_id.id)
+            self._sync_from_discuss_channels(self.channel_id)
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': dict(self.env.context),
+        }
+
+    def action_close_conversation(self):
+        self.ensure_one()
+        if self.channel_id:
+            self.channel_id.sudo().write({'active': False})
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+
+    def action_reopen_conversation(self):
+        self.ensure_one()
+        if self.channel_id:
+            self.channel_id.sudo().write({'active': True})
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_sync_all_from_threads(self):
         channels = self.env['discuss.channel'].sudo().search([('omni_provider', '!=', False)])
