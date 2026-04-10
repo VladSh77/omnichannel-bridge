@@ -241,6 +241,24 @@ class OmniAi(models.AbstractModel):
             )
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
+        if self._omni_is_binary_availability_ping(normalized):
+            clues = self._omni_recent_client_history_clues(channel)
+            has_age = bool((partner and partner.omni_child_age) or clues.get('age') or self._omni_text_has_age(normalized))
+            if self._omni_is_polish_message(normalized):
+                body = (
+                    'Tak, mamy opcje obozów. Proszę podać wiek dziecka, a dobiorę 1-2 najlepsze warianty.'
+                    if not has_age else
+                    'Tak, mamy opcje dla tego wieku. Proszę podać termin, który Państwa interesuje.'
+                )
+            else:
+                body = (
+                    'Так, маємо варіанти таборів. Підкажіть, будь ласка, вік дитини, і підберу 1-2 найкращі варіанти.'
+                    if not has_age else
+                    'Так, маємо варіанти для цього віку. Підкажіть, будь ласка, який період вас цікавить.'
+                )
+            self._omni_post_bot_message(channel, body)
+            self._omni_update_sales_stage_after_reply(partner, channel=channel)
+            return
         if self._omni_is_vague_followup(normalized):
             self._omni_post_bot_message(channel, self._omni_clarify_vague_followup(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
@@ -1032,6 +1050,17 @@ class OmniAi(models.AbstractModel):
             'faktura', 'invoice',
         )
         return any(k in txt for k in keys)
+
+    def _omni_is_binary_availability_ping(self, user_text):
+        txt = re.sub(r'\s+', ' ', (user_text or '').strip().lower())
+        if not txt:
+            return False
+        phrases = (
+            'маєте чи ні', 'є чи ні', 'є чи нема', 'маєте чи маєте',
+            'czy macie', 'macie czy nie',
+            'do you have', 'have or not',
+        )
+        return any(p in txt for p in phrases)
 
     def _omni_extract_booking_facts_from_memory(self, partner):
         import re
