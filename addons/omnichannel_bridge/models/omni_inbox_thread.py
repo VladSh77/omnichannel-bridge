@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 
@@ -95,8 +97,8 @@ class OmniInboxThread(models.Model):
     social_username = fields.Char(string='Username', compute='_compute_panel_profile')
     social_profile_url = fields.Char(string='URL профілю', compute='_compute_panel_profile')
     bot_name = fields.Char(string='Бот', compute='_compute_panel_profile')
-    sp_child_name = fields.Char(string="Ім'я дитини", compute='_compute_panel_profile')
-    sp_booking_email = fields.Char(string='Email бронювання', compute='_compute_panel_profile')
+    sp_child_name = fields.Char(string="Ім'я дитини")
+    sp_booking_email = fields.Char(string='Email бронювання')
     language_code = fields.Char(string='Мова', compute='_compute_panel_profile')
     subscription_status_label = fields.Char(
         string='Статус підписки',
@@ -135,6 +137,36 @@ class OmniInboxThread(models.Model):
                     Channel.omni_bind_partner_to_channel(ch.id, rec.partner_id.id)
                 else:
                     ch.write({'omni_customer_partner_id': False})
+        if 'sp_child_name' in vals or 'sp_booking_email' in vals:
+            Identity = self.env['omni.partner.identity'].sudo()
+            for rec in self:
+                ch = rec.channel_id
+                if not ch or not ch.exists() or not ch.omni_provider:
+                    continue
+                ext = (ch.omni_external_thread_id or '').strip()
+                if not ext:
+                    continue
+                identity = Identity.search(
+                    [('provider', '=', ch.omni_provider), ('external_id', '=', ext)],
+                    limit=1,
+                )
+                if not identity:
+                    continue
+                try:
+                    meta = json.loads(identity.metadata_json or '{}') or {}
+                except Exception:
+                    meta = {}
+                if not isinstance(meta, dict):
+                    meta = {}
+                telegram = meta.get('telegram') if isinstance(meta.get('telegram'), dict) else {}
+                if 'sp_child_name' in vals:
+                    telegram['child_name'] = rec.sp_child_name or ''
+                if 'sp_booking_email' in vals:
+                    meta['booking_email'] = rec.sp_booking_email or ''
+                    telegram['booking_email'] = rec.sp_booking_email or ''
+                if telegram:
+                    meta['telegram'] = telegram
+                identity.write({'metadata_json': json.dumps(meta, ensure_ascii=False)})
         return res
 
     @api.depends('channel_id.active', 'partner_id', 'needaction_counter', 'operator_status')
@@ -156,8 +188,6 @@ class OmniInboxThread(models.Model):
             rec.social_username = ''
             rec.social_profile_url = ''
             rec.bot_name = ''
-            rec.sp_child_name = ''
-            rec.sp_booking_email = ''
             rec.language_code = ''
             rec.subscription_status_label = ''
             rec.partner_email = ''
@@ -173,12 +203,6 @@ class OmniInboxThread(models.Model):
             rec.social_username = ident.get('username') or ident.get('external_id') or ''
             rec.social_profile_url = ident.get('profile_url') or ''
             rec.bot_name = (profile.get('bot_name') or telegram.get('bot_name') or '').strip()
-            rec.sp_child_name = (
-                (profile.get('child_name') or telegram.get('child_name') or '').strip()
-            )
-            rec.sp_booking_email = (
-                (ident.get('booking_email') or telegram.get('booking_email') or '').strip()
-            )
             rec.language_code = (ident.get('language_code') or '').strip()
             badges = profile.get('badges') if isinstance(profile.get('badges'), list) else []
             rec.subscription_status_label = ', '.join(
@@ -284,6 +308,20 @@ class OmniInboxThread(models.Model):
                 preview = '—'
                 last_at = False
 
+            card = Channel.omni_get_client_info_for_channel(channel.id) or {}
+            ident = card.get('identity') or {}
+            profile = card.get('channel_profile') or {}
+            telegram = card.get('telegram') or {}
+            extracted_child = (
+                profile.get('child_name')
+                or telegram.get('child_name')
+                or ''
+            )
+            extracted_booking = (
+                ident.get('booking_email')
+                or telegram.get('booking_email')
+                or ''
+            )
             channel_partner = channel.omni_customer_partner_id
             if _is_guest_partner(channel_partner):
                 channel_partner = self.env.ref('base.public_partner', raise_if_not_found=False)
@@ -299,9 +337,18 @@ class OmniInboxThread(models.Model):
             }
             row = existing.get(channel.id)
             if row:
+                vals['sp_child_name'] = row.sp_child_name or extracted_child
+                vals['sp_booking_email'] = row.sp_booking_email or extracted_booking
                 row.sudo().with_context(omni_inbox_sync_from_channel=True).write(vals)
             else:
-                self.sudo().create(dict(vals, channel_id=channel.id))
+                self.sudo().create(
+                    dict(
+                        vals,
+                        channel_id=channel.id,
+                        sp_child_name=extracted_child,
+                        sp_booking_email=extracted_booking,
+                    )
+                )
 
         return self.search([('channel_id', 'in', channels.ids)])
 

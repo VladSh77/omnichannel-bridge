@@ -124,8 +124,8 @@
                     </group>
                     <group>
                         <group string="Дані бота">
-                            <field name="sp_child_name" readonly="1"/>
-                            <field name="sp_booking_email" readonly="1"/>
+                            <field name="sp_child_name"/>
+                            <field name="sp_booking_email"/>
                         </group>
                         <group string="Профіль каналу">
                             <field name="language_code" readonly="1"/>
