@@ -2,6 +2,8 @@
 
 Документ фіксує **реальну реалізацію** в модулі **SendPulse Odo** (репозиторій `sendpulse-odoo`, технічне ім’я Python/XML-модуля **`odoo_chatwoot_connector`**, шляхи в `__manifest__.py` починаються з `odoo_chatwoot_connector/…`). Потрібен для паритету **`omnichannel_bridge`** з еталоном UI/даних.
 
+**Пов’язано:** сценарій **вітального ланцюжка CampScoutbot** у конструкторі SendPulse (змінні, кнопки, гілки меню) — [SENDPULSE_CAMPSCOUTBOT_WELCOME_FLOW.md](./SENDPULSE_CAMPSCOUTBOT_WELCOME_FLOW.md).
+
 ---
 
 ## 1. Два пов’язані UI (одна розмова)
@@ -170,4 +172,4 @@
 
 ---
 
-*Останнє оновлення змісту документа: 2026-04-09. Репозиторій еталону: `sendpulse-odoo` (модуль `odoo_chatwoot_connector`).*
+*Останнє оновлення змісту документа: 2026-04-10 (додано посилання на вітальний flow CampScoutbot). Репозиторій еталону: `sendpulse-odoo` (модуль `odoo_chatwoot_connector`).*
