@@ -235,6 +235,12 @@ class OmniAi(models.AbstractModel):
                     )
                     self._omni_update_sales_stage_after_reply(partner, channel=channel)
                     return
+            self._omni_post_bot_message(
+                channel,
+                'Щоб дати точні деталі по вашому замовленню, надішліть email із бронювання або номер фактури/замовлення.',
+            )
+            self._omni_update_sales_stage_after_reply(partner, channel=channel)
+            return
         if self._omni_is_vague_followup(normalized):
             self._omni_post_bot_message(channel, self._omni_clarify_vague_followup(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)

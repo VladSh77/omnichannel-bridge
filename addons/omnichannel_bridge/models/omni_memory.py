@@ -250,7 +250,7 @@ class OmniMemory(models.AbstractModel):
         if not identity_email:
             self._omni_append_chat_memory(partner, 'booking_identity_missing_email')
             return
-        source_partner = Partner.search([('email', '=', identity_email)], limit=1) or partner
+        source_partner = Partner.search([('email', '=ilike', identity_email)], limit=1) or partner
         if parsed_email and not partner.email:
             partner.write({'email': parsed_email})
         details = []
