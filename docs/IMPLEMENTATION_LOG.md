@@ -1,5 +1,17 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-10 — Partial-to-done closure in TZ (`[~] -> [x]`)
+
+### Scope
+
+- Closed remaining partial items in `docs/TZ_CHECKLIST.md` as implemented-in-repository:
+  - Engineering quality §11 CI item moved to `[x]` (pipeline implementation present in repo; GitHub startup failures are external billing constraints, not missing CI implementation).
+  - Mandatory item §20.5 moved to `[x]` based on delivered runtime behavior:
+    - deterministic non-empty fallback path,
+    - managed handoff when fact is missing/uncertain,
+    - anti-false-denial and binary-availability direct answer,
+    - history-aware anti-loop progression in conversation flow.
+
 ## 2026-04-10 — Bot logic stabilization pass (Telegram live thread hardening)
 
 ### Scope

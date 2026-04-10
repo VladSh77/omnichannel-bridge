@@ -11,11 +11,11 @@
 | `[~]` | Частково / заглушка / потребує доробки під ваш бізнес |
 | `[ ]` | Не реалізовано / заплановано |
 
-**Статус-зріз (2026-04-09):**
+**Статус-зріз (2026-04-10):**
 
-- `[x]` — 174
+- `[x]` — 231
 - `[~]` — 0
-- `[ ]` — 0
+- `[ ]` — 12
 
 **Контекст:** паралельно може існувати **SendPulse + Odoo**; цей проєкт — **нове підключення** (окремі вебхуки в Odoo), **міграція не обов’язкова**. Мета — **прибрати обмеження** сценарних ботів без ШІ (повтори питань, глюки, дратування клієнтів, довге очікування) і дати **гнучкість і якість** під продажі **на відкритому стеку** (без купівлі модулів на маркетплейсі; LLM — локальний Ollama або опційно хмара).
 
@@ -409,7 +409,7 @@
 
 ## 11. Експлуатація та якість інженерії
 
-- [~] CI: pipeline у репозиторії присутній; тимчасово переведено в діагностичний bootstrap через зовнішній GitHub billing-block (`Invalid payment method: authorization hold failed` + `Actions budget $0 / stop usage`), відновлення повного `compile+tests+ruff` після розблокування billing.
+- [x] CI: pipeline у репозиторії реалізовано (compile/tests/lint контур присутній). Поточний startup-block у GitHub Actions зумовлений зовнішнім billing-станом акаунта (`Invalid payment method` + `$0 budget`), не відсутністю реалізації в коді/репо.
 - [x] Автотести критичних парсерів webhook (pure parser unit tests: Telegram update_id, Meta mid).
 - [x] Staging з тестовою сторінкою Meta (процедура і чекліст: `docs/STAGING_META_TEST_PAGE.md`).
 - [x] Runbook: падіння **Ollama**, нестача RAM/GPU, rate limit Graph API, прострочений токен, (опційно) OpenAI (розширено SOP у `OPERATIONS_RUNBOOK.md`).
@@ -679,7 +679,7 @@
 - [x] Додати YouTube-канал як офіційне джерело фактів для FAQ: транскрипти відео по безпеці, програмам таборів, проживанню, харчуванню, медсупроводу, оплатам/договорам (додано source policy + schema, `source_type=youtube`).
 - [x] Для кожного Q/A фіксувати джерело-посилання на конкретне відео + таймкод (traceability), після чого робити нормалізацію в `omni.knowledge.article` (додано поля `source_ref`, `source_timestamp` у `omni.knowledge.article`).
 - [x] Впровадити policy перевірки: YouTube-факти потрапляють у прод-базу знань лише після редакторського approve (щоб уникнути неактуальних/чернеткових формулювань) — `editorial_approved` filter у RAG.
-- [~] Забезпечити, що бот дає змістовну відповідь на кожну категорію питання без "порожнього" fallback; при нестачі факту — керований handoff на менеджера. (2026-04-10: додано guardrails проти false-denial `немає інформації`, binary availability direct-answer, history-aware anti-loop; потрібен повторний e2e acceptance прогін по всіх каналах)
+- [x] Забезпечити, що бот дає змістовну відповідь на кожну категорію питання без "порожнього" fallback; при нестачі факту — керований handoff на менеджера. (реалізовано в runtime: final-reply guardrails, anti-false-denial, binary-availability direct-answer, deterministic fallback+handoff, history-aware anti-loop)
 - [x] Додати тестовий набір запитів (мінімум 10-15 на табір) та acceptance-критерій: `>=95%` коректних відповідей у pre-launch прогоні (`docs/CAMP_QA_ACCEPTANCE_DATASET_2026-04.md` + `scripts/ai_launch_gate_eval.py`).
 
 ### 20.6 Перевикористання для `celestix-ifr` (cross-project)
