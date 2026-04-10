@@ -299,7 +299,9 @@ class OmniInboxThread(models.Model):
             ).mapped('partner_id').ids
             remove_partner_ids = [pid for pid in current_user_partners if pid not in partner_ids]
             if remove_partner_ids:
-                channel.remove_members(partner_ids=remove_partner_ids)
+                channel.channel_member_ids.filtered(
+                    lambda m: m.partner_id.id in remove_partner_ids
+                ).unlink()
 
     def action_open_identify_wizard(self):
         self.ensure_one()

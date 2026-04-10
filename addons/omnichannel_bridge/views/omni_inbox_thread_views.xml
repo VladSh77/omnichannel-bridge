@@ -109,11 +109,10 @@
                             <field name="partner_id"
                                    options="{'no_create': True, 'no_create_edit': True}"
                                    placeholder="Не ідентифікований"/>
-                            <button name="action_open_partner_form" type="object"
-                                    string="Відкрити картку клієнта" class="btn-link"
-                                    invisible="not partner_id"/>
-                            <field name="partner_email" readonly="1" invisible="partner_id == False"/>
-                            <field name="partner_phone" readonly="1" invisible="partner_id == False"/>
+                            <field name="partner_email" readonly="1"
+                                   invisible="partner_id == False or not partner_email"/>
+                            <field name="partner_phone" readonly="1"
+                                   invisible="partner_id == False or not partner_phone"/>
                         </group>
                         <group string="Канал">
                             <field name="provider" readonly="1"/>
