@@ -426,7 +426,45 @@ class OmniAi(models.AbstractModel):
             cleaned.append(s)
         out = '\n'.join(cleaned).strip()
         out = re.sub(r'\n{3,}', '\n\n', out)
+        out = self._omni_enforce_single_question(out)
+        out = self._omni_enforce_reply_size(out)
         return out
+
+    def _omni_enforce_single_question(self, text):
+        out = (text or '').strip()
+        if not out:
+            return out
+        first_q = out.find('?')
+        if first_q < 0:
+            return out
+        head = out[: first_q + 1]
+        tail = out[first_q + 1 :].replace('?', '.')
+        tail = re.sub(r'\.{2,}', '.', tail)
+        return (head + tail).strip()
+
+    def _omni_enforce_reply_size(self, text):
+        out = (text or '').strip()
+        if not out:
+            return out
+        icp = self.env['ir.config_parameter'].sudo()
+        try:
+            max_chars = int(icp.get_param('omnichannel_bridge.reply_max_chars', '260'))
+        except Exception:
+            max_chars = 260
+        max_chars = max(140, min(max_chars, 700))
+        if len(out) <= max_chars:
+            return out
+        cut = out.rfind('\n', 0, max_chars + 1)
+        if cut < int(max_chars * 0.55):
+            cut = out.rfind('. ', 0, max_chars + 1)
+            if cut != -1:
+                cut += 1
+        if cut < int(max_chars * 0.45):
+            cut = max_chars
+        compact = out[:cut].strip().rstrip(',:;')
+        if not compact.endswith(('.', '!', '?')):
+            compact += '.'
+        return compact
 
     def _omni_coupon_meta_offer_text(self):
         icp = self.env['ir.config_parameter'].sudo()
