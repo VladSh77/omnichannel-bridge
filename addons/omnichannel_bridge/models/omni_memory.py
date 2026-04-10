@@ -241,12 +241,22 @@ class OmniMemory(models.AbstractModel):
         if not partner or not self._omni_is_paid_or_booked_message(text):
             return
         partner = partner.sudo()
+        Partner = self.env['res.partner'].sudo()
+        parsed_email = Partner.omni_parse_email(text or '')
+        partner_email = (partner.email or '').strip().lower()
+        identity_email = (parsed_email or partner_email or '').strip().lower()
+        if not identity_email:
+            self._omni_append_chat_memory(partner, 'booking_identity_missing_email')
+            return
+        source_partner = Partner.search([('email', '=', identity_email)], limit=1) or partner
+        if parsed_email and not partner.email:
+            partner.write({'email': parsed_email})
         details = []
         Order = self.env['sale.order'].sudo() if 'sale.order' in self.env else self.env['res.partner']
         Move = self.env['account.move'].sudo() if 'account.move' in self.env else self.env['res.partner']
 
         order = Order.search(
-            [('partner_id', '=', partner.id)],
+            [('partner_id', '=', source_partner.id)],
             order='write_date desc, id desc',
             limit=1,
         ) if 'sale.order' in self.env else False
@@ -259,7 +269,7 @@ class OmniMemory(models.AbstractModel):
 
         if 'account.move' in self.env:
             inv_domain = [
-                ('partner_id', '=', partner.id),
+                ('partner_id', '=', source_partner.id),
                 ('move_type', 'in', ('out_invoice', 'out_refund')),
                 ('state', '=', 'posted'),
             ]
@@ -271,9 +281,10 @@ class OmniMemory(models.AbstractModel):
 
         if 'event.registration' in self.env:
             Reg = self.env['event.registration'].sudo()
-            reg = Reg.search([('partner_id', '=', partner.id)], order='write_date desc, id desc', limit=1)
+            reg = Reg.search([('partner_id', '=', source_partner.id)], order='write_date desc, id desc', limit=1)
             if reg and reg.event_id:
                 details.append('event:%s' % (reg.event_id.display_name or reg.event_id.name or ''))
 
+        details.insert(0, 'booking_identity_email:%s' % identity_email)
         if details:
             self._omni_append_chat_memory(partner, '; '.join(details))

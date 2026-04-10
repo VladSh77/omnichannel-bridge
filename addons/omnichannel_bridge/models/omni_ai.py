@@ -205,6 +205,15 @@ class OmniAi(models.AbstractModel):
             self._omni_post_bot_message(channel, self._omni_weather_to_camp_reply(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
+        if self._omni_is_paid_or_booked_message(normalized):
+            parsed_email = self.env['res.partner'].sudo().omni_parse_email(normalized)
+            known_email = (partner.email or '').strip().lower() if partner else ''
+            if not parsed_email and not known_email:
+                self._omni_post_bot_message(
+                    channel,
+                    'Щоб чітко ідентифікувати ваше бронювання, надішліть, будь ласка, email, який вказували при замовленні.',
+                )
+                return
         if self._omni_is_vague_followup(normalized):
             self._omni_post_bot_message(channel, self._omni_clarify_vague_followup(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
@@ -958,6 +967,19 @@ class OmniAi(models.AbstractModel):
         )
         return any(k in txt for k in sensitive_markers)
 
+    def _omni_is_paid_or_booked_message(self, user_text):
+        txt = (user_text or '').strip().lower()
+        if not txt:
+            return False
+        keys = (
+            'вже оплат', 'оплатив', 'оплатила', 'оплачено', 'сплатив', 'сплатила',
+            'вже заброн', 'забронював', 'забронювала', 'бронював', 'бронювала',
+            'already paid', 'already booked', 'i paid', 'i booked',
+            'już opłaci', 'opłacone', 'już zarezerw', 'zarezerwowa',
+            'faktura', 'invoice',
+        )
+        return any(k in txt for k in keys)
+
     def _omni_is_ru_or_be_message(self, user_text):
         txt = (user_text or '').lower()
         if not txt:
@@ -977,7 +999,6 @@ class OmniAi(models.AbstractModel):
             'смена',
             'путевка',
             'сколько стоит',
-            'менеджер',
             'прывітанне',
             'лагер',
             'кошт',
@@ -1160,7 +1181,12 @@ class OmniAi(models.AbstractModel):
 
     def _omni_next_step_after_affirmation(self, partner, user_text):
         if not partner:
-            return ''
+            return (
+                'Дякую. Що для вас зараз важливіше: програма, дати, доїзд чи бюджет?'
+                if not self._omni_is_polish_message(user_text or '')
+                else
+                'Dziękuję. Co jest teraz najważniejsze: program, terminy, dojazd czy budżet?'
+            )
         is_pl = self._omni_is_polish_message(user_text or '')
         next_q = self._omni_pick_next_question(partner, user_text)
         if next_q:
