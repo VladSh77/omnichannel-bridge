@@ -205,6 +205,10 @@ class OmniAi(models.AbstractModel):
             self._omni_post_bot_message(channel, self._omni_weather_to_camp_reply(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
+        if self._omni_is_vague_followup(normalized):
+            self._omni_post_bot_message(channel, self._omni_clarify_vague_followup(normalized))
+            self._omni_update_sales_stage_after_reply(partner, channel=channel)
+            return
         if not self._omni_is_camp_scope_message(normalized):
             self._omni_send_out_of_scope_reply(channel)
             self._omni_set_sales_stage(partner, 'handoff', channel, 'out_of_scope')
@@ -1054,6 +1058,33 @@ class OmniAi(models.AbstractModel):
             'Jeśli wygodnie, od razu podłączę managera.'
         )
         self._omni_post_bot_message(channel, body)
+
+    def _omni_is_vague_followup(self, user_text):
+        txt = re.sub(r'\s+', ' ', (user_text or '').strip().lower())
+        if not txt:
+            return False
+        vague_phrases = (
+            'щось інше',
+            'інше',
+            'далі',
+            'ще',
+            'що ще',
+            'шо ше',
+            'something else',
+            'other',
+            'coś innego',
+            'inne',
+        )
+        if txt in vague_phrases:
+            return True
+        if len(txt) <= 14 and any(p in txt for p in vague_phrases):
+            return True
+        return False
+
+    def _omni_clarify_vague_followup(self, user_text):
+        if self._omni_is_polish_message(user_text or ''):
+            return 'Co dokładnie jest dla Państwa najważniejsze: program, terminy, dojazd czy bezpieczeństwo?'
+        return 'Що саме для вас важливіше зараз: програма, дати, доїзд чи безпека?'
 
     def _omni_moderation_policy_hit(self, user_text):
         txt = (user_text or '').lower().strip()
