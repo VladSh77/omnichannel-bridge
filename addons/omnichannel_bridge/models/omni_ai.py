@@ -461,7 +461,14 @@ class OmniAi(models.AbstractModel):
                 cut += 1
         if cut < int(max_chars * 0.45):
             cut = max_chars
+        # Never cut in the middle of a word when hard-limiting reply length.
+        if cut < len(out):
+            ws_cut = out.rfind(' ', 0, cut + 1)
+            if ws_cut >= int(max_chars * 0.45):
+                cut = ws_cut
         compact = out[:cut].strip().rstrip(',:;')
+        # Drop dangling 1-2 character tail tokens like "бі", "з", "і".
+        compact = re.sub(r'\s+[^\s]{1,2}$', '', compact).strip()
         if not compact.endswith(('.', '!', '?')):
             compact += '.'
         return compact
@@ -727,6 +734,11 @@ class OmniAi(models.AbstractModel):
                     cut += 1
             if cut < int(max_len * 0.45):
                 cut = max_len
+            # Prefer word boundary for last-resort split as well.
+            if cut < len(remaining):
+                ws_cut = remaining.rfind(' ', 0, cut + 1)
+                if ws_cut >= int(max_len * 0.45):
+                    cut = ws_cut
             piece = remaining[:cut].strip()
             if piece:
                 chunks.append(piece)
