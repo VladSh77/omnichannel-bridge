@@ -6,6 +6,29 @@ from datetime import datetime
 from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 
+# Substrings for RAG rerank: legal-ish customer questions → prefer omni.legal.document over brochure OCR.
+_OMNI_LEGAL_RAG_HINT_TERMS = frozenset(
+    {
+        'договір',
+        'договор',
+        'umowa',
+        'поверн',
+        'zwrot',
+        'rezygn',
+        'rodo',
+        'gdpr',
+        'правил',
+        'регламент',
+        'оферт',
+        'cookies',
+        'політик',
+        'ochrona',
+        'kamil',
+        'страхов',
+        'ubezpiec',
+    }
+)
+
 
 class OmniKnowledge(models.AbstractModel):
     _name = 'omni.knowledge'
@@ -243,7 +266,11 @@ class OmniKnowledge(models.AbstractModel):
             chunks.append(line)
         if not chunks:
             return _('No camp catalog lines available (check product data and camp markers).')
-        header = _('Use only these CAMP catalog facts for offers: price, program, places_left.')
+        header = _(
+            'Use CAMP catalog lines below for price, program, places_left. '
+            'The optional "terms" snippet on each line may lag the live website — for contract, refunds, '
+            'and all legal wording follow LEGAL_CONTEXT + LEGAL_DOCUMENTS, not catalog terms.'
+        )
         return header + '\n' + '\n'.join(chunks)
 
     @api.model
@@ -816,6 +843,22 @@ class OmniKnowledge(models.AbstractModel):
         return '\n'.join(lines)
 
     @api.model
+    def omni_source_priority_block(self):
+        """Tell the LLM that legal DB + site docs beat catalog text and brochure OCR."""
+        return (
+            'SOURCE_PRIORITY (ієрархія джерел, обов’язково):\n'
+            '1) Ціни, вільні місця, назви змін, валюта, програма табору — з блоку CAMP catalog (ORM) '
+            'та даних замовлень/клієнта в цьому ж промпті.\n'
+            '2) Договір, повернення коштів, сторони угоди, RODO, cookies, захист дітей, формулювання як для права — '
+            'ЛИШЕ з LEGAL_CONTEXT, LEGAL_DOCUMENTS (записи omni.legal.document), статей бази знань з категорією '
+            'policy/insurance та з офіційних URL сайту. Ці джерела завжди переважають над маркетингом.\n'
+            '3) Довгі тексти в полі terms у рядку каталогу товару та уривки з маркетингової брошури OCR '
+            '(наприклад «оферта 2026 — брошура OCR» у RAG_CONTEXT) можуть бути застарілими або неповними '
+            'порівняно з актуальними юридичними документами. Не використовуй їх, щоб суперечити п.2; '
+            'при сумніві — чесно скажи, що точні умови на сайті/у договорі, і запропонуй менеджера.'
+        )
+
+    @api.model
     def omni_prompt_versioning_block(self):
         icp = self.env['ir.config_parameter'].sudo()
         version = (icp.get_param('omnichannel_bridge.llm_prompt_version') or 'v1').strip()
@@ -1005,6 +1048,23 @@ class OmniKnowledge(models.AbstractModel):
 
         # If hybrid mode is disabled, keep legacy lexical path.
         if not self._omni_rag_hybrid_enabled():
+            legal_query = bool(query_terms.intersection(_OMNI_LEGAL_RAG_HINT_TERMS))
+
+            def _rag_sort_key(c):
+                s = 0
+                name_l = (c.get('name') or '').lower()
+                kind = c.get('kind') or ''
+                if legal_query:
+                    if kind == 'doc':
+                        s -= 10
+                    elif kind == 'knowledge' and (
+                        'брошура ocr' in name_l or 'оферта 2026' in name_l
+                    ):
+                        s += 10
+                pri = c.get('priority', 100) if kind == 'knowledge' else 0
+                return (s, pri, c.get('name') or '')
+
+            lexical_ranked.sort(key=_rag_sort_key)
             top = lexical_ranked[: self._omni_rag_top_k(max_items=max_items)]
             lines = ['RAG_CONTEXT:']
             for c in top:
@@ -1033,6 +1093,8 @@ class OmniKnowledge(models.AbstractModel):
         rrf_k = self._omni_rag_rrf_k()
         lexical_pos = {c.get('id'): idx for idx, c in enumerate(lexical_ranked)}
         graph_pos = {c.get('id'): idx for idx, c in enumerate(graph_candidates)}
+        legal_query = bool(query_terms.intersection(_OMNI_LEGAL_RAG_HINT_TERMS))
+
         fused = []
         for c in fused_pool:
             cid = c.get('id')
@@ -1043,6 +1105,17 @@ class OmniKnowledge(models.AbstractModel):
                 score += 1.0 / float(rrf_k + graph_pos[cid] + 1)
             # Lightweight cross-rerank pass.
             score += self._omni_cross_rerank_score(query, c.get('name'), c.get('quote'))
+            if legal_query:
+                kind = c.get('kind') or ''
+                name_l = (c.get('name') or '').lower()
+                if kind == 'doc':
+                    score += 0.45
+                elif kind == 'knowledge' and (
+                    'брошура ocr' in name_l
+                    or 'брошура ocr' in name_l.replace(' ', '')
+                    or 'оферта 2026' in name_l
+                ):
+                    score -= 0.55
             c_terms = self._omni_term_set('%s %s' % (c.get('name') or '', c.get('quote') or ''))
             anchor_ratio = float(len(query_terms.intersection(c_terms))) / float(max(len(query_terms), 1))
             # Anti-drift guard: penalize candidates that diverge from the original query.
@@ -1142,6 +1215,8 @@ class OmniKnowledge(models.AbstractModel):
             self.omni_catalog_context_for_llm(partner),
             '---',
             self.omni_recommended_catalog_context(partner, limit=2),
+            '---',
+            self.omni_source_priority_block(),
         ]
         if partner and partner.omni_chat_memory:
             parts.append('---\nCLIENT_MEMORY_LINES:\n%s' % partner.omni_chat_memory.strip())
