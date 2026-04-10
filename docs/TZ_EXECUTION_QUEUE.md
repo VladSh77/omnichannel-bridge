@@ -9,6 +9,7 @@ Baseline:
 - Branch: `main`
 - Baseline commit: `e695d03` (historical Phase 1 lock)
 - **Current delivery head (2026-04-10):** після **`5c9df51`**: **legal source priority** (LLM + RAG, `9f40c0e`) + **KB стаття ієрархії джерел** (`omni_kb_ai_source_hierarchy.xml`, версія **17.0.1.0.48**). Актуальний SHA див. `git log -1 main` у репо; прод-оновлення: `git pull` + `-u omnichannel_bridge --no-http` (див. **`docs/IMPLEMENTATION_LOG.md`**).
+- **Next-day backlog (2026-04-11):** **`docs/TZ_CHECKLIST.md`** — блок «Черга на 2026-04-11»: UA **таборів** (не *табірів*), узгоджений рід персони бота (не змішувати «консультант» з «готова»).
 - Deployment baseline on server before new wave: documented in `docs/IMPLEMENTATION_LOG.md`
 
 Purpose:
