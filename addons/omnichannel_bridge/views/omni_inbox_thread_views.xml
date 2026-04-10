@@ -128,7 +128,7 @@
                             <field name="sp_booking_email"/>
                         </group>
                         <group string="ПРОФІЛЬ SENDPULSE">
-                            <field name="language_code" readonly="1" string="Мова"/>
+                            <field name="language_code" string="Мова"/>
                             <field name="subscription_status_label" readonly="1" string="Статус підписки"/>
                         </group>
                     </group>
