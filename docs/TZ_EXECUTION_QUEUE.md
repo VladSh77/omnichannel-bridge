@@ -7,7 +7,8 @@ Status: in progress
 Baseline:
 
 - Branch: `main`
-- Baseline commit: `e695d03`
+- Baseline commit: `e695d03` (historical Phase 1 lock)
+- **Current delivery head (2026-04-10):** `5c9df51` — operations playbook seed + UA ops UI + legal/knowledge data wave; production upgraded with `docker exec … odoo -u omnichannel_bridge --stop-after-init --no-http` (see `docs/IMPLEMENTATION_LOG.md` top entry).
 - Deployment baseline on server before new wave: documented in `docs/IMPLEMENTATION_LOG.md`
 
 Purpose:

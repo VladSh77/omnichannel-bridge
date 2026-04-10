@@ -93,7 +93,7 @@ Fajna/
 | [docs/TZ_CHECKLIST.md](docs/TZ_CHECKLIST.md) | Повне ТЗ + чекліст готовності |
 | [docs/TZ_EXECUTION_QUEUE.md](docs/TZ_EXECUTION_QUEUE.md) | Черга виконання ТЗ з DoD по хвилях |
 | [docs/TECHNICAL_PASSPORT.md](docs/TECHNICAL_PASSPORT.md) | Технічний паспорт модуля (архітектура, інтеграції, SLA) |
-| [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | Операційні процедури (інциденти, відновлення, rollback) |
+| [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) | Операційні процедури (інциденти, відновлення, rollback); **`-u` у Docker з `--no-http`**, дані playbook не з `camp` |
 | [docs/SECURITY_RODO.md](docs/SECURITY_RODO.md) | Правила безпеки та обробки даних (RODO/GDPR) |
 | [docs/LEGAL_FACTS_PACK.md](docs/LEGAL_FACTS_PACK.md) | Дозволені юридичні факти для бота (джерела з camp repo) |
 | [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | Тест-план для локального/staging/prod контурів |

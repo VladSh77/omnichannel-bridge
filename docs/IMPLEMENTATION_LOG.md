@@ -1,5 +1,56 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-10 — Operations data (playbook seed), UA UI, Git/deploy alignment, module upgrade on prod
+
+### Scope (product)
+
+- Released **`omnichannel_bridge` 17.0.1.0.45** (commit **`5c9df51`** on `main`).
+- **DB-backed “operations playbook”** (not synced from `camp` git):
+  - New data: `data/omni_playbook_defaults.xml` (`noupdate="1"`): default **stage transitions** (aligned with `res.partner._OMNI_STAGE_TRANSITIONS`), **moderation rule** (keyword `суїцид`, `escalate_pause`, priority 10), **objection policies** (six types) with bilingual UA/PL bodies matching `omni_sales_intel._omni_objection_playbook_templates` intent.
+  - New data: `data/omni_legal_documents.xml`; manifest wires `omni_legal_documents.xml` + `omni_playbook_defaults.xml` after `omni_camp_knowledge_articles.xml`.
+- **Models / views / i18n:** Ukrainian field labels and list/form chrome for `omni.objection.policy`, `omni.moderation.rule`, `omni.stage.transition`, `omni.knowledge.article`, related legal/prompt views; `omni_ops_views.xml` menu labels and sequence fixes; `uk_UA.po` / `pl.po` updates.
+- **Knowledge:** `data/omni_camp_knowledge_articles.xml` and `scripts/generate_camp_knowledge_data.py` — UA titles for cookie/child-protection rows, optional `source_type` / `source_url` in generator tuples; existing rows with `noupdate="1"` may need manual edit on old DBs to refresh titles/URLs.
+- **Tests:** `tests/test_contract_regressions.py` — assertion that playbook defaults XML is listed in `__manifest__.py` `data` list.
+
+### Scope (documentation / support)
+
+- SendPulse docs touched in same release wave: `docs/SENDPULSE_API.local.env.example`, `docs/SENDPULSE_REST_API_PUBLIC_OVERVIEW.md` (no secrets in repo; local key file gitignored).
+
+### Git alignment (local ↔ GitHub ↔ CampScout server)
+
+- **Local:** committed all pending bridge changes; pushed `main` to `origin`.
+- **GitHub `origin/main`:** **`5c9df51`**.
+- **Server:** repository path **`/opt/campscout/custom-addons/omnichannel_bridge_repo`** (canonical git checkout); **`/opt/campscout/custom-addons/omnichannel_bridge`** is a **symlink** to `omnichannel_bridge_repo/addons/omnichannel_bridge` (direct folder has no `.git`).
+- **Peer repos on same host** (`git pull --ff-only`): `campscout_management`, `odoo_chatwoot_connector` (remote `sendpulse-odoo`), `zadarma_odoo` — verified up to date after sync.
+
+### Production module upgrade (Odoo 17 in Docker)
+
+- **Issue:** `docker exec campscout_web odoo ... -u omnichannel_bridge --stop-after-init` **without** disabling HTTP fails with **`OSError: [Errno 98] Address already in use`** because a **second** Odoo process tries to bind **8069** while `campscout_web` is already running.
+- **Working one-liner:**
+
+```bash
+docker exec campscout_web odoo -c /etc/odoo/odoo.conf -d campscout \
+  -u omnichannel_bridge --stop-after-init --no-http --without-demo=all
+```
+
+- **Verified:** upgrade completed successfully; log shows load of `omni_legal_documents.xml`, `omni_playbook_defaults.xml`, view/i18n reload; exit **0**, “Stopping gracefully”.
+- **DB name on prod container:** `db_name = campscout` (from `/etc/odoo/odoo.conf`).
+
+### Operational notes
+
+- **`noupdate="1"`** on playbook/knowledge XML: re-running `-u` does **not** overwrite user-edited records tied to the same `xml_id`; new ids in a new data file still load on upgrade.
+- **Populate / change playbook content:** Odoo UI (**Operations** menus) or edit XML + bump version + `-u`; see runbook section on playbook vs `camp` repo.
+
+### Artifacts (this wave)
+
+- `addons/omnichannel_bridge/__manifest__.py` (version **17.0.1.0.45**, data list)
+- `addons/omnichannel_bridge/data/omni_playbook_defaults.xml` (new)
+- `addons/omnichannel_bridge/data/omni_legal_documents.xml` (new)
+- `addons/omnichannel_bridge/data/omni_camp_knowledge_articles.xml`
+- `addons/omnichannel_bridge/models/*.py`, `views/*.xml`, `i18n/*.po`, `scripts/generate_camp_knowledge_data.py`, `tests/test_contract_regressions.py`
+- `docs/OPERATIONS_RUNBOOK.md` (module upgrade recipe appended same day)
+- `docs/TZ_CHECKLIST.md` / `docs/TZ_EXECUTION_QUEUE.md` (dated note / baseline pointer)
+
 ## 2026-04-10 — Closure of remaining 12 TZ items (20.4 / 20.8.1 / 20.9 / 20.9.1)
 
 ### Scope

@@ -1,5 +1,23 @@
 # CHANGELOG — omnichannel_bridge
 
+## [17.0.1.0.45] — 2026-04-10
+
+### Додано
+
+- `data/omni_playbook_defaults.xml` — стартові **переходи етапів** (`omni.stage.transition`), **правило модерації** (кризовий маркер), **політики заперечень** (`omni.objection.policy`); `noupdate="1"`.
+- `data/omni_legal_documents.xml` — початкові записи юридичних документів (узгоджено з маніфестом).
+
+### Змінено
+
+- Версія модуля **17.0.1.0.45**; підключення нових data-файлів у `__manifest__.py`.
+- Українські підписи полів і UI для **Операції** (політики заперечень, модерація, переходи, база знань тощо); оновлення `uk_UA.po` / `pl.po`.
+- База знань (XML + генератор): UA для cookie/child policy, поля джерела в скрипті генерації.
+- Документація: `docs/IMPLEMENTATION_LOG.md`, `docs/OPERATIONS_RUNBOOK.md` (оновлення модуля в Docker з `--no-http`), примітки в `docs/TZ_CHECKLIST.md`, `docs/TZ_EXECUTION_QUEUE.md`.
+
+### Операційно
+
+- Продакшен CampScout: після `git pull` виконано `-u omnichannel_bridge` з **`--no-http`** (див. runbook).
+
 ## [0.1.0] — 2026-04-04
 
 ### Додано

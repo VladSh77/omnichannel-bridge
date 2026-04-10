@@ -16,6 +16,29 @@
   2. Commit and push.
   3. Server update only after explicit approval.
 
+## Module upgrade in Docker (CampScout production)
+
+When **`campscout_web`** is already running, a **second** `odoo` process inside the same container must **not** bind port **8069** (default HTTP), or startup fails with **`Address already in use`**.
+
+Use **`--no-http`** so the one-shot upgrade loads the registry and exits without listening:
+
+```bash
+docker exec campscout_web odoo -c /etc/odoo/odoo.conf -d campscout \
+  -u omnichannel_bridge --stop-after-init --no-http --without-demo=all
+```
+
+- **Config:** `/etc/odoo/odoo.conf` inside the container.
+- **Database:** `db_name` / `dbfilter` (prod: **`campscout`** as of 2026-04-10).
+- **Code:** git checkout at **`/opt/campscout/custom-addons/omnichannel_bridge_repo`**; live addon path is symlink **`omnichannel_bridge` → `…/addons/omnichannel_bridge`**.
+
+After upgrade, confirm UI menus (**Operations** → objection policies / moderation / stage transitions) and, if new XML data uses new `xml_id`s, that rows appeared (remember **`noupdate="1"`** skips overwriting existing linked records).
+
+## Playbook data: not from `camp` git
+
+- **`omni.objection.policy`**, **`omni.moderation.rule`**, **`omni.stage.transition`** are **Odoo models** filled via **UI** or **`data/*.xml`**. The **`camp`** repository does **not** auto-import into these tables.
+- Default seed: **`data/omni_playbook_defaults.xml`**. Stage transition rules in DB override per-`from_stage` allowed targets; if no rows for a stage, code falls back to **`res.partner._OMNI_STAGE_TRANSITIONS`**.
+- Objection text resolution: `ir.config_parameter` overrides → **`omni.objection.policy`** rows override templates in `omni_sales_intel` (see code path `_omni_objection_playbook_templates`).
+
 ## Incident Classes
 
 - P1: Webhooks fully down, no inbound processing.
