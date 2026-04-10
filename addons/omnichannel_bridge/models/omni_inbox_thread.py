@@ -35,6 +35,25 @@ def _operator_status_for_channel(channel):
     return 'idle'
 
 
+def _is_guest_partner(partner):
+    if not partner:
+        return True
+    if partner.email or partner.phone or partner.mobile:
+        return False
+    name = (partner.name or '').strip().lower()
+    if not name:
+        return True
+    return (
+        name.startswith('@')
+        or name.startswith('tg_')
+        or name.startswith('wa:')
+        or name.startswith('meta:')
+        or name.startswith('viber:')
+        or name.startswith('tiktok:')
+        or name.startswith('line:')
+    )
+
+
 class OmniInboxThread(models.Model):
     _name = 'omni.inbox.thread'
     _description = 'Omnichannel operator inbox (mirror of messenger Discuss threads)'
@@ -90,6 +109,12 @@ class OmniInboxThread(models.Model):
         related='channel_id.message_ids',
         string='Повідомлення',
         readonly=True,
+    )
+    operator_user_ids = fields.Many2many(
+        'res.users',
+        string='Оператори',
+        compute='_compute_operator_user_ids',
+        inverse='_inverse_operator_user_ids',
     )
 
     _sql_constraints = [
@@ -162,6 +187,33 @@ class OmniInboxThread(models.Model):
             rec.partner_email = (partner.get('email') or '').strip()
             rec.partner_phone = (partner.get('phone') or '').strip()
 
+    @api.depends('channel_id')
+    def _compute_operator_user_ids(self):
+        for rec in self:
+            users = self.env['res.users']
+            channel = rec.channel_id
+            if channel:
+                partners = channel.sudo().channel_member_ids.partner_id
+                users = partners.user_ids.filtered(
+                    lambda u: not u.share and u.active and not u._is_public()
+                )
+            rec.operator_user_ids = users
+
+    def _inverse_operator_user_ids(self):
+        for rec in self:
+            channel = rec.channel_id.sudo()
+            if not channel:
+                continue
+            partner_ids = rec.operator_user_ids.mapped('partner_id').ids
+            if partner_ids:
+                channel.add_members(partner_ids=partner_ids)
+            current_user_partners = channel.channel_member_ids.partner_id.user_ids.filtered(
+                lambda u: not u.share and u.active and not u._is_public()
+            ).mapped('partner_id').ids
+            remove_partner_ids = [pid for pid in current_user_partners if pid not in partner_ids]
+            if remove_partner_ids:
+                channel.remove_members(partner_ids=remove_partner_ids)
+
     def action_open_identify_wizard(self):
         self.ensure_one()
         raw = self.env['ir.actions.act_window']._for_xml_id(
@@ -232,12 +284,13 @@ class OmniInboxThread(models.Model):
                 preview = '—'
                 last_at = False
 
+            channel_partner = channel.omni_customer_partner_id
+            if _is_guest_partner(channel_partner):
+                channel_partner = self.env.ref('base.public_partner', raise_if_not_found=False)
             vals = {
                 'thread_name': channel.name or '',
                 'provider': channel.omni_provider,
-                'partner_id': channel.omni_customer_partner_id.id
-                if channel.omni_customer_partner_id
-                else False,
+                'partner_id': channel_partner.id if channel_partner else False,
                 'external_thread_id': channel.omni_external_thread_id or False,
                 'last_message_preview': preview,
                 'last_message_at': last_at,

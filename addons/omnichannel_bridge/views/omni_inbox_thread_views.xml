@@ -109,6 +109,9 @@
                             <field name="partner_id"
                                    options="{'no_create': True, 'no_create_edit': True}"
                                    placeholder="Не ідентифікований"/>
+                            <button name="action_open_partner_form" type="object"
+                                    string="Відкрити картку клієнта" class="btn-link"
+                                    invisible="not partner_id"/>
                             <field name="partner_email" readonly="1" invisible="partner_id == False"/>
                             <field name="partner_phone" readonly="1" invisible="partner_id == False"/>
                         </group>
@@ -131,6 +134,9 @@
                     </group>
                     <group>
                         <group string="Оператори">
+                            <field name="operator_user_ids" widget="many2many_tags"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   domain="[('share', '=', False), ('active', '=', True)]"/>
                             <field name="operator_status" readonly="1"/>
                         </group>
                         <group string="Тред">
