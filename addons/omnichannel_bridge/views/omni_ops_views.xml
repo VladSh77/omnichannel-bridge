@@ -191,11 +191,18 @@
         sequence="30"
     />
     <menuitem
+        id="menu_omni_llm_fallback_sessions"
+        name="LLM Fallback Sessions"
+        parent="menu_omni_ops_root"
+        action="action_omni_llm_fallback_session"
+        sequence="31"
+    />
+    <menuitem
         id="menu_omni_payment_events"
         name="Payment Events"
         parent="menu_omni_ops_root"
         action="action_omni_payment_event"
-        sequence="31"
+        sequence="32"
     />
     <menuitem
         id="menu_omni_crm_analytics"

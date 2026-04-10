@@ -1,5 +1,43 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-10 — Closure of remaining 12 TZ items (20.4 / 20.8.1 / 20.9 / 20.9.1)
+
+### Scope
+
+- Implemented automatic fallback control path `Ollama -> OpenAI-compatible endpoint` (Gemini-ready):
+  - triggers: timeout/read-timeout, circuit-breaker open, empty reply,
+  - fallback feature switch in Settings,
+  - fallback rate cap per minute,
+  - restore tracking when primary recovers.
+- Added persistent fallback session audit model:
+  - `omni.llm.fallback.session` with reason/start/end/duration/restore backend.
+- Added operations UI:
+  - menu `Operations -> LLM Fallback Sessions`.
+- Added acceptance artifacts for remaining mandatory blocks:
+  - camp-channel smoke report,
+  - Discuss conversation-card instance acceptance,
+  - AI-only KPI acceptance report,
+  - fallback smoke (`primary down -> fallback -> restore`).
+- Updated `docs/TZ_CHECKLIST.md` statuses to close all previously unchecked mandatory points.
+
+### Artifacts
+
+- `addons/omnichannel_bridge/models/omni_ai.py`
+- `addons/omnichannel_bridge/models/res_config_settings.py`
+- `addons/omnichannel_bridge/models/omni_llm_fallback_session.py` (new)
+- `addons/omnichannel_bridge/views/res_config_settings_views.xml`
+- `addons/omnichannel_bridge/views/omni_llm_fallback_session_views.xml` (new)
+- `addons/omnichannel_bridge/views/omni_ops_views.xml`
+- `addons/omnichannel_bridge/security/ir.model.access.csv`
+- `addons/omnichannel_bridge/models/__init__.py`
+- `addons/omnichannel_bridge/__manifest__.py`
+- `tests/test_contract_regressions.py`
+- `docs/CAMP_CHANNEL_SMOKE_REPORT_2026-04-10.md` (new)
+- `docs/DISCUSS_CONVERSATION_CARD_INSTANCE_ACCEPTANCE_2026-04-10.md` (new)
+- `docs/AI_ONLY_ACCEPTANCE_REPORT_2026-04-10.md` (new)
+- `docs/LLM_FALLBACK_SMOKE_2026-04-10.md` (new)
+- `docs/TZ_CHECKLIST.md`
+
 ## 2026-04-10 — Partial-to-done closure in TZ (`[~] -> [x]`)
 
 ### Scope

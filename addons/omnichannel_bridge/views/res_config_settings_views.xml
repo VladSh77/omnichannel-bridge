@@ -216,6 +216,39 @@
                         <setting string="OpenAI model">
                             <field name="omnichannel_openai_model"/>
                         </setting>
+                        <setting string="OpenAI-compatible base URL" help="Use Gemini endpoint for fallback, e.g. https://generativelanguage.googleapis.com/v1beta/openai">
+                            <field name="omnichannel_openai_base_url"/>
+                        </setting>
+                        <setting string="OpenAI connect timeout (s)">
+                            <field name="omnichannel_openai_connect_timeout_seconds"/>
+                        </setting>
+                        <setting string="OpenAI read timeout (s)">
+                            <field name="omnichannel_openai_read_timeout_seconds"/>
+                        </setting>
+                        <setting string="Auto fallback enabled">
+                            <field name="omnichannel_llm_fallback_enabled"/>
+                        </setting>
+                        <setting string="Fallback backend">
+                            <field name="omnichannel_llm_fallback_backend"/>
+                        </setting>
+                        <setting string="Fallback on timeout/read-timeout">
+                            <field name="omnichannel_llm_fallback_on_timeout"/>
+                        </setting>
+                        <setting string="Fallback when circuit-breaker is open">
+                            <field name="omnichannel_llm_fallback_on_cb_open"/>
+                        </setting>
+                        <setting string="Fallback on empty primary reply">
+                            <field name="omnichannel_llm_fallback_on_empty"/>
+                        </setting>
+                        <setting string="Fallback rate cap (calls/min)">
+                            <field name="omnichannel_llm_fallback_rate_cap_per_minute"/>
+                        </setting>
+                        <setting string="Fallback status (readonly)">
+                            <field name="omnichannel_llm_fallback_active" readonly="1"/>
+                        </setting>
+                        <setting string="Fallback reason (readonly)">
+                            <field name="omnichannel_llm_fallback_reason" readonly="1"/>
+                        </setting>
                         <setting string="Legacy OpenAI toggle" help="Якщо увімкнено без llm_enabled — LLM вважається увімкненим (зворотна сумісність).">
                             <field name="omnichannel_openai_enabled"/>
                         </setting>

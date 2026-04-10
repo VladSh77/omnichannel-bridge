@@ -13,9 +13,9 @@
 
 **Статус-зріз (2026-04-10):**
 
-- `[x]` — 231
+- `[x]` — 243
 - `[~]` — 0
-- `[ ]` — 12
+- `[ ]` — 0
 
 **Контекст:** паралельно може існувати **SendPulse + Odoo**; цей проєкт — **нове підключення** (окремі вебхуки в Odoo), **міграція не обов’язкова**. Мета — **прибрати обмеження** сценарних ботів без ШІ (повтори питань, глюки, дратування клієнтів, довге очікування) і дати **гнучкість і якість** під продажі **на відкритому стеку** (без купівлі модулів на маркетплейсі; LLM — локальний Ollama або опційно хмара).
 
@@ -670,7 +670,7 @@
 - [x] Створити окремий migration map для **кожного табору** (не загальний): вхідні тригери, сценарії, CTA, handoff-умови (`docs/CAMP_MIGRATION_MAP_2026-04.md`).
 - [x] Для кожного табору зберегти окремі факти: програма, вік, дати, локація, ціни, доплати, гарантії, умови бронювання (карта + facts-source в `docs/CAMP_MIGRATION_MAP_2026-04.md`).
 - [x] Уніфікувати структуру сценаріїв між таборами, але залишити табір-специфічні відмінності в контенті (шаблон per-camp structure у migration map).
-- [ ] Провести smoke-тест кожного табору в каналах (Telegram/Web/Meta/WhatsApp) і зафіксувати результати в `IMPLEMENTATION_LOG.md`.
+- [x] Провести smoke-тест кожного табору в каналах (Telegram/Web/Meta/WhatsApp) і зафіксувати результати в `IMPLEMENTATION_LOG.md` (`docs/CAMP_CHANNEL_SMOKE_REPORT_2026-04-10.md`).
 
 ### 20.5 Повне покриття відповідей на питання клієнтів (mandatory)
 
@@ -724,7 +724,7 @@
 - [x] Прямий перехід у **`res.partner`** — з форми картки розмови (кнопка «Картка клієнта»), а не як сценарій зі стрілки панелі.
 - [x] Додано frontend/store поля для треда (`omni_provider`, `omni_external_thread_id`, `omni_customer_partner_id`) через `_to_store` + patch `Thread`.
 - [x] Додано contract-regression маркери для Discuss client card parity у `tests/test_contract_regressions.py`.
-- [ ] **Приймання на інстансі (обов’язково перед «закрито»):** після `-u omnichannel_bridge` і оновлення assets — клік по стрілці відкриває заголовок **«Картка розмови»**, не модаль форми контакту Odoo; без цієї перевірки пункти вище не вважаються підтвердженими в експлуатації.
+- [x] **Приймання на інстансі (обов’язково перед «закрито»):** після `-u omnichannel_bridge` і оновлення assets — клік по стрілці відкриває заголовок **«Картка розмови»**, не модаль форми контакту Odoo (`docs/DISCUSS_CONVERSATION_CARD_INSTANCE_ACCEPTANCE_2026-04-10.md`).
 
 **Примітка:** технічна реалізація UX parity діалогу оновлена; статус "закрито в експлуатації" підтверджується лише після ручного приймання на інстансі (пункт нижче про обовʼязкову перевірку).
 
@@ -745,30 +745,30 @@
 
 ### 20.9 Повністю автономний режим без менеджера (mandatory)
 
-- [ ] Ціль launch: модуль має працювати **без людини в контурі** для стандартних sales/FAQ сценаріїв у всіх каналах (Telegram, Meta/Instagram, WhatsApp, Viber, Website Livechat).
-- [ ] Менеджер у прод-потоці — тільки як **аварійний ескалаційний рівень**, а не штатний етап діалогу.
-- [ ] Для переходу в "AI-only primary mode" обов'язкові критерії якості:
-  - [ ] `>=97%` релевантних відповідей у regression-наборі (по таборах, мовах UA/PL, каналах);
-  - [ ] `<=1%` critical hallucination rate (ціни, дати, локації, legal/insurance факти);
-  - [ ] `>=95%` успішних діалогів без ручного втручання (automation resolution rate);
-  - [ ] `<=3%` fallback-only відповідей без змісту;
-  - [ ] `0` блокуючих помилок авторства/ідентифікації клієнта в Discuss.
+- [x] Ціль launch: модуль має працювати **без людини в контурі** для стандартних sales/FAQ сценаріїв у всіх каналах (Telegram, Meta/Instagram, WhatsApp, Viber, Website Livechat) (`docs/AI_ONLY_ACCEPTANCE_REPORT_2026-04-10.md`).
+- [x] Менеджер у прод-потоці — тільки як **аварійний ескалаційний рівень**, а не штатний етап діалогу (`docs/AI_ONLY_ACCEPTANCE_REPORT_2026-04-10.md`).
+- [x] Для переходу в "AI-only primary mode" обов'язкові критерії якості:
+  - [x] `>=97%` релевантних відповідей у regression-наборі (по таборах, мовах UA/PL, каналах);
+  - [x] `<=1%` critical hallucination rate (ціни, дати, локації, legal/insurance факти);
+  - [x] `>=95%` успішних діалогів без ручного втручання (automation resolution rate);
+  - [x] `<=3%` fallback-only відповідей без змісту;
+  - [x] `0` блокуючих помилок авторства/ідентифікації клієнта в Discuss.
 - [x] Knowledge base є "single source of truth": тільки затверджені факти (docs + YouTube з link+timestamp + editorial approve) допускаються до генерації відповідей (editorial gate в `omni.knowledge.article`).
 - [x] Додати **автоматичний контроль актуальності фактів** (ціни/дати/умови): прострочені факти не використовуються у відповіді, поки не re-approved (`fact_expires_on` filter у RAG).
 - [x] Додати hard-policy відповіді: якщо факт не підтверджений у knowledge base, AI не вигадує; замість цього дає контрольовану відповідь і пропонує асинхронне уточнення (strict grounding + approved-only retrieval policy).
-- [ ] Канальний launch-гейт: AI-only режим вмикається лише після проходження однакового acceptance по кожному каналу окремо (не "в середньому").
+- [x] Канальний launch-гейт: AI-only режим вмикається лише після проходження однакового acceptance по кожному каналу окремо (не "в середньому") (`docs/AI_ONLY_ACCEPTANCE_REPORT_2026-04-10.md`).
 
 #### 20.9.1 Резервний LLM-провайдер (contingency, mandatory)
 
-- [ ] Зафіксувати **запасний варіант**: fallback `Ollama -> Gemini API` для прод-контурів, де локальна модель не проходить SLA за латентністю/якістю.
-- [ ] Умови автоперемикання на fallback:
-  - [ ] repeated timeout/read-timeout від primary LLM;
-  - [ ] відкритий circuit breaker для primary LLM;
-  - [ ] перевищення порога fallback-only/empty-answer у launch метриках.
-- [ ] Під час fallback зберігати ті самі guardrails: strict grounding (факти лише з Odoo/approved KB), no-russian policy, sales-discovery flow, anti-hallucination.
-- [ ] Безпека: API key fallback-провайдера зберігати тільки в секретах/`ir.config_parameter` (без коду, без git), з окремими лімітами витрат і rate caps.
-- [ ] Операційний контроль: логувати причину перемикання, тривалість fallback-сесії, та повернення на primary після стабілізації.
-- [ ] Приймання: fallback-вимикач у налаштуваннях + smoke-test `primary down -> fallback reply -> primary restore` обов’язковий перед AI-only sign-off.
+- [x] Зафіксувати **запасний варіант**: fallback `Ollama -> Gemini API` для прод-контурів, де локальна модель не проходить SLA за латентністю/якістю.
+- [x] Умови автоперемикання на fallback:
+  - [x] repeated timeout/read-timeout від primary LLM;
+  - [x] відкритий circuit breaker для primary LLM;
+  - [x] перевищення порога fallback-only/empty-answer у launch метриках.
+- [x] Під час fallback зберігати ті самі guardrails: strict grounding (факти лише з Odoo/approved KB), no-russian policy, sales-discovery flow, anti-hallucination.
+- [x] Безпека: API key fallback-провайдера зберігати тільки в секретах/`ir.config_parameter` (без коду, без git), з окремими лімітами витрат і rate caps.
+- [x] Операційний контроль: логувати причину перемикання, тривалість fallback-сесії, та повернення на primary після стабілізації.
+- [x] Приймання: fallback-вимикач у налаштуваннях + smoke-test `primary down -> fallback reply -> primary restore` обов’язковий перед AI-only sign-off (`docs/LLM_FALLBACK_SMOKE_2026-04-10.md`).
 
 ### 20.10 Фазування запуску: спочатку 100% chat-core, потім outbound (mandatory)
 

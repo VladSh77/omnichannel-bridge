@@ -204,8 +204,67 @@ class ResConfigSettings(models.TransientModel):
         default='gpt-4o-mini',
         config_parameter='omnichannel_bridge.openai_model',
     )
+    omnichannel_openai_base_url = fields.Char(
+        string='OpenAI-compatible base URL',
+        default='https://api.openai.com/v1',
+        config_parameter='omnichannel_bridge.openai_base_url',
+    )
+    omnichannel_openai_connect_timeout_seconds = fields.Integer(
+        string='OpenAI connect timeout (seconds)',
+        default=5,
+        config_parameter='omnichannel_bridge.openai_connect_timeout_seconds',
+    )
+    omnichannel_openai_read_timeout_seconds = fields.Integer(
+        string='OpenAI read timeout (seconds)',
+        default=30,
+        config_parameter='omnichannel_bridge.openai_read_timeout_seconds',
+    )
     omnichannel_openai_system_prompt = fields.Char(
         config_parameter='omnichannel_bridge.openai_system_prompt',
+    )
+    omnichannel_llm_fallback_enabled = fields.Boolean(
+        string='Enable automatic LLM fallback',
+        default=True,
+        config_parameter='omnichannel_bridge.llm_fallback_enabled',
+        help='When primary backend is unavailable, switch to fallback backend automatically.',
+    )
+    omnichannel_llm_fallback_backend = fields.Selection(
+        selection=[
+            ('openai', 'OpenAI-compatible (Gemini/OpenAI endpoint)'),
+        ],
+        string='Fallback backend',
+        default='openai',
+        config_parameter='omnichannel_bridge.llm_fallback_backend',
+    )
+    omnichannel_llm_fallback_on_timeout = fields.Boolean(
+        string='Fallback on timeout/read-timeout',
+        default=True,
+        config_parameter='omnichannel_bridge.llm_fallback_on_timeout',
+    )
+    omnichannel_llm_fallback_on_cb_open = fields.Boolean(
+        string='Fallback when circuit breaker is open',
+        default=True,
+        config_parameter='omnichannel_bridge.llm_fallback_on_cb_open',
+    )
+    omnichannel_llm_fallback_on_empty = fields.Boolean(
+        string='Fallback on empty primary reply',
+        default=True,
+        config_parameter='omnichannel_bridge.llm_fallback_on_empty',
+    )
+    omnichannel_llm_fallback_rate_cap_per_minute = fields.Integer(
+        string='Fallback rate cap (calls/minute)',
+        default=20,
+        config_parameter='omnichannel_bridge.llm_fallback_rate_cap_per_minute',
+    )
+    omnichannel_llm_fallback_active = fields.Boolean(
+        string='Fallback session active (readonly)',
+        config_parameter='omnichannel_bridge.llm_fallback_active',
+        readonly=True,
+    )
+    omnichannel_llm_fallback_reason = fields.Char(
+        string='Fallback reason (readonly)',
+        config_parameter='omnichannel_bridge.llm_fallback_reason',
+        readonly=True,
     )
     omnichannel_llm_prompt_version = fields.Char(
         string='Prompt version tag',

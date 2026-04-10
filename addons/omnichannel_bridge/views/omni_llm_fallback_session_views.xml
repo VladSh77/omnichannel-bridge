@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_llm_fallback_session_tree" model="ir.ui.view">
+        <field name="name">omni.llm.fallback.session.tree</field>
+        <field name="model">omni.llm.fallback.session</field>
+        <field name="arch" type="xml">
+            <tree string="LLM Fallback Sessions" create="false" edit="false">
+                <field name="state"/>
+                <field name="primary_backend"/>
+                <field name="fallback_backend"/>
+                <field name="reason"/>
+                <field name="started_at"/>
+                <field name="ended_at"/>
+                <field name="duration_seconds"/>
+                <field name="restore_backend"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_omni_llm_fallback_session" model="ir.actions.act_window">
+        <field name="name">LLM Fallback Sessions</field>
+        <field name="res_model">omni.llm.fallback.session</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

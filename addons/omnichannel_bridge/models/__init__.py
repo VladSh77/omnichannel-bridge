@@ -12,6 +12,7 @@ from . import omni_objection_policy
 from . import omni_moderation_rule
 from . import omni_knowledge_article
 from . import omni_outbound_log
+from . import omni_llm_fallback_session
 from . import omni_promo
 from . import omni_manager_reply_template
 from . import omni_manager_reply_assist

@@ -244,6 +244,27 @@ class ContractRegressionTests(unittest.TestCase):
         ci = (ROOT / ".github/workflows/ci.yml").read_text()
         self.assertIn("ruff check", ci)
 
+    def test_llm_fallback_session_markers_present(self):
+        ai = (ROOT / "addons/omnichannel_bridge/models/omni_ai.py").read_text()
+        settings = (
+            ROOT / "addons/omnichannel_bridge/models/res_config_settings.py"
+        ).read_text()
+        ops_views = (
+            ROOT / "addons/omnichannel_bridge/views/omni_ops_views.xml"
+        ).read_text()
+        self.assertIn("_omni_try_fallback_llm", ai)
+        self.assertIn("_omni_fallback_mark_started", ai)
+        self.assertIn("_omni_fallback_mark_restored", ai)
+        self.assertIn("llm_fallback_enabled", settings)
+        self.assertIn("llm_fallback_rate_cap_per_minute", settings)
+        self.assertTrue(
+            (
+                ROOT
+                / "addons/omnichannel_bridge/models/omni_llm_fallback_session.py"
+            ).exists()
+        )
+        self.assertIn("action_omni_llm_fallback_session", ops_views)
+
     def test_objection_policy_editor_markers_present(self):
         intel = (
             ROOT / "addons/omnichannel_bridge/models/omni_sales_intel.py"

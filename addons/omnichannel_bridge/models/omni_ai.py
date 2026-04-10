@@ -1390,6 +1390,14 @@ class OmniAi(models.AbstractModel):
         if backend == 'ollama':
             if not self._omni_ollama_cb_allows(icp):
                 _logger.warning('Ollama circuit breaker open: skipping LLM call')
+                if self._omni_fallback_allowed(icp, reason='cb_open'):
+                    return self._omni_try_fallback_llm(
+                        icp=icp,
+                        system_prompt=system_prompt,
+                        user_text=user_text,
+                        reason='cb_open',
+                        primary_backend='ollama',
+                    )
                 return ''
             base = (icp.get_param('omnichannel_bridge.ollama_base_url') or 'http://127.0.0.1:11434').strip()
             model = (icp.get_param('omnichannel_bridge.ollama_model') or 'llama3.2').strip()
@@ -1397,14 +1405,39 @@ class OmniAi(models.AbstractModel):
                 text = self._ollama_chat_completion(base, model, system_prompt, user_text)
             except req_exc.Timeout:
                 self._omni_ollama_cb_mark_failure(icp, 'timeout')
+                if self._omni_fallback_allowed(icp, reason='timeout'):
+                    return self._omni_try_fallback_llm(
+                        icp=icp,
+                        system_prompt=system_prompt,
+                        user_text=user_text,
+                        reason='timeout',
+                        primary_backend='ollama',
+                    )
                 return ''
             except Exception:
                 self._omni_ollama_cb_mark_failure(icp, 'error')
+                if self._omni_fallback_allowed(icp, reason='error'):
+                    return self._omni_try_fallback_llm(
+                        icp=icp,
+                        system_prompt=system_prompt,
+                        user_text=user_text,
+                        reason='error',
+                        primary_backend='ollama',
+                    )
                 return ''
             if text:
                 self._omni_ollama_cb_mark_success(icp)
+                self._omni_fallback_mark_restored(icp=icp, primary_backend='ollama')
                 return text
             self._omni_ollama_cb_mark_failure(icp, 'empty')
+            if self._omni_fallback_allowed(icp, reason='empty'):
+                return self._omni_try_fallback_llm(
+                    icp=icp,
+                    system_prompt=system_prompt,
+                    user_text=user_text,
+                    reason='empty',
+                    primary_backend='ollama',
+                )
             return ''
         return ''
 
@@ -1569,6 +1602,116 @@ class OmniAi(models.AbstractModel):
             )
             return
         icp.set_param('omnichannel_bridge.ollama_cb_fail_count', str(fail_count))
+
+    def _omni_fallback_allowed(self, icp, reason=''):
+        enabled = str(icp.get_param('omnichannel_bridge.llm_fallback_enabled', 'True')).lower() in ('1', 'true', 'yes')
+        if not enabled:
+            return False
+        reason = (reason or '').strip()
+        if reason == 'cb_open':
+            return str(icp.get_param('omnichannel_bridge.llm_fallback_on_cb_open', 'True')).lower() in ('1', 'true', 'yes')
+        if reason in ('timeout', 'read_timeout'):
+            return str(icp.get_param('omnichannel_bridge.llm_fallback_on_timeout', 'True')).lower() in ('1', 'true', 'yes')
+        if reason == 'empty':
+            return str(icp.get_param('omnichannel_bridge.llm_fallback_on_empty', 'True')).lower() in ('1', 'true', 'yes')
+        return True
+
+    def _omni_fallback_rate_allowed(self, icp):
+        try:
+            cap = int(icp.get_param('omnichannel_bridge.llm_fallback_rate_cap_per_minute', '20'))
+        except Exception:
+            cap = 20
+        cap = max(1, min(500, cap))
+        now = Datetime.now()
+        bucket = now.strftime('%Y-%m-%d %H:%M')
+        key = 'omnichannel_bridge.llm_fallback_bucket'
+        count_key = 'omnichannel_bridge.llm_fallback_bucket_count'
+        current_bucket = (icp.get_param(key) or '').strip()
+        try:
+            current_count = int(icp.get_param(count_key, '0'))
+        except Exception:
+            current_count = 0
+        if current_bucket != bucket:
+            icp.set_param(key, bucket)
+            icp.set_param(count_key, '1')
+            return True
+        if current_count >= cap:
+            _logger.warning('LLM fallback rate cap reached: cap=%s/min', cap)
+            return False
+        icp.set_param(count_key, str(current_count + 1))
+        return True
+
+    def _omni_try_fallback_llm(self, icp, system_prompt, user_text, reason='', primary_backend='ollama'):
+        fallback_backend = (icp.get_param('omnichannel_bridge.llm_fallback_backend') or 'openai').strip()
+        if fallback_backend != 'openai':
+            return ''
+        if not self._omni_fallback_rate_allowed(icp):
+            return ''
+        text = self._openai_chat_completion(
+            icp.get_param('omnichannel_bridge.openai_api_key'),
+            icp.get_param('omnichannel_bridge.openai_model') or 'gpt-4o-mini',
+            (icp.get_param('omnichannel_bridge.openai_base_url') or 'https://api.openai.com/v1').strip(),
+            system_prompt,
+            user_text,
+            icp=icp,
+        )
+        if not text:
+            return ''
+        self._omni_fallback_mark_started(
+            icp=icp,
+            reason=reason or 'primary_unavailable',
+            primary_backend=primary_backend,
+            fallback_backend=fallback_backend,
+        )
+        return text
+
+    def _omni_fallback_mark_started(self, icp, reason='', primary_backend='ollama', fallback_backend='openai'):
+        now = Datetime.now()
+        is_active = str(icp.get_param('omnichannel_bridge.llm_fallback_active', 'False')).lower() in ('1', 'true', 'yes')
+        if not is_active:
+            icp.set_param('omnichannel_bridge.llm_fallback_active', 'True')
+            icp.set_param('omnichannel_bridge.llm_fallback_started_at', Datetime.to_string(now))
+            icp.set_param('omnichannel_bridge.llm_fallback_reason', reason or '')
+            self.env['omni.llm.fallback.session'].sudo().create({
+                'primary_backend': primary_backend,
+                'fallback_backend': fallback_backend,
+                'reason': reason or '',
+                'started_at': now,
+                'state': 'active',
+            })
+            _logger.warning('LLM fallback activated: %s -> %s (reason=%s)', primary_backend, fallback_backend, reason)
+        icp.set_param('omnichannel_bridge.llm_fallback_last_event_at', Datetime.to_string(now))
+
+    def _omni_fallback_mark_restored(self, icp, primary_backend='ollama'):
+        is_active = str(icp.get_param('omnichannel_bridge.llm_fallback_active', 'False')).lower() in ('1', 'true', 'yes')
+        if not is_active:
+            return
+        now = Datetime.now()
+        started_raw = (icp.get_param('omnichannel_bridge.llm_fallback_started_at') or '').strip()
+        duration_seconds = 0
+        if started_raw:
+            try:
+                started_at = Datetime.from_string(started_raw)
+                duration_seconds = max(0, int((now - started_at).total_seconds()))
+            except Exception:
+                duration_seconds = 0
+        icp.set_param('omnichannel_bridge.llm_fallback_active', 'False')
+        icp.set_param('omnichannel_bridge.llm_fallback_started_at', '')
+        icp.set_param('omnichannel_bridge.llm_fallback_reason', '')
+        icp.set_param('omnichannel_bridge.llm_fallback_last_event_at', Datetime.to_string(now))
+        active_session = self.env['omni.llm.fallback.session'].sudo().search(
+            [('state', '=', 'active')],
+            order='id desc',
+            limit=1,
+        )
+        if active_session:
+            active_session.write({
+                'state': 'restored',
+                'ended_at': now,
+                'duration_seconds': duration_seconds,
+                'restore_backend': primary_backend,
+            })
+        _logger.warning('LLM primary restored: backend=%s duration=%ss', primary_backend, duration_seconds)
 
     def _omni_route_manager_mention_if_needed(self, channel, partner, user_text, bot_reply):
         lowered = (user_text or '').lower()

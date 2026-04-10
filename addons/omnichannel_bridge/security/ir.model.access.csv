@@ -8,6 +8,7 @@ access_omni_partner_identity_user,omni.partner.identity.user,model_omni_partner_
 access_omni_partner_identity_manager,omni.partner.identity.manager,model_omni_partner_identity,sales_team.group_sale_manager,1,1,1,1
 access_omni_webhook_event_manager,omni.webhook.event.manager,model_omni_webhook_event,sales_team.group_sale_manager,1,1,1,1
 access_omni_outbound_log_manager,omni.outbound.log.manager,model_omni_outbound_log,sales_team.group_sale_manager,1,0,0,0
+access_omni_llm_fallback_session_manager,omni.llm.fallback.session.manager,model_omni_llm_fallback_session,sales_team.group_sale_manager,1,0,0,0
 access_omni_payment_event_manager,omni.payment.event.manager,model_omni_payment_event,sales_team.group_sale_manager,1,0,0,0
 access_omni_ai_job_manager,omni.ai.job.manager,model_omni_ai_job,sales_team.group_sale_manager,1,1,1,1
 access_omni_prompt_audit_manager,omni.prompt.audit.manager,model_omni_prompt_audit,sales_team.group_sale_manager,1,0,0,0

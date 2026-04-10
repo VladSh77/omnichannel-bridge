@@ -2,7 +2,7 @@
 {
     "name": "Omnichannel Bridge",
     "summary": "Aggregate messengers into Discuss; webhooks, CRM partner match, AI/sales hooks",
-    "version": "17.0.1.0.40",
+    "version": "17.0.1.0.41",
     "category": "Productivity/Discuss",
     "author": "Fajna",
     "license": "LGPL-3",
@@ -35,6 +35,7 @@
         "views/omni_moderation_rule_views.xml",
         "views/omni_knowledge_article_views.xml",
         "views/omni_outbound_log_views.xml",
+        "views/omni_llm_fallback_session_views.xml",
         "views/omni_payment_event_views.xml",
         "views/omni_manager_reply_views.xml",
         "views/res_config_settings_views.xml",
