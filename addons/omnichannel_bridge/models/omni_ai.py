@@ -259,6 +259,20 @@ class OmniAi(models.AbstractModel):
             self._omni_post_bot_message(channel, body)
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
+        if self._omni_is_standalone_age_answer(normalized):
+            next_q = self._omni_pick_next_question(partner, normalized, channel=channel)
+            if next_q:
+                self._omni_post_bot_message(channel, 'Дякую. %s' % next_q)
+                self._omni_update_sales_stage_after_reply(partner, channel=channel)
+                return
+        if self._omni_is_continue_search_command(normalized):
+            next_q = self._omni_pick_next_question(partner, normalized, channel=channel)
+            if next_q:
+                self._omni_post_bot_message(channel, next_q)
+            else:
+                self._omni_post_bot_message(channel, 'Прийнято. Підбираю 1-2 найрелевантніші варіанти і зараз надішлю.')
+            self._omni_update_sales_stage_after_reply(partner, channel=channel)
+            return
         if self._omni_is_vague_followup(normalized):
             self._omni_post_bot_message(channel, self._omni_clarify_vague_followup(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
@@ -623,7 +637,7 @@ class OmniAi(models.AbstractModel):
             return txt
         # For camp-selection questions bot should never claim "no data":
         # it has approved KB + Odoo catalog facts.
-        if 'табір' in low and 'замовлен' not in low and 'invoice' not in low and 'фактур' not in low:
+        if any(k in low for k in ('табір', 'табор')) and 'замовлен' not in low and 'invoice' not in low and 'фактур' not in low:
             return 'Маю інформацію про табори CampScout. Підкажіть, будь ласка, який вік дитини?'
         return txt
 
@@ -1061,6 +1075,25 @@ class OmniAi(models.AbstractModel):
             'do you have', 'have or not',
         )
         return any(p in txt for p in phrases)
+
+    def _omni_is_standalone_age_answer(self, user_text):
+        txt = (user_text or '').strip().lower()
+        if not txt:
+            return False
+        if re.fullmatch(r'\d{1,2}', txt):
+            return True
+        return bool(re.fullmatch(r'\d{1,2}\s*(?:рок[аів]?|р\.)', txt))
+
+    def _omni_is_continue_search_command(self, user_text):
+        txt = re.sub(r'\s+', ' ', (user_text or '').strip().lower())
+        if not txt:
+            return False
+        commands = (
+            'шукайте', 'підберіть', 'підбирайте', 'підбери', 'підбери мені',
+            'dobierz', 'proszę dobrać', 'szukaj',
+            'find options', 'pick options',
+        )
+        return txt in commands
 
     def _omni_extract_booking_facts_from_memory(self, partner):
         import re
