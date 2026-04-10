@@ -246,7 +246,7 @@ class OmniAi(models.AbstractModel):
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
         if self._omni_is_short_affirmation(normalized):
-            follow = self._omni_next_step_after_affirmation(partner, normalized)
+            follow = self._omni_next_step_after_affirmation(partner, normalized, channel=channel)
             if follow:
                 self._omni_post_bot_message(channel, follow)
                 self._omni_update_sales_stage_after_reply(partner, channel=channel)
@@ -319,8 +319,8 @@ class OmniAi(models.AbstractModel):
             self._omni_send_fallback(channel, partner, ICP)
             return
         reply = self._omni_sales_guard_reply(reply, partner, normalized)
-        reply = self._omni_prevent_qualification_loop(reply, partner, normalized)
-        reply = self._omni_append_next_question(reply, partner, normalized)
+        reply = self._omni_prevent_qualification_loop(reply, partner, normalized, channel=channel)
+        reply = self._omni_append_next_question(reply, partner, normalized, channel=channel)
         reply = self._omni_apply_reserve_flow(channel, partner, normalized, facts, reply)
         reply = self._omni_finalize_client_reply(reply)
         self._omni_post_bot_message(channel, reply)
@@ -1223,7 +1223,7 @@ class OmniAi(models.AbstractModel):
             return False
         return bool(re.match(r'^(так|ок|добре|ага|yes|ok|yep|tak|dobrze)\b[.!?]*$', txt))
 
-    def _omni_next_step_after_affirmation(self, partner, user_text):
+    def _omni_next_step_after_affirmation(self, partner, user_text, channel=None):
         if not partner:
             return (
                 'Дякую. Що для вас зараз важливіше: програма, дати, доїзд чи бюджет?'
@@ -1232,7 +1232,7 @@ class OmniAi(models.AbstractModel):
                 'Dziękuję. Co jest teraz najważniejsze: program, terminy, dojazd czy budżet?'
             )
         is_pl = self._omni_is_polish_message(user_text or '')
-        next_q = self._omni_pick_next_question(partner, user_text)
+        next_q = self._omni_pick_next_question(partner, user_text, channel=channel)
         if next_q:
             return (
                 'Дякую, рухаємось далі. %s' % next_q
@@ -1527,26 +1527,27 @@ class OmniAi(models.AbstractModel):
                 reason=reason,
             )
 
-    def _omni_append_next_question(self, reply, partner, user_text):
+    def _omni_append_next_question(self, reply, partner, user_text, channel=None):
         base = (reply or '').strip()
         if not base or not partner:
             return base
         if any(q in base for q in ('?', '？')):
             return base
-        question = self._omni_pick_next_question(partner, user_text)
+        question = self._omni_pick_next_question(partner, user_text, channel=channel)
         if not question:
             return base
         return '%s\n\n%s' % (base, question)
 
-    def _omni_pick_next_question(self, partner, user_text):
+    def _omni_pick_next_question(self, partner, user_text, channel=None):
         partner = partner.sudo()
         is_pl = self._omni_is_polish_message(user_text or '')
         mem = (partner.omni_chat_memory or '').lower()
-        has_age = bool(partner.omni_child_age) or ('age:' in mem) or self._omni_text_has_age(user_text)
-        has_period = bool(partner.omni_preferred_period) or ('period:' in mem) or self._omni_text_has_period(user_text)
-        has_city = bool(partner.omni_departure_city) or ('city:' in mem) or self._omni_text_has_departure_city(user_text)
-        has_budget = bool(partner.omni_budget_amount) or ('budget:' in mem) or self._omni_text_has_budget(user_text)
-        has_contact = bool(partner.phone or partner.mobile or partner.email) or self._omni_text_has_contact(user_text)
+        clues = self._omni_recent_client_history_clues(channel)
+        has_age = bool(partner.omni_child_age) or ('age:' in mem) or self._omni_text_has_age(user_text) or clues.get('age')
+        has_period = bool(partner.omni_preferred_period) or ('period:' in mem) or self._omni_text_has_period(user_text) or clues.get('period')
+        has_city = bool(partner.omni_departure_city) or ('city:' in mem) or self._omni_text_has_departure_city(user_text) or clues.get('city')
+        has_budget = bool(partner.omni_budget_amount) or ('budget:' in mem) or self._omni_text_has_budget(user_text) or clues.get('budget')
+        has_contact = bool(partner.phone or partner.mobile or partner.email) or self._omni_text_has_contact(user_text) or clues.get('contact')
         if not has_age:
             return (
                 'Підкажіть, будь ласка, який вік дитини?'
@@ -1579,7 +1580,44 @@ class OmniAi(models.AbstractModel):
             )
         return ''
 
-    def _omni_prevent_qualification_loop(self, reply, partner, user_text):
+    def _omni_recent_client_history_clues(self, channel):
+        clues = {'age': False, 'period': False, 'city': False, 'budget': False, 'contact': False}
+        if not channel:
+            return clues
+        channel = channel.sudo()
+        customer = channel.omni_customer_partner_id
+        if not customer:
+            return clues
+        msgs = self.env['mail.message'].sudo().search(
+            [
+                ('model', '=', 'discuss.channel'),
+                ('res_id', '=', channel.id),
+                ('author_id', '=', customer.id),
+            ],
+            order='id desc',
+            limit=30,
+        )
+        Partner = self.env['res.partner'].sudo()
+        for msg in msgs:
+            text = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', msg.body or '')).strip()
+            if not text:
+                continue
+            if self._omni_extract_age(text):
+                clues['age'] = True
+            if self._omni_extract_period(text):
+                clues['period'] = True
+            if self._omni_extract_departure_city(text):
+                clues['city'] = True
+            amount, _curr = self._omni_extract_budget(text)
+            if amount:
+                clues['budget'] = True
+            if Partner.omni_parse_email(text) or Partner.omni_parse_phone(text):
+                clues['contact'] = True
+            if all(clues.values()):
+                break
+        return clues
+
+    def _omni_prevent_qualification_loop(self, reply, partner, user_text, channel=None):
         import re
         if not partner:
             return reply
@@ -1597,7 +1635,7 @@ class OmniAi(models.AbstractModel):
         )
         if not (has_age and asks_age):
             return txt
-        next_q = self._omni_pick_next_question(partner, user_text or '')
+        next_q = self._omni_pick_next_question(partner, user_text or '', channel=channel)
         if not next_q:
             return txt
         if re.search(r'(скільки\s+.*рок|якого\s+віку|wiek\s+dziecka|ile\s+lat)', next_q.lower(), re.IGNORECASE):
