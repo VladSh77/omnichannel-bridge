@@ -1,5 +1,23 @@
 # CHANGELOG — omnichannel_bridge
 
+## [17.0.1.0.48] — 2026-04-10
+
+### Додано
+
+- `data/omni_kb_ai_source_hierarchy.xml` — стаття бази знань про **ієрархію джерел** (каталог vs юридичні документи vs OCR-брошура); не генерується з `camp/knowledge-base`.
+
+### Змінено
+
+- Версія модуля **17.0.1.0.48**; маніфест підключає новий data-файл після `omni_camp_knowledge_articles.xml`.
+- Документація: `docs/IMPLEMENTATION_LOG.md`, `docs/TZ_CHECKLIST.md`, `docs/TZ_EXECUTION_QUEUE.md`; контрактний тест на наявність seed у маніфесті.
+
+## [17.0.1.0.47] — 2026-04-10
+
+### Змінено
+
+- **`omni_knowledge`:** блок пріоритету джерел для LLM, rerank RAG для «юридичних» запитів (документи ↑, брошура OCR ↓), константа **`_OMNI_LEGAL_RAG_HINT_TERMS`**.
+- **`omni_ai`:** у **`_STRICT_POLICY_UK`** додано правило: договір / legal / RODO / cookies — за **LEGAL_CONTEXT**, **LEGAL_DOCUMENTS** та офіційними URL, а не за полем умов у каталозі чи OCR.
+
 ## [17.0.1.0.45] — 2026-04-10
 
 ### Додано

@@ -7,6 +7,7 @@
   - Source: sibling repo `camp/knowledge-base` (markdown).
   - Regenerate: `python3 scripts/generate_camp_knowledge_data.py` (optional `CAMP_KNOWLEDGE_BASE=...`), then commit `data/omni_camp_knowledge_articles.xml` and bump module upgrade.
 - **Marketing brochure OCR (Offer 2026):** PNG slides in `~/Developer/Offer2026_unpacked` → `python3 scripts/ocr_offer2026_to_markdown.py` (macOS Vision) writes `camp/knowledge-base/00_offer2026_brochure_part*.md`; optional `scripts/split_offer2026_markdown.py` if you only need to re-chunk an existing monolithic `00_offer2026_brochure.md`. Re-run the generator and `-u omnichannel_bridge`.
+- **Legal vs catalog (authoritative order):** код (`omni_source_priority_block`, RAG rerank) і стаття **`omni_kb_ai_source_hierarchy`** у **`data/omni_kb_ai_source_hierarchy.xml`** (не з генератора `camp`) — юридичні документи та офіційні URL важливіші за поле «умови» в каталозі та за OCR-брошуру; див. `docs/IMPLEMENTATION_LOG.md`.
 - **Probe free places** for a camp product (e.g. POSHUMIMO): in `odoo shell`, run `scripts/odoo_probe_camp_places.py` → `run(env)` (see file docstring).
 
 ## Deployment Guardrail

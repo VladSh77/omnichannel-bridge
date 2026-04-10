@@ -649,6 +649,13 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn("omni_legal_documents_context_block", knowledge)
         self.assertIn("LEGAL_DOCUMENTS:", knowledge)
 
+    def test_ai_source_hierarchy_seed_in_manifest(self):
+        manifest = (ROOT / "addons/omnichannel_bridge/__manifest__.py").read_text()
+        seed_xml = ROOT / "addons/omnichannel_bridge/data/omni_kb_ai_source_hierarchy.xml"
+        self.assertTrue(seed_xml.is_file(), "expected omni_kb_ai_source_hierarchy.xml")
+        self.assertIn("omni_kb_ai_source_hierarchy.xml", manifest)
+        self.assertIn("omni_kb_ai_source_hierarchy", seed_xml.read_text())
+
     def test_event_registration_truth_sync_markers_present(self):
         knowledge = (
             ROOT / "addons/omnichannel_bridge/models/omni_knowledge.py"

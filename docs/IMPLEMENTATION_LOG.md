@@ -1,5 +1,37 @@
 # Implementation Log — `omnichannel_bridge`
 
+## 2026-04-10 — Legal source priority (LLM + RAG), knowledge seed, production upgrade
+
+### Scope (product)
+
+- **`omnichannel_bridge` 17.0.1.0.47 → 17.0.1.0.48**: **`9f40c0e`** (legal/RAG + policy), далі коміт на **`main`** з **`omni_kb_ai_source_hierarchy.xml`**, оновленням документації та контрактним тестом (версія модуля **0.48**).
+- **Strict grounding / RAG (`omni_knowledge.py`):** explicit **`omni_source_priority_block()`** after catalog snippets; legal-like queries boost **`omni.legal.document`** chunks and penalize brochure OCR knowledge lines; shared token set **`_OMNI_LEGAL_RAG_HINT_TERMS`**.
+- **`omni_ai.py`:** **`_STRICT_POLICY_UK`** — пункт про пріоритет **LEGAL_CONTEXT / LEGAL_DOCUMENTS / офіційні URL** над полем «умови» в каталозі та OCR-брошурою.
+- **База знань (модуль):** новий data-файл **`data/omni_kb_ai_source_hierarchy.xml`** — стаття **`omni_kb_ai_source_hierarchy`** (категорія policy, пріоритет 2) з ієрархією джерел для операторів і узгодженням з кодом; **не** перезаписується **`generate_camp_knowledge_data.py`**.
+- **Тести:** `test_ai_source_hierarchy_seed_in_manifest` у **`tests/test_contract_regressions.py`**.
+
+### Scope (documentation)
+
+- Цей запис; **`CHANGELOG.md`** **`[17.0.1.0.47]`** / **`[17.0.1.0.48]`**; оновлення **`docs/TZ_CHECKLIST.md`**, **`docs/TZ_EXECUTION_QUEUE.md`**; за потреби коротка згадка в **`docs/OPERATIONS_RUNBOOK.md`** (брошура vs legal).
+
+### Production (CampScout, Docker)
+
+- На сервері: **`git pull --ff-only`** у **`/opt/campscout/custom-addons/omnichannel_bridge_repo`**.
+- Оновлення модуля:
+
+```bash
+docker exec campscout_web odoo -c /etc/odoo/odoo.conf -d campscout \
+  -u omnichannel_bridge --stop-after-init --no-http --without-demo=all
+```
+
+- Підтверджено користувачем після попереднього push коду legal-priority; хвиля **0.48** додає KB XML + документацію — повторний **`-u`** після pull коміту з цим файлом.
+
+### DevJournal (Obsidian)
+
+- Доповнення до **`DevJournal/sessions/2026-04-10-omnichannel-operations-git-deploy.md`**: legal hierarchy, коміти, команда upgrade.
+
+---
+
 ## 2026-04-10 — Operations data (playbook seed), UA UI, Git/deploy alignment, module upgrade on prod
 
 ### Scope (product)
