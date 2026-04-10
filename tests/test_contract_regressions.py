@@ -292,6 +292,9 @@ class ContractRegressionTests(unittest.TestCase):
             ROOT / "addons/omnichannel_bridge/models/omni_knowledge.py"
         ).read_text()
         self.assertIn("omni.knowledge.article", model)
+        self.assertIn("editorial_approved", model)
+        self.assertIn("fact_expires_on", model)
+        self.assertIn("source_timestamp", model)
         self.assertIn("action_omni_knowledge_article", views)
         self.assertIn("menu_omni_knowledge_articles", ops)
         self.assertIn("self.env['omni.knowledge.article']", knowledge)
@@ -562,6 +565,27 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn("omni.promo", promo)
         self.assertIn("omni_promo_context_block", knowledge)
         self.assertIn("PROMOTIONS:", knowledge)
+
+    def test_hybrid_rag_markers_present(self):
+        settings = (
+            ROOT / "addons/omnichannel_bridge/models/res_config_settings.py"
+        ).read_text()
+        settings_xml = (
+            ROOT / "addons/omnichannel_bridge/views/res_config_settings_views.xml"
+        ).read_text()
+        knowledge = (
+            ROOT / "addons/omnichannel_bridge/models/omni_knowledge.py"
+        ).read_text()
+        self.assertIn("rag_hybrid_enabled", settings)
+        self.assertIn("rag_graph_enabled", settings)
+        self.assertIn("rag_rrf_k", settings)
+        self.assertIn("rag_top_k", settings)
+        self.assertIn("rag_anchor_min_percent", settings)
+        self.assertIn('name="omnichannel_rag_hybrid_enabled"', settings_xml)
+        self.assertIn('name="omnichannel_rag_graph_enabled"', settings_xml)
+        self.assertIn("RAG_PIPELINE: hybrid_retrieval + rrf_fusion + cross_rerank + anti_drift", knowledge)
+        self.assertIn("_omni_graph_expand_candidates", knowledge)
+        self.assertIn("_omni_cross_rerank_score", knowledge)
 
     def test_insurance_entities_and_context_markers_present(self):
         insurance = (

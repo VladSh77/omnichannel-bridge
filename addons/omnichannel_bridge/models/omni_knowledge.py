@@ -720,44 +720,258 @@ class OmniKnowledge(models.AbstractModel):
         ) % (version, exp_tag or 'none', profile or 'default')
 
     @api.model
+    def _omni_rag_hybrid_enabled(self):
+        val = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.rag_hybrid_enabled',
+            'True',
+        )
+        return str(val).lower() in ('1', 'true', 'yes')
+
+    @api.model
+    def _omni_rag_graph_enabled(self):
+        val = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.rag_graph_enabled',
+            'True',
+        )
+        return str(val).lower() in ('1', 'true', 'yes')
+
+    @api.model
+    def _omni_rag_rrf_k(self):
+        raw = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.rag_rrf_k',
+            '60',
+        )
+        try:
+            return max(1, min(int(raw), 200))
+        except Exception:
+            return 60
+
+    @api.model
+    def _omni_rag_top_k(self, max_items=4):
+        raw = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.rag_top_k',
+            '8',
+        )
+        try:
+            configured = max(1, min(int(raw), 20))
+        except Exception:
+            configured = 8
+        # Context U-curve safeguard: keep small-mid context by default.
+        if self._omni_compact_mode():
+            configured = min(configured, 5)
+        return max(1, min(max_items, configured))
+
+    @api.model
+    def _omni_rag_anchor_min_percent(self):
+        raw = self.env['ir.config_parameter'].sudo().get_param(
+            'omnichannel_bridge.rag_anchor_min_percent',
+            '50',
+        )
+        try:
+            return max(10, min(int(raw), 100))
+        except Exception:
+            return 50
+
+    @api.model
+    def _omni_term_set(self, text):
+        txt = (text or '').lower().strip()
+        if not txt:
+            return set()
+        return {t for t in re.split(r'[^a-zA-Zа-яА-ЯіІїЇєЄ0-9]+', txt) if len(t) >= 3}
+
+    @api.model
+    def _omni_phrase_overlap_score(self, query, candidate_text):
+        q_terms = self._omni_term_set(query)
+        c_terms = self._omni_term_set(candidate_text)
+        if not q_terms or not c_terms:
+            return 0.0
+        shared = q_terms.intersection(c_terms)
+        if not shared:
+            return 0.0
+        return float(len(shared)) / float(max(len(q_terms), 1))
+
+    @api.model
+    def _omni_cross_rerank_score(self, query, name, quote):
+        # Lightweight cross-encoder approximation: token overlap + phrase hits + prefix bonus.
+        base = self._omni_phrase_overlap_score(query, '%s %s' % (name or '', quote or ''))
+        q = (query or '').strip().lower()
+        n = (name or '').strip().lower()
+        qt = (quote or '').strip().lower()
+        phrase_bonus = 0.0
+        if q and q in qt:
+            phrase_bonus += 0.4
+        if q and q in n:
+            phrase_bonus += 0.2
+        if q and n.startswith(q[: min(8, len(q))]):
+            phrase_bonus += 0.1
+        return base + phrase_bonus
+
+    @api.model
+    def _omni_build_hybrid_candidates(self):
+        candidates = []
+        for doc in self.env['omni.legal.document'].sudo().search([('active', '=', True), ('allow_in_bot', '=', True)], limit=80):
+            candidates.append({
+                'id': 'doc:%s' % doc.id,
+                'kind': 'doc',
+                'name': doc.name or '',
+                'url': doc.url or '',
+                'quote': doc.short_quote or '',
+                'bag': ('%s %s %s' % (doc.name or '', doc.short_quote or '', doc.doc_type or '')).lower(),
+                'graph_tag': 'legal',
+            })
+        for pkg in self.env['omni.insurance.package'].sudo().search([('active', '=', True)], limit=80):
+            candidates.append({
+                'id': 'insurance:%s' % pkg.id,
+                'kind': 'insurance',
+                'name': pkg.name or '',
+                'url': pkg.policy_url or '',
+                'quote': pkg.short_terms or '',
+                'bag': ('%s %s %s' % (pkg.name or '', pkg.short_terms or '', pkg.code or '')).lower(),
+                'graph_tag': 'insurance',
+            })
+        today = fields.Date.context_today(self)
+        for art in self.env['omni.knowledge.article'].sudo().search([('active', '=', True)], order='priority asc, id desc', limit=120):
+            if not getattr(art, 'editorial_approved', True):
+                continue
+            if getattr(art, 'fact_expires_on', False) and art.fact_expires_on < today:
+                continue
+            candidates.append({
+                'id': 'knowledge:%s' % art.id,
+                'kind': 'knowledge',
+                'name': art.name or '',
+                'url': art.source_url or '',
+                'quote': art.body or '',
+                'bag': ('%s %s %s' % (art.name or '', art.body or '', art.category or '')).lower(),
+                'graph_tag': 'article:%s' % (art.category or 'other'),
+                'priority': art.priority or 100,
+            })
+        return candidates
+
+    @api.model
+    def _omni_graph_expand_candidates(self, query_terms, lexical_ranked):
+        if not lexical_ranked:
+            return []
+        # IFR-like graph expansion: pull neighbors by graph tag and shared key terms.
+        anchors = lexical_ranked[: min(5, len(lexical_ranked))]
+        tags = {c.get('graph_tag') for c in anchors if c.get('graph_tag')}
+        seed_terms = set()
+        for c in anchors:
+            seed_terms.update(self._omni_term_set(c.get('name')))
+            seed_terms.update(self._omni_term_set(c.get('quote')))
+        seed_terms = {t for t in seed_terms if t in query_terms or len(t) >= 5}
+
+        expanded = []
+        for c in lexical_ranked:
+            if c in anchors:
+                continue
+            match_tag = c.get('graph_tag') in tags if c.get('graph_tag') else False
+            match_term = bool(seed_terms.intersection(self._omni_term_set(c.get('name'))))
+            if match_tag or match_term:
+                expanded.append(c)
+        return expanded[:20]
+
+    @api.model
     def omni_dynamic_rag_context(self, user_text, max_items=4):
         query = (user_text or '').lower().strip()
         if not query:
             return ''
-        terms = [t for t in re.split(r'[^a-zA-Zа-яА-ЯіІїЇєЄ0-9]+', query) if len(t) >= 3]
-        if not terms:
+        query_terms = self._omni_term_set(query)
+        if not query_terms:
             return ''
-        scored = []
-        for doc in self.env['omni.legal.document'].sudo().search([('active', '=', True), ('allow_in_bot', '=', True)], limit=50):
-            bag = ('%s %s %s' % (doc.name or '', doc.short_quote or '', doc.doc_type or '')).lower()
-            score = sum(1 for t in terms if t in bag)
+
+        candidates = self._omni_build_hybrid_candidates()
+        lexical = []
+        for c in candidates:
+            score = sum(1 for t in query_terms if t in (c.get('bag') or ''))
+            if c.get('kind') == 'knowledge' and c.get('priority', 100) <= 30:
+                score += 1
             if score > 0:
-                scored.append((score, 'doc', doc.name, doc.url, doc.short_quote or ''))
-        for pkg in self.env['omni.insurance.package'].sudo().search([('active', '=', True)], limit=50):
-            bag = ('%s %s %s' % (pkg.name or '', pkg.short_terms or '', pkg.code or '')).lower()
-            score = sum(1 for t in terms if t in bag)
-            if score > 0:
-                scored.append((score, 'insurance', pkg.name, pkg.policy_url or '', pkg.short_terms or ''))
-        for art in self.env['omni.knowledge.article'].sudo().search([('active', '=', True)], order='priority asc, id desc', limit=80):
-            bag = ('%s %s %s' % (art.name or '', art.body or '', art.category or '')).lower()
-            score = sum(1 for t in terms if t in bag)
-            if score > 0:
-                # Slightly boost higher-priority articles to surface curated answers first.
-                prio_boost = 1 if (art.priority or 100) <= 30 else 0
-                scored.append((score + prio_boost, 'knowledge', art.name, art.source_url or '', art.body or ''))
-        if not scored:
+                lexical.append((score, c))
+        if not lexical:
             return ''
-        scored.sort(key=lambda x: x[0], reverse=True)
-        top = scored[:max(1, min(max_items, 8))]
+
+        lexical.sort(key=lambda x: x[0], reverse=True)
+        lexical_ranked = [c for _s, c in lexical]
+
+        # If hybrid mode is disabled, keep legacy lexical path.
+        if not self._omni_rag_hybrid_enabled():
+            top = lexical_ranked[: self._omni_rag_top_k(max_items=max_items)]
+            lines = ['RAG_CONTEXT:']
+            for c in top:
+                lines.append('- %s | %s | url:%s | quote:%s | score:%s' % (
+                    c.get('kind') or '—',
+                    c.get('name') or '—',
+                    c.get('url') or '—',
+                    (c.get('quote') or '').strip()[:180] or '—',
+                    1,
+                ))
+            return '\n'.join(lines)
+
+        graph_candidates = []
+        if self._omni_rag_graph_enabled():
+            graph_candidates = self._omni_graph_expand_candidates(query_terms, lexical_ranked)
+        fused_pool = []
+        seen = set()
+        for c in lexical_ranked + graph_candidates:
+            cid = c.get('id')
+            if not cid or cid in seen:
+                continue
+            seen.add(cid)
+            fused_pool.append(c)
+
+        # RRF fusion between lexical rank and graph expansion rank.
+        rrf_k = self._omni_rag_rrf_k()
+        lexical_pos = {c.get('id'): idx for idx, c in enumerate(lexical_ranked)}
+        graph_pos = {c.get('id'): idx for idx, c in enumerate(graph_candidates)}
+        fused = []
+        for c in fused_pool:
+            cid = c.get('id')
+            score = 0.0
+            if cid in lexical_pos:
+                score += 1.0 / float(rrf_k + lexical_pos[cid] + 1)
+            if cid in graph_pos:
+                score += 1.0 / float(rrf_k + graph_pos[cid] + 1)
+            # Lightweight cross-rerank pass.
+            score += self._omni_cross_rerank_score(query, c.get('name'), c.get('quote'))
+            c_terms = self._omni_term_set('%s %s' % (c.get('name') or '', c.get('quote') or ''))
+            anchor_ratio = float(len(query_terms.intersection(c_terms))) / float(max(len(query_terms), 1))
+            # Anti-drift guard: penalize candidates that diverge from the original query.
+            anchor_min = float(self._omni_rag_anchor_min_percent()) / 100.0
+            if anchor_ratio < anchor_min:
+                score -= 0.35
+            fused.append((score, anchor_ratio, c))
+
+        fused.sort(key=lambda x: x[0], reverse=True)
+        top_k = self._omni_rag_top_k(max_items=max_items)
+        anchor_min = float(self._omni_rag_anchor_min_percent()) / 100.0
+        selected = []
+        for score, anchor_ratio, c in fused:
+            if len(selected) >= top_k:
+                break
+            if anchor_ratio < anchor_min and len(selected) > 0:
+                continue
+            selected.append((score, anchor_ratio, c))
+        # Hard reset fallback: if anti-drift removes everything, use lexical anchors only.
+        if not selected:
+            for c in lexical_ranked[:top_k]:
+                selected.append((1.0, 1.0, c))
+
         lines = ['RAG_CONTEXT:']
-        for score, kind, name, url, quote in top:
+        lines.append('RAG_PIPELINE: hybrid_retrieval + rrf_fusion + cross_rerank + anti_drift')
+        for score, anchor_ratio, c in selected:
             lines.append('- %s | %s | url:%s | quote:%s | score:%s' % (
-                kind,
-                name or '—',
-                url or '—',
-                (quote or '').strip()[:180] or '—',
-                score,
+                c.get('kind') or '—',
+                c.get('name') or '—',
+                c.get('url') or '—',
+                (c.get('quote') or '').strip()[:180] or '—',
+                round(score, 4),
             ))
+            if self._omni_debug_sources_enabled():
+                lines.append('  debug: anchor_ratio=%s id=%s tag=%s' % (
+                    round(anchor_ratio, 3),
+                    c.get('id') or '—',
+                    c.get('graph_tag') or '—',
+                ))
         return '\n'.join(lines)
 
     @api.model

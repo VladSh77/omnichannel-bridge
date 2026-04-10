@@ -227,6 +227,32 @@ class ResConfigSettings(models.TransientModel):
         default='default',
         config_parameter='omnichannel_bridge.llm_assistant_profile',
     )
+    omnichannel_rag_hybrid_enabled = fields.Boolean(
+        string='RAG: hybrid retrieval enabled',
+        config_parameter='omnichannel_bridge.rag_hybrid_enabled',
+        default=True,
+    )
+    omnichannel_rag_graph_enabled = fields.Boolean(
+        string='RAG: graph expansion enabled',
+        config_parameter='omnichannel_bridge.rag_graph_enabled',
+        default=True,
+    )
+    omnichannel_rag_rrf_k = fields.Integer(
+        string='RAG: RRF fusion K',
+        config_parameter='omnichannel_bridge.rag_rrf_k',
+        default=60,
+    )
+    omnichannel_rag_top_k = fields.Integer(
+        string='RAG: top K context lines',
+        config_parameter='omnichannel_bridge.rag_top_k',
+        default=8,
+    )
+    omnichannel_rag_anchor_min_percent = fields.Integer(
+        string='RAG: anti-drift minimum anchor (%)',
+        config_parameter='omnichannel_bridge.rag_anchor_min_percent',
+        default=50,
+        help='Minimum overlap with original query terms to keep candidate after rerank.',
+    )
     omnichannel_objection_playbook_price = fields.Char(
         string='Objection playbook: price',
         config_parameter='omnichannel_bridge.objection_playbook_price',

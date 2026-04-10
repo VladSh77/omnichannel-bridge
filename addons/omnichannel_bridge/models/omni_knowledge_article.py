@@ -33,3 +33,20 @@ class OmniKnowledgeArticle(models.Model):
     priority = fields.Integer(default=100, help='Lower value means higher retrieval priority.')
     body = fields.Text(required=True)
     source_url = fields.Char()
+    source_type = fields.Selection(
+        selection=[
+            ('knowledge_article', 'Knowledge article'),
+            ('policy_doc', 'Policy document'),
+            ('youtube', 'YouTube'),
+            ('other', 'Other'),
+        ],
+        default='knowledge_article',
+        required=True,
+    )
+    source_ref = fields.Char(help='Record key / URL / external source reference.')
+    source_timestamp = fields.Char(help='Optional source timestamp (e.g., YouTube 12:34).')
+    editorial_approved = fields.Boolean(
+        default=True,
+        help='Only editor-approved facts are eligible for production RAG.',
+    )
+    fact_expires_on = fields.Date(help='If set and date has passed, article is excluded from RAG context.')

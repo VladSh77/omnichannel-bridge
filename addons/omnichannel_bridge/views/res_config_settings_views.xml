@@ -231,6 +231,21 @@
                         <setting string="Assistant profile">
                             <field name="omnichannel_llm_assistant_profile"/>
                         </setting>
+                        <setting string="RAG hybrid retrieval">
+                            <field name="omnichannel_rag_hybrid_enabled"/>
+                        </setting>
+                        <setting string="RAG graph expansion">
+                            <field name="omnichannel_rag_graph_enabled"/>
+                        </setting>
+                        <setting string="RRF fusion K">
+                            <field name="omnichannel_rag_rrf_k"/>
+                        </setting>
+                        <setting string="RAG top K lines">
+                            <field name="omnichannel_rag_top_k"/>
+                        </setting>
+                        <setting string="RAG anti-drift anchor (%)">
+                            <field name="omnichannel_rag_anchor_min_percent"/>
+                        </setting>
                         <setting string="Moderation keywords">
                             <field name="omnichannel_moderation_keywords" widget="text"/>
                         </setting>

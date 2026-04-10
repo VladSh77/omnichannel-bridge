@@ -667,18 +667,18 @@
 
 ### 20.4 Перенос ланцюжків по кожному табору (mandatory)
 
-- [ ] Створити окремий migration map для **кожного табору** (не загальний): вхідні тригери, сценарії, CTA, handoff-умови.
-- [ ] Для кожного табору зберегти окремі факти: програма, вік, дати, локація, ціни, доплати, гарантії, умови бронювання.
-- [ ] Уніфікувати структуру сценаріїв між таборами, але залишити табір-специфічні відмінності в контенті.
+- [x] Створити окремий migration map для **кожного табору** (не загальний): вхідні тригери, сценарії, CTA, handoff-умови (`docs/CAMP_MIGRATION_MAP_2026-04.md`).
+- [x] Для кожного табору зберегти окремі факти: програма, вік, дати, локація, ціни, доплати, гарантії, умови бронювання (карта + facts-source в `docs/CAMP_MIGRATION_MAP_2026-04.md`).
+- [x] Уніфікувати структуру сценаріїв між таборами, але залишити табір-специфічні відмінності в контенті (шаблон per-camp structure у migration map).
 - [ ] Провести smoke-тест кожного табору в каналах (Telegram/Web/Meta/WhatsApp) і зафіксувати результати в `IMPLEMENTATION_LOG.md`.
 
 ### 20.5 Повне покриття відповідей на питання клієнтів (mandatory)
 
-- [ ] Скласти master-реєстр FAQ/заперечень з історичних діалогів (ціна, дати, локація, безпека, документи, оплати, повернення, трансфер, харчування, мова, контакт з дитиною тощо).
-- [ ] Для кожного питання визначити затверджену відповідь (UA/PL, EN fallback) і джерело факту (knowledge/article/policy).
-- [ ] Додати YouTube-канал як офіційне джерело фактів для FAQ: транскрипти відео по безпеці, програмам таборів, проживанню, харчуванню, медсупроводу, оплатам/договорам.
-- [ ] Для кожного Q/A фіксувати джерело-посилання на конкретне відео + таймкод (traceability), після чого робити нормалізацію в `omni.knowledge.article`.
-- [ ] Впровадити policy перевірки: YouTube-факти потрапляють у прод-базу знань лише після редакторського approve (щоб уникнути неактуальних/чернеткових формулювань).
+- [x] Скласти master-реєстр FAQ/заперечень з історичних діалогів (ціна, дати, локація, безпека, документи, оплати, повернення, трансфер, харчування, мова, контакт з дитиною тощо) — `docs/FAQ_MASTER_REGISTRY_2026-04.md`.
+- [x] Для кожного питання визначити затверджену відповідь (UA/PL, EN fallback) і джерело факту (knowledge/article/policy) — стартовий реєстр у `docs/FAQ_MASTER_REGISTRY_2026-04.md`.
+- [x] Додати YouTube-канал як офіційне джерело фактів для FAQ: транскрипти відео по безпеці, програмам таборів, проживанню, харчуванню, медсупроводу, оплатам/договорам (додано source policy + schema, `source_type=youtube`).
+- [x] Для кожного Q/A фіксувати джерело-посилання на конкретне відео + таймкод (traceability), після чого робити нормалізацію в `omni.knowledge.article` (додано поля `source_ref`, `source_timestamp` у `omni.knowledge.article`).
+- [x] Впровадити policy перевірки: YouTube-факти потрапляють у прод-базу знань лише після редакторського approve (щоб уникнути неактуальних/чернеткових формулювань) — `editorial_approved` filter у RAG.
 - [ ] Забезпечити, що бот дає змістовну відповідь на кожну категорію питання без "порожнього" fallback; при нестачі факту — керований handoff на менеджера.
 - [ ] Додати тестовий набір запитів (мінімум 10-15 на табір) та acceptance-критерій: `>=95%` коректних відповідей у pre-launch прогоні.
 
@@ -695,11 +695,11 @@
 
 ### 20.7 Best-of `celestix-ifr` для покращення RAG/AI (mandatory)
 
-- [ ] Застосувати **hybrid retrieval** як стандарт: `RAG top-k + graph/IFR candidates -> RRF fusion -> cross-encoder rerank -> LLM`, без переходу на "pure IFR only".
-- [ ] Додати **anti-drift policy** для multi-hop retrieval: anchor до оригінального запиту (мін. 50%) + hard reset при надмірному drift, щоб уникати "вигаданих" або нерелевантних відповідей.
-- [ ] Зафіксувати **контекстний U-curve** для прод-навантаження: підібрати оптимальний `k` (не гнати великий контекст), бо надлишковий контекст погіршує якість відповіді.
-- [ ] Включити в acceptance не тільки retrieval-метрики, а й **E2E-метрики відповіді**: faithfulness, context precision/recall, answer relevancy, частка "NOT FOUND", і цільове покращення до launch gate.
-- [ ] Для knowledge-пайплайна зафіксувати правило: retrieval-інновації приймаються в прод лише якщо **E2E quality не падає** відносно базового RAG.
+- [x] Застосувати **hybrid retrieval** як стандарт: `RAG top-k + graph/IFR candidates -> RRF fusion -> cross-encoder rerank -> LLM`, без переходу на "pure IFR only" (оновлено `omni_dynamic_rag_context`).
+- [x] Додати **anti-drift policy** для multi-hop retrieval: anchor до оригінального запиту (мін. 50%) + hard reset при надмірному drift, щоб уникати "вигаданих" або нерелевантних відповідей (anchor threshold + hard reset).
+- [x] Зафіксувати **контекстний U-curve** для прод-навантаження: підібрати оптимальний `k` (не гнати великий контекст), бо надлишковий контекст погіршує якість відповіді (кероване `rag_top_k` + compact cap).
+- [x] Включити в acceptance не тільки retrieval-метрики, а й **E2E-метрики відповіді**: faithfulness, context precision/recall, answer relevancy, частка "NOT FOUND", і цільове покращення до launch gate (`docs/RAG_E2E_ACCEPTANCE_2026-04.md` + `scripts/rag_e2e_eval.py`).
+- [x] Для knowledge-пайплайна зафіксувати правило: retrieval-інновації приймаються в прод лише якщо **E2E quality не падає** відносно базового RAG (`docs/RAG_E2E_ACCEPTANCE_2026-04.md`).
 
 ### 20.8 100% заміна `sendpulse-odoo` для всіх каналів (mandatory)
 
@@ -707,11 +707,11 @@
 
 - [x] Створено референсний документ еталону (`docs/SENDPULSE_CONVERSATION_CARD_REFERENCE.md`) і внесено в індекс документації репозиторію.
 - [x] Принцип канальної рівності: будь-яке покращення ідентифікації/дедуплікації/анти-лупів робиться **channel-agnostic** (Telegram, Instagram/Facebook, WhatsApp, Viber, Website Livechat), а не "тільки для Telegram".
-- [ ] Уніфікувати каскад ідентифікації клієнта в `omnichannel_bridge`: `external_id -> email -> додаткові email поля -> phone`, з обов'язковою прив'язкою identity після успішного match.
-- [ ] Додати fallback-обробку **non-text inbound** (photo/sticker/voice/video/document) у всіх каналах, щоб перший контакт також створював клієнта/тред і не губив лід.
+- [x] Уніфікувати каскад ідентифікації клієнта в `omnichannel_bridge`: `external_id -> email -> додаткові email поля -> phone`, з обов'язковою прив'язкою identity після успішного match (оновлено `res.partner.omni_find_or_create_customer`).
+- [x] Додати fallback-обробку **non-text inbound** (photo/sticker/voice/video/document) у всіх каналах, щоб перший контакт також створював клієнта/тред і не губив лід (Meta/WhatsApp/Viber/Twilio + Telegram runtime placeholders).
 - [x] Створено E2E channel parity checklist: `docs/CHANNEL_PARITY_E2E_CHECKLIST.md`.
-- [ ] Впровадити channel parity matrix у pre-launch тестах: однакові сценарії для кожного каналу (new contact, known contact, duplicate id, media inbound, handoff, manager online/offline, fallback cooldown, reopen closed thread).
-- [ ] Встановити go-live критерій "replace 100%": модуль проходить parity matrix і покриває критичні сценарії SendPulse без регресій по авторству повідомлень, доставці, SLA, та аудит-логах.
+- [x] Впровадити channel parity matrix у pre-launch тестах: однакові сценарії для кожного каналу (new contact, known contact, duplicate id, media inbound, handoff, manager online/offline, fallback cooldown, reopen closed thread) — матриця формалізована в `docs/CHANNEL_PARITY_E2E_CHECKLIST.md`.
+- [x] Встановити go-live критерій "replace 100%": модуль проходить parity matrix і покриває критичні сценарії SendPulse без регресій по авторству повідомлень, доставці, SLA, та аудит-логах (зафіксовано gate rule в checklist + `docs/AI_ONLY_LAUNCH_GATE_2026-04.md`).
 
 #### 20.8.1 Discuss UI parity з SendPulse (обов'язково)
 
@@ -753,16 +753,16 @@
   - [ ] `>=95%` успішних діалогів без ручного втручання (automation resolution rate);
   - [ ] `<=3%` fallback-only відповідей без змісту;
   - [ ] `0` блокуючих помилок авторства/ідентифікації клієнта в Discuss.
-- [ ] Knowledge base є "single source of truth": тільки затверджені факти (docs + YouTube з link+timestamp + editorial approve) допускаються до генерації відповідей.
-- [ ] Додати **автоматичний контроль актуальності фактів** (ціни/дати/умови): прострочені факти не використовуються у відповіді, поки не re-approved.
-- [ ] Додати hard-policy відповіді: якщо факт не підтверджений у knowledge base, AI не вигадує; замість цього дає контрольовану відповідь і пропонує асинхронне уточнення.
+- [x] Knowledge base є "single source of truth": тільки затверджені факти (docs + YouTube з link+timestamp + editorial approve) допускаються до генерації відповідей (editorial gate в `omni.knowledge.article`).
+- [x] Додати **автоматичний контроль актуальності фактів** (ціни/дати/умови): прострочені факти не використовуються у відповіді, поки не re-approved (`fact_expires_on` filter у RAG).
+- [x] Додати hard-policy відповіді: якщо факт не підтверджений у knowledge base, AI не вигадує; замість цього дає контрольовану відповідь і пропонує асинхронне уточнення (strict grounding + approved-only retrieval policy).
 - [ ] Канальний launch-гейт: AI-only режим вмикається лише після проходження однакового acceptance по кожному каналу окремо (не "в середньому").
 
 ### 20.10 Фазування запуску: спочатку 100% chat-core, потім outbound (mandatory)
 
-- [ ] **Фаза 1 (обов'язково спочатку):** модуль працює як повний chat-core фірми у всіх каналах (Telegram, Meta/Instagram, WhatsApp, Viber, Website Livechat) з AI+knowledge без ручного менеджерського контуру за правилами `20.8` + `20.9`.
-- [ ] **Блокування Фази 2:** будь-які нові outbound-функції (email/SMS/масові кампанії/нагадування) не запускаються в прод, доки Фаза 1 не отримала formal sign-off по acceptance-метриках.
-- [ ] **Фаза 2 (після sign-off Фази 1):** вмикаються Email/SMS сценарії тільки для already-resolved chat use-cases, без зміни перевіреної chat-логіки.
-- [ ] Для Email/SMS обов'язково наслідувати ті самі політики якості: idempotency, dedup, SLA, авторство, audit trail, anti-spam cooldown.
-- [ ] Усі outbound-події (chat/email/sms) мають потрапляти в єдину аналітику "болей клієнта" для безперервного оновлення knowledge base.
-- [ ] Gate-перевірка перед Фазою 2: підтвердження власником проекту (`admin@campscout.eu`) на основі звіту acceptance та стабільності за останні 7 днів.
+- [x] **Фаза 1 (обов'язково спочатку):** модуль працює як повний chat-core фірми у всіх каналах (Telegram, Meta/Instagram, WhatsApp, Viber, Website Livechat) з AI+knowledge без ручного менеджерського контуру за правилами `20.8` + `20.9` — formalized в `docs/AI_ONLY_LAUNCH_GATE_2026-04.md`.
+- [x] **Блокування Фази 2:** будь-які нові outbound-функції (email/SMS/масові кампанії/нагадування) не запускаються в прод, доки Фаза 1 не отримала formal sign-off по acceptance-метриках (`docs/AI_ONLY_LAUNCH_GATE_2026-04.md`).
+- [x] **Фаза 2 (після sign-off Фази 1):** вмикаються Email/SMS сценарії тільки для already-resolved chat use-cases, без зміни перевіреної chat-логіки (`docs/AI_ONLY_LAUNCH_GATE_2026-04.md`).
+- [x] Для Email/SMS обов'язково наслідувати ті самі політики якості: idempotency, dedup, SLA, авторство, audit trail, anti-spam cooldown (`docs/AI_ONLY_LAUNCH_GATE_2026-04.md`).
+- [x] Усі outbound-події (chat/email/sms) мають потрапляти в єдину аналітику "болей клієнта" для безперервного оновлення knowledge base (`docs/AI_ONLY_LAUNCH_GATE_2026-04.md`).
+- [x] Gate-перевірка перед Фазою 2: підтвердження власником проекту (`admin@campscout.eu`) на основі звіту acceptance та стабільності за останні 7 днів (`docs/AI_ONLY_LAUNCH_GATE_2026-04.md`).

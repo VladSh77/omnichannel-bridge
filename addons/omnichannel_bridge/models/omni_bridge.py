@@ -400,7 +400,18 @@ class OmniBridge(models.AbstractModel):
                     continue
                 text = (msg.get("text") or "").strip()
                 if not text:
-                    continue
+                    # Keep first-touch non-text events so identity/thread are still created.
+                    if msg.get("attachments"):
+                        first_att = (msg.get("attachments") or [{}])[0] or {}
+                        att_type = (first_att.get("type") or "non-text").strip().lower()
+                        text = "[%s]" % att_type
+                    elif msg.get("sticker_id"):
+                        text = "[sticker]"
+                    elif msg.get("quick_reply"):
+                        payload_txt = (msg.get("quick_reply") or {}).get("payload") or ""
+                        text = ("[quick_reply] %s" % payload_txt).strip()
+                    else:
+                        text = "[non-text]"
                 sender = str(event.get("sender", {}).get("id") or "")
                 if not sender:
                     continue
@@ -770,9 +781,12 @@ class OmniBridge(models.AbstractModel):
             return {"ok": True, "skipped": True}
         message = data.get("message") or {}
         text = (message.get("text") or "").strip()
+        if not text:
+            msg_type = (message.get("type") or "").strip().lower()
+            text = "[%s]" % (msg_type or "non-text")
         sender = data.get("sender") or {}
         user_id = str(sender.get("id") or "")
-        if text and user_id:
+        if user_id:
             display_name = sender.get("name") or _("Viber user %s") % user_id
             self._omni_deliver_inbound(
                 "viber",
@@ -832,7 +846,7 @@ class OmniBridge(models.AbstractModel):
                         list_reply = (interactive.get("list_reply") or {}).get("title")
                         text = (button_reply or list_reply or "").strip()
                     if not text:
-                        continue
+                        text = "[%s]" % (msg_type or "non-text")
                     sender = str(msg.get("from") or "")
                     if not sender:
                         continue
@@ -886,7 +900,10 @@ class OmniBridge(models.AbstractModel):
         body = (data.get("Body") or data.get("body") or "").strip()
         from_raw = (data.get("From") or data.get("from") or "").strip()
         sender = from_raw.replace("whatsapp:", "").strip()
-        if not body or not sender:
+        if not body:
+            media_count = (data.get("NumMedia") or data.get("num_media") or "0").strip()
+            body = "[media]" if media_count not in ("", "0") else "[non-text]"
+        if not sender:
             webhook_event.sudo().write(
                 {
                     "state": "processed",

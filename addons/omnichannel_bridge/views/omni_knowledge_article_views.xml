@@ -10,6 +10,9 @@
                 <field name="name"/>
                 <field name="category"/>
                 <field name="channel_scope"/>
+                <field name="source_type"/>
+                <field name="editorial_approved"/>
+                <field name="fact_expires_on"/>
                 <field name="source_url"/>
             </tree>
         </field>
@@ -31,6 +34,11 @@
                         <group>
                             <field name="name"/>
                             <field name="source_url"/>
+                            <field name="source_type"/>
+                            <field name="source_ref"/>
+                            <field name="source_timestamp"/>
+                            <field name="editorial_approved"/>
+                            <field name="fact_expires_on"/>
                         </group>
                     </group>
                     <group>

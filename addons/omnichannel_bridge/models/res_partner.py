@@ -205,6 +205,11 @@ class ResPartner(models.Model):
                 v = nested.get('email')
                 if v:
                     email_candidates.append(v)
+        # Optional custom metadata variants from external bridges.
+        for key in ('secondary_email', 'alt_email', 'parent_email', 'billing_email'):
+            v = metadata.get(key)
+            if v:
+                email_candidates.append(v)
         existing = Identity.search([
             ('provider', '=', provider),
             ('external_id', '=', external_id),
@@ -251,7 +256,28 @@ class ResPartner(models.Model):
             addr = (addr or '').strip().lower()
             if not addr:
                 return self.browse()
-            return self.sudo().search([('email', '=', addr)], limit=1)
+            # Identity cascade standard: external_id -> email -> additional email-like fields -> phone.
+            partner = self.sudo().search([('email', '=', addr)], limit=1)
+            if partner:
+                return partner
+            # Best-effort for custom DBs: inspect email-like char fields.
+            email_like_fields = []
+            for fname, field in self._fields.items():
+                if fname == 'email':
+                    continue
+                if field.type != 'char':
+                    continue
+                if 'email' not in fname.lower():
+                    continue
+                email_like_fields.append(fname)
+            for fname in email_like_fields[:30]:
+                try:
+                    partner = self.sudo().search([(fname, '=', addr)], limit=1)
+                except Exception:
+                    partner = self.browse()
+                if partner:
+                    return partner
+            return self.browse()
 
         partner = self.browse()
         for email in email_candidates:
