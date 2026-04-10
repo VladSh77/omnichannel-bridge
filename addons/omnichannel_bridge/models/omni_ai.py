@@ -1471,10 +1471,11 @@ class OmniAi(models.AbstractModel):
     def _omni_pick_next_question(self, partner, user_text):
         partner = partner.sudo()
         is_pl = self._omni_is_polish_message(user_text or '')
-        has_age = bool(partner.omni_child_age) or self._omni_text_has_age(user_text)
-        has_period = bool(partner.omni_preferred_period) or self._omni_text_has_period(user_text)
-        has_city = bool(partner.omni_departure_city) or self._omni_text_has_departure_city(user_text)
-        has_budget = bool(partner.omni_budget_amount) or self._omni_text_has_budget(user_text)
+        mem = (partner.omni_chat_memory or '').lower()
+        has_age = bool(partner.omni_child_age) or ('age:' in mem) or self._omni_text_has_age(user_text)
+        has_period = bool(partner.omni_preferred_period) or ('period:' in mem) or self._omni_text_has_period(user_text)
+        has_city = bool(partner.omni_departure_city) or ('city:' in mem) or self._omni_text_has_departure_city(user_text)
+        has_budget = bool(partner.omni_budget_amount) or ('budget:' in mem) or self._omni_text_has_budget(user_text)
         has_contact = bool(partner.phone or partner.mobile or partner.email) or self._omni_text_has_contact(user_text)
         if not has_age:
             return (
