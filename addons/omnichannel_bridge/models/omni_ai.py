@@ -206,6 +206,7 @@ class OmniAi(models.AbstractModel):
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
         if self._omni_is_paid_or_booked_message(normalized):
+            self.env['omni.memory'].sudo()._omni_attach_paid_booking_facts(partner, normalized)
             parsed_email = self.env['res.partner'].sudo().omni_parse_email(normalized)
             known_email = (partner.email or '').strip().lower() if partner else ''
             if not parsed_email and not known_email:
@@ -214,6 +215,26 @@ class OmniAi(models.AbstractModel):
                     'Щоб чітко ідентифікувати ваше бронювання, надішліть, будь ласка, email, який вказували при замовленні.',
                 )
                 return
+            booking_facts = self._omni_extract_booking_facts_from_memory(partner)
+            if booking_facts:
+                camp_or_event = booking_facts.get('camp') or booking_facts.get('event')
+                ref = booking_facts.get('booking_ref')
+                invoice = booking_facts.get('invoice')
+                fragments = []
+                if camp_or_event:
+                    fragments.append('Табір/подія: %s.' % camp_or_event)
+                if ref:
+                    fragments.append('Бронювання: %s.' % ref)
+                if invoice:
+                    fragments.append('Фактура: %s.' % invoice)
+                if fragments:
+                    self._omni_post_bot_message(
+                        channel,
+                        'Знайшла ваше замовлення за email. %s Підкажіть, вас цікавлять дати заїзду чи оргдеталі виїзду?'
+                        % (' '.join(fragments)),
+                    )
+                    self._omni_update_sales_stage_after_reply(partner, channel=channel)
+                    return
         if self._omni_is_vague_followup(normalized):
             self._omni_post_bot_message(channel, self._omni_clarify_vague_followup(normalized))
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
@@ -974,11 +995,27 @@ class OmniAi(models.AbstractModel):
         keys = (
             'вже оплат', 'оплатив', 'оплатила', 'оплачено', 'сплатив', 'сплатила',
             'вже заброн', 'забронював', 'забронювала', 'бронював', 'бронювала',
+            'вже купив', 'вже купила', 'вже купили', 'купив табір', 'купила табір', 'купили табір',
+            'придбав', 'придбала', 'кпив',
             'already paid', 'already booked', 'i paid', 'i booked',
             'już opłaci', 'opłacone', 'już zarezerw', 'zarezerwowa',
             'faktura', 'invoice',
         )
         return any(k in txt for k in keys)
+
+    def _omni_extract_booking_facts_from_memory(self, partner):
+        import re
+        if not partner:
+            return {}
+        mem = (partner.omni_chat_memory or '').strip()
+        if not mem:
+            return {}
+        facts = {}
+        for key in ('booking_identity_email', 'booking_ref', 'camp', 'invoice', 'invoice_state', 'event'):
+            matches = re.findall(r'%s:([^;\n]+)' % key, mem, flags=re.IGNORECASE)
+            if matches:
+                facts[key] = (matches[-1] or '').strip()
+        return facts
 
     def _omni_is_ru_or_be_message(self, user_text):
         txt = (user_text or '').lower()
