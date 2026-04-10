@@ -1174,6 +1174,7 @@ class OmniAi(models.AbstractModel):
         except Exception:
             num_predict = 160
         num_predict = max(64, min(400, num_predict))
+        keep_alive = (icp.get_param('omnichannel_bridge.ollama_keep_alive', '30m') or '30m').strip()
         openai_url = '%s/v1/chat/completions' % base
         payload_oa = {
             'model': model,
@@ -1184,6 +1185,7 @@ class OmniAi(models.AbstractModel):
             'temperature': 0.15,
             'stream': False,
             'max_tokens': num_predict,
+            'keep_alive': keep_alive,
         }
         try:
             resp = requests.post(openai_url, json=payload_oa, timeout=(connect_timeout, read_timeout))
@@ -1203,6 +1205,7 @@ class OmniAi(models.AbstractModel):
                 {'role': 'user', 'content': user_text},
             ],
             'stream': False,
+            'keep_alive': keep_alive,
             'options': {'temperature': 0.15, 'num_predict': num_predict},
         }
         try:
