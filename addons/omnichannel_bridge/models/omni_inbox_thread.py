@@ -74,8 +74,18 @@ class OmniInboxThread(models.Model):
         string='Канал',
         index=True,
     )
-    partner_id = fields.Many2one('res.partner', string='Клієнт', index=True, ondelete='set null')
-    external_thread_id = fields.Char(string='Зовнішній ID', index=True)
+    partner_id = fields.Many2one(
+        'res.partner',
+        string='Клієнт',
+        index=True,
+        ondelete='set null',
+        help='Клієнт Odoo, до якого привʼязано поточну розмову.',
+    )
+    external_thread_id = fields.Char(
+        string='Зовнішній ID',
+        index=True,
+        help='Зовнішній ідентифікатор контакту/треду в каналі провайдера.',
+    )
     last_message_preview = fields.Char(string='Останнє повідомлення')
     last_message_at = fields.Datetime(string='Час останнього', index=True)
     operator_status = fields.Selection(
@@ -94,18 +104,49 @@ class OmniInboxThread(models.Model):
         string='Стадія',
         compute='_compute_conversation_stage',
     )
-    social_username = fields.Char(string='Username', compute='_compute_panel_profile')
-    social_profile_url = fields.Char(string='URL профілю', compute='_compute_panel_profile')
-    bot_name = fields.Char(string='Бот', compute='_compute_panel_profile')
-    sp_child_name = fields.Char(string="Ім'я дитини")
-    sp_booking_email = fields.Char(string='Email бронювання')
-    language_code = fields.Char(string='Мова', compute='_compute_panel_profile')
+    social_username = fields.Char(
+        string='Username',
+        compute='_compute_panel_profile',
+        help="Ім'я користувача або посилання на профіль у соцмережах.",
+    )
+    social_profile_url = fields.Char(
+        string='URL профілю',
+        compute='_compute_panel_profile',
+        help='Пряме посилання на профіль клієнта в каналі.',
+    )
+    bot_name = fields.Char(
+        string='Бот',
+        compute='_compute_panel_profile',
+        help='Назва бота/каналу, через який прийшов цей тред.',
+    )
+    sp_child_name = fields.Char(
+        string="Ім'я дитини",
+        help='Значення, зібране ботом під час діалогу.',
+    )
+    sp_booking_email = fields.Char(
+        string='Email бронювання',
+        help='Email, який клієнт назвав для бронювання.',
+    )
+    language_code = fields.Char(
+        string='Мова',
+        compute='_compute_panel_profile',
+        help='Код мови профілю клієнта (якщо доступний у metadata).',
+    )
     subscription_status_label = fields.Char(
         string='Статус підписки',
         compute='_compute_panel_profile',
+        help='Статус/бейдж підписки з профілю каналу.',
     )
-    partner_email = fields.Char(string='Email (клієнт)', compute='_compute_panel_profile')
-    partner_phone = fields.Char(string='Телефон (клієнт)', compute='_compute_panel_profile')
+    partner_email = fields.Char(
+        string='Email (клієнт)',
+        compute='_compute_panel_profile',
+        help='Email з картки клієнта Odoo.',
+    )
+    partner_phone = fields.Char(
+        string='Телефон (клієнт)',
+        compute='_compute_panel_profile',
+        help='Телефон з картки клієнта Odoo.',
+    )
     message_ids = fields.One2many(
         'mail.message',
         related='channel_id.message_ids',
