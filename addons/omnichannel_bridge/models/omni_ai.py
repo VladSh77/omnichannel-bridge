@@ -34,6 +34,13 @@ _CAMP_DOMAIN_POLICY_UK = """
 - Мінімізуй дані про дітей: запитуй лише необхідне для підбору/бронювання.
 """
 
+# Питання про вік у відповіді бота (UA/PL) — для анти-повтору після збереження віку в CRM/історії.
+_OMNI_ASKS_AGE_REPLY_RE = re.compile(
+    r'(?:скільки\s+.*рок|якого\s+віку|який\s+вік\s+дитин|підкажіть[^\n.?!]{0,80}вік\s+дитин(?:и)?|'
+    r'wiek\s+dziecka|ile\s+lat|podaj(?:cie)?\s+wiek)',
+    re.IGNORECASE,
+)
+
 
 class OmniAi(models.AbstractModel):
     _name = 'omni.ai'
@@ -242,7 +249,7 @@ class OmniAi(models.AbstractModel):
             self._omni_update_sales_stage_after_reply(partner, channel=channel)
             return
         if self._omni_is_binary_availability_ping(normalized):
-            clues = self._omni_recent_client_history_clues(channel)
+            clues = self._omni_recent_client_history_clues(channel, partner=partner)
             has_age = bool((partner and partner.omni_child_age) or clues.get('age') or self._omni_text_has_age(normalized))
             if self._omni_is_polish_message(normalized):
                 body = (
@@ -1766,16 +1773,30 @@ class OmniAi(models.AbstractModel):
             return base
         return '%s\n\n%s' % (base, question)
 
+    def _omni_qualification_flags(self, partner, user_text='', channel=None):
+        """Єдине джерело правди: CRM + памʼять + поточний текст + останні репліки клієнта в каналі."""
+        partner = partner.sudo() if partner else None
+        mem = (partner.omni_chat_memory or '').lower() if partner else ''
+        clues = self._omni_recent_client_history_clues(channel, partner=partner)
+        ut = user_text or ''
+        pr = partner
+        return {
+            'has_age': bool(pr and pr.omni_child_age) or ('age:' in mem) or self._omni_text_has_age(ut) or clues.get('age'),
+            'has_period': bool(pr and pr.omni_preferred_period) or ('period:' in mem) or self._omni_text_has_period(ut) or clues.get('period'),
+            'has_city': bool(pr and pr.omni_departure_city) or ('city:' in mem) or self._omni_text_has_departure_city(ut) or clues.get('city'),
+            'has_budget': bool(pr and pr.omni_budget_amount) or ('budget:' in mem) or self._omni_text_has_budget(ut) or clues.get('budget'),
+            'has_contact': bool(pr and (pr.phone or pr.mobile or pr.email)) or self._omni_text_has_contact(ut) or clues.get('contact'),
+        }
+
     def _omni_pick_next_question(self, partner, user_text, channel=None):
         partner = partner.sudo()
         is_pl = self._omni_is_polish_message(user_text or '')
-        mem = (partner.omni_chat_memory or '').lower()
-        clues = self._omni_recent_client_history_clues(channel)
-        has_age = bool(partner.omni_child_age) or ('age:' in mem) or self._omni_text_has_age(user_text) or clues.get('age')
-        has_period = bool(partner.omni_preferred_period) or ('period:' in mem) or self._omni_text_has_period(user_text) or clues.get('period')
-        has_city = bool(partner.omni_departure_city) or ('city:' in mem) or self._omni_text_has_departure_city(user_text) or clues.get('city')
-        has_budget = bool(partner.omni_budget_amount) or ('budget:' in mem) or self._omni_text_has_budget(user_text) or clues.get('budget')
-        has_contact = bool(partner.phone or partner.mobile or partner.email) or self._omni_text_has_contact(user_text) or clues.get('contact')
+        flags = self._omni_qualification_flags(partner, user_text, channel=channel)
+        has_age = flags['has_age']
+        has_period = flags['has_period']
+        has_city = flags['has_city']
+        has_budget = flags['has_budget']
+        has_contact = flags['has_contact']
         if not has_age:
             return (
                 'Підкажіть, будь ласка, який вік дитини?'
@@ -1808,19 +1829,20 @@ class OmniAi(models.AbstractModel):
             )
         return ''
 
-    def _omni_recent_client_history_clues(self, channel):
+    def _omni_recent_client_history_clues(self, channel, partner=None):
         clues = {'age': False, 'period': False, 'city': False, 'budget': False, 'contact': False}
         if not channel:
             return clues
         channel = channel.sudo()
         customer = channel.omni_customer_partner_id
-        if not customer:
+        author_id = partner.sudo().id if partner else (customer.id if customer else False)
+        if not author_id:
             return clues
         msgs = self.env['mail.message'].sudo().search(
             [
                 ('model', '=', 'discuss.channel'),
                 ('res_id', '=', channel.id),
-                ('author_id', '=', customer.id),
+                ('author_id', '=', author_id),
             ],
             order='id desc',
             limit=30,
@@ -1845,28 +1867,35 @@ class OmniAi(models.AbstractModel):
                 break
         return clues
 
+    def _omni_strip_age_question_sentences(self, text):
+        """Прибирає речення/рядки з питанням про вік, щоб не втрачати решту відповіді LLM."""
+        if not (text or '').strip():
+            return (text or '').strip()
+        chunks = re.split(r'(?:\n\n+|\n)', text.strip())
+        kept_blocks = []
+        for block in chunks:
+            sentences = re.split(r'(?<=[.!?])\s+', block.strip())
+            kept_s = [s for s in sentences if s.strip() and not _OMNI_ASKS_AGE_REPLY_RE.search(s)]
+            if kept_s:
+                kept_blocks.append(' '.join(kept_s).strip())
+        return '\n\n'.join(kept_blocks).strip()
+
     def _omni_prevent_qualification_loop(self, reply, partner, user_text, channel=None):
-        import re
         if not partner:
             return reply
         txt = (reply or '').strip()
         if not txt:
             return txt
-        mem = (partner.omni_chat_memory or '').lower()
-        has_age = bool(partner.omni_child_age) or ('age:' in mem)
-        asks_age = bool(
-            re.search(
-                r'(скільки\s+.*рок|якого\s+віку|wiek\s+dziecka|ile\s+lat)',
-                txt.lower(),
-                re.IGNORECASE,
-            )
-        )
+        flags = self._omni_qualification_flags(partner, user_text or '', channel=channel)
+        has_age = flags['has_age']
+        asks_age = bool(_OMNI_ASKS_AGE_REPLY_RE.search(txt))
         if not (has_age and asks_age):
             return txt
+        cleaned = self._omni_strip_age_question_sentences(txt)
+        if cleaned:
+            return cleaned
         next_q = self._omni_pick_next_question(partner, user_text or '', channel=channel)
-        if not next_q:
-            return txt
-        if re.search(r'(скільки\s+.*рок|якого\s+віку|wiek\s+dziecka|ile\s+lat)', next_q.lower(), re.IGNORECASE):
+        if not next_q or _OMNI_ASKS_AGE_REPLY_RE.search(next_q):
             return txt
         return next_q
 
@@ -1911,11 +1940,17 @@ class OmniAi(models.AbstractModel):
         if m:
             age = int(m.group(1))
             return age if 5 <= age <= 18 else 0
-        bare = re.fullmatch(r'\s*(\d{1,2})\s*', (txt or '').strip())
-        if not bare:
-            return 0
-        age = int(bare.group(1))
-        return age if 5 <= age <= 18 else 0
+        plain = (txt or '').strip()
+        bare = re.fullmatch(r'\s*(\d{1,2})\s*', plain)
+        if bare:
+            age = int(bare.group(1))
+            return age if 5 <= age <= 18 else 0
+        # Коротка репліка з єдиним числом 5–18 («так, 12») — типова відповідь на питання про вік.
+        if plain and len(plain) <= 48:
+            hits = [int(g) for g in re.findall(r'\b(\d{1,2})\b', plain) if 5 <= int(g) <= 18]
+            if len(hits) == 1:
+                return hits[0]
+        return 0
 
     def _omni_extract_period(self, txt):
         import re

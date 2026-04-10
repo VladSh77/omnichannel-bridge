@@ -800,6 +800,18 @@ class ContractRegressionTests(unittest.TestCase):
         self.assertIn('msgstr "Analityka CRM"', pl_po)  # CRM Analytics translation
         self.assertIn("Language: pl_PL", pl_po)  # Language header
 
+    def test_sales_qualification_flags_and_funnel_prompt(self):
+        kn = (ROOT / "addons/omnichannel_bridge/models/omni_knowledge.py").read_text()
+        ai = (ROOT / "addons/omnichannel_bridge/models/omni_ai.py").read_text()
+        self.assertIn("def _omni_qualification_flags", ai)
+        self.assertIn("def _omni_recent_client_history_clues(self, channel, partner=None)", ai)
+        self.assertIn("_OMNI_ASKS_AGE_REPLY_RE", ai)
+        self.assertIn("SALES_FUNNEL_CRM", kn)
+        self.assertIn(
+            "omni_sales_discovery_block(partner, channel=channel, user_text=user_text or '')",
+            kn,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

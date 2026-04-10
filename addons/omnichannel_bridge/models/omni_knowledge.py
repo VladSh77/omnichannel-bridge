@@ -1131,7 +1131,7 @@ class OmniKnowledge(models.AbstractModel):
             '---',
             self.omni_partner_core_facts(partner),
             '---',
-            self.omni_sales_discovery_block(partner),
+            self.omni_sales_discovery_block(partner, channel=channel, user_text=user_text or ''),
             '---',
             self.omni_greeting_instruction_block(partner),
             '---',
@@ -1157,20 +1157,22 @@ class OmniKnowledge(models.AbstractModel):
         return '\n'.join(parts)
 
     @api.model
-    def omni_sales_discovery_block(self, partner):
+    def omni_sales_discovery_block(self, partner, channel=None, user_text=''):
         """
         Sales flow helper for LLM:
         - keep dialog consultative
         - ask only missing qualification points
         - avoid repeating already known data from memory/CRM.
         """
-        memory = (partner.omni_chat_memory or '').lower() if partner else ''
-        has_age = bool(partner and partner.omni_child_age) or 'age:' in memory
-        has_period = bool(partner and partner.omni_preferred_period) or 'period:' in memory
-        has_budget = bool(partner and partner.omni_budget_amount) or 'budget:' in memory
-        has_city = bool(partner and partner.omni_departure_city) or 'city:' in memory
-        has_phone = bool(partner and (partner.phone or partner.mobile))
-        has_email = bool(partner and partner.email)
+        omni_ai = self.env['omni.ai'].sudo()
+        flags = omni_ai._omni_qualification_flags(
+            partner, user_text=user_text or '', channel=channel,
+        )
+        has_age = flags['has_age']
+        has_period = flags['has_period']
+        has_budget = flags['has_budget']
+        has_city = flags['has_city']
+        has_contact = flags['has_contact']
 
         missing = []
         if not has_age:
@@ -1181,7 +1183,7 @@ class OmniKnowledge(models.AbstractModel):
             missing.append('місто виїзду/логістика')
         if not has_budget:
             missing.append('орієнтовний бюджет')
-        if not has_phone and not has_email:
+        if not has_contact:
             missing.append('контакт для бронювання')
 
         profile_line = (
@@ -1195,17 +1197,31 @@ class OmniKnowledge(models.AbstractModel):
                 (partner.omni_sales_stage or '') if partner else '',
             )
         )
+        stage = (partner.omni_sales_stage or '') if partner else ''
+        handoff_line = ''
+        if stage == 'handoff':
+            handoff_line = (
+                '\n- STAGE_HANDOFF: не збирай поля з Missing і не починай кваліфікацію заново; '
+                'коротко підтримай клієнта або підтвердь передачу менеджеру.'
+            )
 
         return (
+            'SALES_FUNNEL_CRM (внутрішній етап у stage=...):\n'
+            '- new: перший контакт; одне тепле уточнення з Missing (не «продаж у лоб»).\n'
+            '- qualifying: послідовно закривай Missing — одне питання за повідомлення.\n'
+            '- proposal: 1–2 релевантні табори з фактами; без тиску на оплату в чаті; мʼякий крок (бронь/менеджер).\n'
+            '- handoff: діалог передано людині — не розгортай нову воронку в чаті.\n'
             'SALES_DISCOVERY_POLICY:\n'
             '- Працюй як консультант з продажу таборів: коротко, по суті, з емпатією.\n'
             '- Після першої відповіді веди кваліфікацію: вік, зміна, логістика, бюджет, контакт.\n'
-            '- Став не більше 1-2 уточнень за повідомлення.\n'
-            '- Не повторюй питання, якщо факт вже відомий з CRM або CLIENT_MEMORY_LINES.\n'
+            '- Став не більше одного уточнювального питання за повідомлення.\n'
+            '- Не повторюй питання, якщо факт уже в CRM, CLIENT_MEMORY_LINES або видно з THREAD_TRANSCRIPT вище.\n'
+            '- Якщо вік дитини вже відомий — ніколи знову не питай про вік (ні в тексті, ні в уточненні).\n'
             '- %s.\n'
-            '- Missing now: %s.\n'
+            '- Missing now: %s.%s\n'
             '- Коли даних достатньо: запропонуй 1-2 релевантні табори з ORM фактами і мʼякий наступний крок (бронь/менеджер).'
         ) % (
             profile_line,
             ', '.join(missing) if missing else 'дані для підбору вже зібрані',
+            handoff_line,
         )
