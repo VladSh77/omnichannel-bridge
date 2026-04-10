@@ -104,7 +104,7 @@
                            statusbar_visible="new,in_progress,new_message,close"/>
                 </header>
                 <sheet>
-                    <group string="Тред">
+                    <group>
                         <group string="Клієнт">
                             <field name="partner_id"
                                    options="{'no_create': True, 'no_create_edit': True}"
@@ -127,9 +127,9 @@
                             <field name="sp_child_name"/>
                             <field name="sp_booking_email"/>
                         </group>
-                        <group string="Профіль каналу">
-                            <field name="language_code" readonly="1"/>
-                            <field name="subscription_status_label" readonly="1"/>
+                        <group string="ПРОФІЛЬ SENDPULSE">
+                            <field name="language_code" readonly="1" string="Мова"/>
+                            <field name="subscription_status_label" readonly="1" string="Статус підписки"/>
                         </group>
                     </group>
                     <group>
@@ -139,10 +139,10 @@
                                    domain="[('share', '=', False), ('active', '=', True)]"/>
                             <field name="operator_status" readonly="1"/>
                         </group>
-                        <group string="Тред">
-                            <field name="external_thread_id" readonly="1"/>
-                            <field name="last_message_at" readonly="1"/>
-                            <field name="thread_name" readonly="1"/>
+                        <group string="SENDPULSE">
+                            <field name="external_thread_id" readonly="1" string="Contact ID"/>
+                            <field name="last_message_at" readonly="1" string="Останнє повідомлення"/>
+                            <field name="thread_name" readonly="1" string="Discuss Канал"/>
                         </group>
                     </group>
                     <notebook>
