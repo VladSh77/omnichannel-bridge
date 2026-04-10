@@ -13,7 +13,7 @@
         "sale_management",
         "stock",
         "account",
-        "web",
+        'web',
     ],
     "data": [
         "security/omni_security.xml",

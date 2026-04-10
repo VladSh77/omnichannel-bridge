@@ -11,6 +11,7 @@ from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
 from psycopg2 import IntegrityError
 
+from ..utils.omni_pii_mask import mask_pii_for_logging
 from ..utils.omni_provider_contracts import omni_is_stub_provider
 from ..utils.webhook_parsers import (
     extract_meta_mid,
