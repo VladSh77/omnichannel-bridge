@@ -424,13 +424,15 @@ class MailChannel(models.Model):
                     subtype_xmlid='mail.mt_comment',
                     author_id=odoobot.id,
                 )
-                if has_contact:
+                if has_contact or manager_hours_now:
+                    # During manager hours keep livechat AI-first:
+                    # do not hard-block dialog on missing contact.
                     vals['omni_livechat_entry_state'] = 'ready'
                 else:
                     vals['omni_livechat_entry_state'] = 'awaiting_contact'
                     vals['omni_livechat_contact_attempts'] = 0
                 self.sudo().write(vals)
-                return True
+                return not manager_hours_now
             if topic == 'contact' and not has_contact:
                 self.sudo().with_context(omni_skip_livechat_inbound=True).message_post(
                     body=self._omni_livechat_contact_prompt_text_lang(is_pl=is_pl),
@@ -473,6 +475,10 @@ class MailChannel(models.Model):
             )
             return True
         if state == 'awaiting_contact':
+            # AI-first behavior in manager hours: contact capture remains optional.
+            if manager_hours_now:
+                self.sudo().write({'omni_livechat_entry_state': 'ready'})
+                return False
             if self._omni_livechat_name_needs_clarification(author):
                 guessed_name = self._omni_extract_name_from_text(body)
                 if guessed_name:
