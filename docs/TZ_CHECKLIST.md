@@ -709,6 +709,7 @@
 - [x] Принцип канальної рівності: будь-яке покращення ідентифікації/дедуплікації/анти-лупів робиться **channel-agnostic** (Telegram, Instagram/Facebook, WhatsApp, Viber, Website Livechat), а не "тільки для Telegram".
 - [ ] Уніфікувати каскад ідентифікації клієнта в `omnichannel_bridge`: `external_id -> email -> додаткові email поля -> phone`, з обов'язковою прив'язкою identity після успішного match.
 - [ ] Додати fallback-обробку **non-text inbound** (photo/sticker/voice/video/document) у всіх каналах, щоб перший контакт також створював клієнта/тред і не губив лід.
+- [x] Створено E2E channel parity checklist: `docs/CHANNEL_PARITY_E2E_CHECKLIST.md`.
 - [ ] Впровадити channel parity matrix у pre-launch тестах: однакові сценарії для кожного каналу (new contact, known contact, duplicate id, media inbound, handoff, manager online/offline, fallback cooldown, reopen closed thread).
 - [ ] Встановити go-live критерій "replace 100%": модуль проходить parity matrix і покриває критичні сценарії SendPulse без регресій по авторству повідомлень, доставці, SLA, та аудит-логах.
 
