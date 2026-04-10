@@ -574,6 +574,7 @@ class OmniAi(models.AbstractModel):
             return out
         out = self._omni_cleanup_reply_structure(out)
         out = self._omni_grammar_polish_reply(out)
+        out = self._omni_fix_false_camp_access_denial(out)
         out = self._omni_cleanup_ru_lexemes(out)
         if self._omni_has_ru_markers(out):
             # Deterministic hard-stop: never send mixed/ru-looking phrasing to client.
@@ -585,6 +586,28 @@ class OmniAi(models.AbstractModel):
         out = self._omni_enforce_single_question(out)
         out = self._omni_enforce_reply_size(out)
         return out.strip()
+
+    def _omni_fix_false_camp_access_denial(self, text):
+        txt = (text or '').strip()
+        if not txt:
+            return txt
+        low = txt.lower()
+        has_denial = any(
+            k in low for k in (
+                'не маю доступу',
+                'немає доступу',
+                'немає інформації',
+                'нема інформації',
+                'у моїй системі',
+            )
+        )
+        if not has_denial:
+            return txt
+        # For camp-selection questions bot should never claim "no data":
+        # it has approved KB + Odoo catalog facts.
+        if 'табір' in low and 'замовлен' not in low and 'invoice' not in low and 'фактур' not in low:
+            return 'Маю інформацію про табори CampScout. Підкажіть, будь ласка, який вік дитини?'
+        return txt
 
     def _omni_enforce_single_question(self, text):
         out = (text or '').strip()
