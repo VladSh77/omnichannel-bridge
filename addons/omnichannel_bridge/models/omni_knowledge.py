@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+from datetime import datetime
 
 from odoo import _, api, fields, models
 from odoo.tools import html2plaintext
@@ -17,6 +18,104 @@ class OmniKnowledge(models.AbstractModel):
             'True',
         )
         return str(val).lower() in ('1', 'true', 'yes')
+
+    @api.model
+    def _omni_is_camp_event_name(self, event_name):
+        txt = (event_name or '').lower()
+        if not txt:
+            return False
+        camp_markers = (
+            'кемп', 'табір', 'camp', 'obóz', 'kolonia', 'turnus',
+            'дослідники морів', 'долини карпа', 'пошумимо', 'вовчій стежці',
+            'підкова', 'цивілізація', 'chill-camp',
+        )
+        non_camp_markers = (
+            'зустріч', 'он лайн', 'курс', 'вебінар', 'meeting',
+        )
+        if any(k in txt for k in non_camp_markers):
+            return False
+        return any(k in txt for k in camp_markers)
+
+    @api.model
+    def omni_cron_refresh_camp_availability_snapshot(self):
+        """
+        Daily auto-monitoring of camp free places for bot grounding.
+        Creates/updates one KB article with fresh seats + locations.
+        """
+        if 'event.event' not in self.env:
+            return
+        Event = self.env['event.event'].sudo()
+        Registration = self.env['event.registration'].sudo() if 'event.registration' in self.env else False
+        events = Event.search([('active', '=', True)], order='date_begin asc, id asc')
+        camp_rows = []
+        now = fields.Datetime.now()
+        for event in events:
+            name = (
+                event.name.get('uk_UA')
+                if isinstance(event.name, dict)
+                else (event.name or '')
+            ) or (
+                event.name.get('en_US')
+                if isinstance(event.name, dict)
+                else ''
+            ) or 'event'
+            if not self._omni_is_camp_event_name(name):
+                continue
+            registered = 0
+            if Registration:
+                registered = Registration.search_count([
+                    ('event_id', '=', event.id),
+                    ('state', 'not in', ('cancel', 'cancelled', 'draft')),
+                ])
+            seats_max = int(event.seats_max or 0)
+            seats_available = max(0, seats_max - registered) if seats_max else 0
+            country = ''
+            if event.country_id:
+                country = event.country_id.name if isinstance(event.country_id.name, str) else ''
+            location = country or event.address_id.city or (
+                event.address_id.name if event.address_id else ''
+            ) or '-'
+            camp_rows.append({
+                'name': name,
+                'location': location,
+                'seats_available': seats_available,
+                'seats_max': seats_max,
+                'registered': registered,
+            })
+        if not camp_rows:
+            return
+
+        lines = [
+            'AUTO_DAILY_CAMP_AVAILABILITY',
+            'updated_at: %s' % datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'source: event.event + event.registration',
+            '',
+            'Дані для бота (актуальна наявність місць):',
+        ]
+        for row in camp_rows:
+            lines.append(
+                '- %s | локація: %s | вільно місць: %s/%s'
+                % (row['name'], row['location'], row['seats_available'], row['seats_max'])
+            )
+        body = '\n'.join(lines)
+
+        Article = self.env['omni.knowledge.article'].sudo()
+        article = Article.search([('source_ref', '=', 'daily_camp_availability_snapshot')], limit=1)
+        vals = {
+            'name': 'CampScout: щоденний моніторинг вільних місць (auto)',
+            'category': 'faq',
+            'channel_scope': 'all',
+            'priority': 5,
+            'body': body,
+            'source_type': 'other',
+            'source_ref': 'daily_camp_availability_snapshot',
+            'source_timestamp': now.strftime('%Y-%m-%d %H:%M:%S'),
+            'editorial_approved': True,
+        }
+        if article:
+            article.write(vals)
+        else:
+            Article.create(vals)
 
     @api.model
     def _omni_debug_sources_enabled(self):
