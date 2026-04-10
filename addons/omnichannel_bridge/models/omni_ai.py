@@ -302,6 +302,9 @@ class OmniAi(models.AbstractModel):
             '- No aggressive urgency, no pressure tactics.\n'
             '- Keep concise, helpful, and factual.\n'
             '- No russian words/lexemes; use clean Ukrainian or Polish only.\n'
+            '- Write like a real human manager, not a legal document.\n'
+            '- Avoid robotic meta-phrases like "у нашій системі", "з емпатією", '
+            '"немає конкретних гарантій".\n'
             '- Mobile-first: one short paragraph, no long walls of text.\n'
             '- Sales mode: discover client needs first, not "catalog dump".\n'
             '- Do NOT lead with price in first replies unless client explicitly asks about price.\n'
@@ -369,12 +372,60 @@ class OmniAi(models.AbstractModel):
             return out
         if self._omni_contains_ru_lexemes(out):
             out = self._omni_cleanup_ru_lexemes(out)
+        out = self._omni_humanize_sales_tone(out)
         # Premium sales flow: price only after qualification or direct price request.
         is_profile_ready = bool(
             partner and partner.omni_child_age and partner.omni_preferred_period
         )
         if not is_profile_ready and not self._omni_user_asks_price(user_text):
             out = self._omni_strip_price_lines(out) or out
+        out = self._omni_cleanup_reply_structure(out)
+        return out
+
+    def _omni_humanize_sales_tone(self, text):
+        out = text or ''
+        replacements = {
+            'Звертаюся до вас з емпатією': 'Розумію ваш запит',
+            'звертаюся до вас з емпатією': 'розумію ваш запит',
+            'У нашій системі немає конкретних гарантій, які можна надати безпосередньо.': (
+                'Безпека дитини для нас у пріоритеті, і це підтверджується стандартами табору.'
+            ),
+            'у нашій системі немає конкретних гарантій, які можна надати безпосередньо.': (
+                'безпека дитини для нас у пріоритеті, і це підтверджується стандартами табору.'
+            ),
+            'Однак ми маємо кілька важливих погоджень та процедур:': (
+                'Ось коротко, як ми забезпечуємо безпеку:'
+            ),
+            'однак ми маємо кілька важливих погоджень та процедур:': (
+                'ось коротко, як ми забезпечуємо безпеку:'
+            ),
+        }
+        for src, dst in replacements.items():
+            out = out.replace(src, dst)
+        return out.strip()
+
+    def _omni_cleanup_reply_structure(self, text):
+        lines = [(ln or '').rstrip() for ln in (text or '').splitlines()]
+        cleaned = []
+        for idx, ln in enumerate(lines):
+            s = ln.strip()
+            if not s:
+                if cleaned and cleaned[-1]:
+                    cleaned.append('')
+                continue
+            # Remove accidental lonely numbering lines like "2".
+            if re.fullmatch(r'\d+[.)]?', s):
+                continue
+            # Normalize markdown-heavy bullets for chat readability.
+            s = s.replace('**', '')
+            # Keep simple numeric lists consistent.
+            if re.match(r'^\d+\.\s*$', s):
+                continue
+            if idx == 0 and s.endswith(':') and len(lines) > 1:
+                s = s[:-1]
+            cleaned.append(s)
+        out = '\n'.join(cleaned).strip()
+        out = re.sub(r'\n{3,}', '\n\n', out)
         return out
 
     def _omni_coupon_meta_offer_text(self):
