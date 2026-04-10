@@ -1156,10 +1156,7 @@ class OmniAi(models.AbstractModel):
         txt = re.sub(r'\s+', ' ', (user_text or '').strip().lower())
         if not txt:
             return False
-        return txt in (
-            'так', 'так.', 'ок', 'ок.', 'добре', 'ага', 'yes', 'ok', 'yep',
-            'tak', 'tak.', 'dobrze',
-        )
+        return bool(re.match(r'^(так|ок|добре|ага|yes|ok|yep|tak|dobrze)\b[.!?]*$', txt))
 
     def _omni_next_step_after_affirmation(self, partner, user_text):
         if not partner:
@@ -1525,18 +1522,22 @@ class OmniAi(models.AbstractModel):
         if phone and not (partner.phone or partner.mobile):
             vals['phone'] = phone
         age = self._omni_extract_age(txt)
-        if age and not partner.omni_child_age:
+        if age and (not partner.omni_child_age or int(partner.omni_child_age) != int(age)):
             vals['omni_child_age'] = age
         period = self._omni_extract_period(txt)
-        if period and not partner.omni_preferred_period:
+        if period and ((partner.omni_preferred_period or '').strip().lower() != period.strip().lower()):
             vals['omni_preferred_period'] = period
         city = self._omni_extract_departure_city(txt)
-        if city and not partner.omni_departure_city:
+        if city and ((partner.omni_departure_city or '').strip().lower() != city.strip().lower()):
             vals['omni_departure_city'] = city
         budget_amount, budget_currency = self._omni_extract_budget(txt)
-        if budget_amount and not partner.omni_budget_amount:
+        if budget_amount and (
+            not partner.omni_budget_amount
+            or float(partner.omni_budget_amount or 0.0) != float(budget_amount)
+            or (budget_currency and (partner.omni_budget_currency or '').lower() != budget_currency.lower())
+        ):
             vals['omni_budget_amount'] = budget_amount
-            if budget_currency and not partner.omni_budget_currency:
+            if budget_currency:
                 vals['omni_budget_currency'] = budget_currency
         if vals:
             partner.write(vals)

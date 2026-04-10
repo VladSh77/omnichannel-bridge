@@ -144,13 +144,16 @@ class OmniMemory(models.AbstractModel):
             age = int(age_m.group(1))
             clues.append('age:%s' % age)
             if 5 <= age <= 18:
-                updates['omni_child_age'] = age
+                if not partner.omni_child_age or int(partner.omni_child_age) != age:
+                    updates['omni_child_age'] = age
         else:
             # Accept bare age answers like "9" after qualification prompts.
             bare_m = re.fullmatch(r'\s*(\d{1,2})\s*', txt)
             if bare_m:
                 age = int(bare_m.group(1))
-                if 5 <= age <= 18 and not partner.omni_child_age:
+                if 5 <= age <= 18 and (
+                    not partner.omni_child_age or int(partner.omni_child_age) != age
+                ):
                     clues.append('age:%s' % age)
                     updates['omni_child_age'] = age
         budget_m = re.search(
