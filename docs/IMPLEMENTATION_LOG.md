@@ -28,7 +28,7 @@ docker exec campscout_web odoo -c /etc/odoo/odoo.conf -d campscout \
 
 ### DevJournal (Obsidian)
 
-- Доповнення до **`DevJournal/sessions/2026-04-10-omnichannel-operations-git-deploy.md`**: legal hierarchy, коміти, команда upgrade.
+- Доповнення до **`DevJournal/sessions/LOG.md`** (розділ **2026-04-10**): legal hierarchy, коміти, команда upgrade.
 
 ---
 
@@ -261,7 +261,7 @@ docker exec campscout_web odoo -c /etc/odoo/odoo.conf -d campscout \
 
 **Remediation:** SendPulse `main` reset to commit **`6905fa7`** and **force-pushed**; commits `9317e1c` and `2775941` removed from branch history.
 
-**Cross-links:** `sendpulse-odoo/docs/TZ.md`, `sendpulse-odoo/CHANGELOG.md`, `sendpulse-odoo/TECHNICAL_DOCS.md`, `docs/TZ_CHECKLIST.md` (operational incidents), `DevJournal/sessions/2026-04-09-sendpulse-critical-scope-violation.md`.
+**Cross-links:** `sendpulse-odoo/docs/TZ.md`, `sendpulse-odoo/CHANGELOG.md`, `sendpulse-odoo/TECHNICAL_DOCS.md`, `docs/TZ_CHECKLIST.md` (operational incidents), `DevJournal/sessions/LOG.md`.
 
 **Rule:** no SendPulse code changes for omnichannel/Discuss UX without a **separate, explicit** change request and sign-off.
 

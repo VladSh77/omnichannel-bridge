@@ -55,7 +55,7 @@
 
 **Жорстке правило:** інтеграція Discuss / omnichannel UI — **тільки** в `omnichannel_bridge`; SendPulse — лише за **окремим** погодженим ТЗ.
 
-Деталі: `sendpulse-odoo/docs/TZ.md`, `sendpulse-odoo/CHANGELOG.md`, `docs/IMPLEMENTATION_LOG.md`, `DevJournal/sessions/2026-04-09-sendpulse-critical-scope-violation.md`.
+Деталі: `sendpulse-odoo/docs/TZ.md`, `sendpulse-odoo/CHANGELOG.md`, `docs/IMPLEMENTATION_LOG.md`, `DevJournal/sessions/LOG.md` (розділи **2026-04-09**, **2026-04-11**).
 
 </div>
 
