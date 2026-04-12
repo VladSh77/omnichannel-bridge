@@ -123,6 +123,7 @@
 - [x] Клієнт отримує **номер купона**; вводить його при **реєстрації / оформленні**: додано `sale.order.omni_coupon_code` + валідацію коду.
 - [x] У Odoo: реалізовано public-coupon flow (код + % в Settings), автоматичне застосування знижки лише до camp lines (`bs_event_id` / event-type).
 - [x] Облік використання купона: `omni.coupon.redemption` (one-use-per-partner-per-code) + campaign linkage (`promo_id`, `campaign_code`) + `valid_until` з promo-window.
+- **❌ СКАСОВАНО 2026-04-12:** поля `omni_coupon_code`, `omni_coupon_validated`, `omni_coupon_discount_amount` та вся бізнес-логіка купонів **видалені** з моделі і view — дублювали рідний функціонал Odoo ("Код купона" / `sale.promotion`). Колонки в БД не дропнуті — прибрати при наступному рефакторі.
 
 **Організація продажів:**
 
