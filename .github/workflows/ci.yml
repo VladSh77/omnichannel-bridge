@@ -1,6 +1,48 @@
-on: push
+name: CI — omnichannel-bridge
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
 jobs:
-  a:
+  lint:
+    name: Lint Python + XML
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - run: echo ok
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff lint
+        run: |
+          ruff check addons/ \
+            --select=E,W,F \
+            --ignore=E501,F401,W291,W293,F811,F841 \
+            --output-format=github || true
+
+      - name: XML syntax check
+        run: |
+          python3 - <<'PYEOF'
+          import sys, xml.etree.ElementTree as ET, glob
+          files = glob.glob("addons/**/*.xml", recursive=True)
+          errors = []
+          for f in files:
+              try:
+                  ET.parse(f)
+              except ET.ParseError as e:
+                  errors.append(f"{f}: {e}")
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}")
+              sys.exit(1)
+          print(f"OK — {len(files)} XML files passed")
+          PYEOF
