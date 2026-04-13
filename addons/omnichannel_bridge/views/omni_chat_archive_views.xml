@@ -1,15 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Form view to read single archived message -->
+    <record id="view_omni_chat_archive_form" model="ir.ui.view">
+        <field name="name">omni.chat.archive.form</field>
+        <field name="model">omni.chat.archive</field>
+        <field name="arch" type="xml">
+            <form string="Архів чату" create="false">
+                <sheet>
+                    <group>
+                        <field name="date" string="Дата"/>
+                        <field name="author_name" string="Автор"/>
+                    </group>
+                    <field name="body" string="Повідомлення" widget="html" readonly="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <!-- List view for archive messages -->
     <record id="view_omni_chat_archive_list" model="ir.ui.view">
         <field name="name">omni.chat.archive.list</field>
         <field name="model">omni.chat.archive</field>
         <field name="arch" type="xml">
-            <list string="Архів чату" create="false" delete="false" edit="false" default_order="date asc">
+            <list string="Архів чату" create="false" delete="false" default_order="date asc">
                 <field name="date" string="Дата" widget="datetime"/>
                 <field name="author_name" string="Автор"/>
-                <field name="body" string="Повідомлення" widget="html"/>
+                <field name="body" string="Повідомлення"/>
             </list>
         </field>
     </record>
@@ -18,7 +35,7 @@
     <record id="action_omni_chat_archive" model="ir.actions.act_window">
         <field name="name">Архів чату</field>
         <field name="res_model">omni.chat.archive</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_omni_chat_archive_list"/>
     </record>
 
