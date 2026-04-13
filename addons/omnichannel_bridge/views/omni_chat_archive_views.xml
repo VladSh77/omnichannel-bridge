@@ -23,11 +23,11 @@
         <field name="name">omni.chat.archive.list</field>
         <field name="model">omni.chat.archive</field>
         <field name="arch" type="xml">
-            <list string="Архів чату" create="false" delete="false">
+            <tree string="Архів чату" create="false" delete="false">
                 <field name="date" string="Дата"/>
                 <field name="author_name" string="Автор"/>
                 <field name="body" string="Повідомлення"/>
-            </list>
+            </tree>
         </field>
     </record>
 
