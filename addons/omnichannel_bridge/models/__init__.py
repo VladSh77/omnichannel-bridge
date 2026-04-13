@@ -41,3 +41,4 @@ from . import omni_payment_event
 from . import sale_order
 from . import payment_transaction
 from . import account_move
+from . import omni_chat_archive

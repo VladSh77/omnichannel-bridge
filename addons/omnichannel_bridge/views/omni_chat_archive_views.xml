@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List view for archive messages -->
+    <record id="view_omni_chat_archive_list" model="ir.ui.view">
+        <field name="name">omni.chat.archive.list</field>
+        <field name="model">omni.chat.archive</field>
+        <field name="arch" type="xml">
+            <list string="Архів чату" create="false" delete="false" edit="false" default_order="date asc">
+                <field name="date" string="Дата" widget="datetime"/>
+                <field name="author_name" string="Автор"/>
+                <field name="body" string="Повідомлення" widget="html"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action to open archive from smart button -->
+    <record id="action_omni_chat_archive" model="ir.actions.act_window">
+        <field name="name">Архів чату</field>
+        <field name="res_model">omni.chat.archive</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_omni_chat_archive_list"/>
+    </record>
+
+    <!-- Extend CRM lead form: smart button in button_box -->
+    <record id="view_crm_lead_chat_archive_button" model="ir.ui.view">
+        <field name="name">crm.lead.chat.archive.button</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_all_leads"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button name="action_open_chat_archive"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-comments-o"
+                        invisible="omni_chat_archive_count == 0">
+                    <field name="omni_chat_archive_count" widget="statinfo" string="Архів чату"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

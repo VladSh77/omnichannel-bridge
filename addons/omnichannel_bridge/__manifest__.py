@@ -52,6 +52,7 @@
         "views/omni_reserve_entry_views.xml",
         "views/omni_ops_views.xml",
         "views/omni_conversation_audit_views.xml",
+        "views/omni_chat_archive_views.xml",
     ],
     "external_dependencies": {
         "python": ["requests", "pytz"],
