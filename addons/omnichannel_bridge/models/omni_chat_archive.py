@@ -32,7 +32,7 @@ class CrmLeadChatArchive(models.Model):
 
     omni_chat_archive_ids = fields.One2many(
         'omni.chat.archive', 'lead_id',
-        string='Архів чату',
+        string='Повідомлення архіву',
     )
     omni_chat_archive_count = fields.Integer(
         string='Архів чату',
